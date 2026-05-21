@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: bejson_server.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / Core / bejson_server.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 bejson_server.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_server.py
+Family:       Core
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  API server implementation for BEJSON data distribution.
+&#34;&#34;&#34;
+import os
+import socket
+import random
+import subprocess
+import sys
+import json
+import time
+import shutil
+from datetime import datetime
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
+class SimpleLock:
+    &#34;&#34;&#34;Portable file lock using directory creation (atomic on most FS).&#34;&#34;&#34;
+    def __init__(self, lock_path):
+        self.lock_dir = lock_path + &#34;.lockdir&#34;
+        self.is_locked = False
+
+    def acquire(self, timeout=10):
+        start_time = time.time()
+        while time.time() - start_time &lt; timeout:
+            try:
+                os.mkdir(self.lock_dir)
+                self.is_locked = True
+                return True
+            except FileExistsError:
+                time.sleep(0.1)
+        return False
+
+    def release(self):
+        if self.is_locked:
+            try:
+                os.rmdir(self.lock_dir)
+            except OSError:
+                pass
+            self.is_locked = False
+
+def copy_to_clipboard(text):
+    &#34;&#34;&#34;Portable clipboard copy.&#34;&#34;&#34;
+    try:
+        if sys.platform == &#39;linux&#39; and shutil.which(&#39;termux-clipboard-set&#39;):
+            subprocess.run([&#34;termux-clipboard-set&#34;, text], check=False)
+        elif sys.platform == &#39;darwin&#39;:
+            subprocess.run([&#39;pbcopy&#39;], input=text.encode(&#39;utf-8&#39;), check=False)
+        elif sys.platform == &#39;win32&#39;:
+            subprocess.run([&#39;clip&#39;], input=text.encode(&#39;utf-8&#39;), check=False)
+    except Exception:
+        pass
+
+def open_url(url):
+    &#34;&#34;&#34;Portable URL open.&#34;&#34;&#34;
+    try:
+        if sys.platform == &#39;linux&#39; and shutil.which(&#39;termux-open-url&#39;):
+            subprocess.run([&#39;termux-open-url&#39;, url], check=False)
+        else:
+            import webbrowser
+            webbrowser.open(url)
+    except Exception:
+        pass
+
+def is_port_in_use(port):
+    &#34;&#34;&#34;Checks if a port is currently occupied.&#34;&#34;&#34;
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+        return s.connect_ex((&#39;localhost&#39;, port)) == 0
+
+def get_random_available_port(start=5001, end=5020):
+    ports = list(range(start, end + 1))
+    random.shuffle(ports)
+    for port in ports:
+        if not is_port_in_use(port):
+            return port
+    return None
+
+try:
+    from lib_bejson_env import resolve_path
+except ImportError:
+    def resolve_path(p): return p.replace(&#34;{HOME}&#34;, os.path.expanduser(&#34;~&#34;))
+
+def register_server(name, port):
+    reg_path = resolve_path(&#34;{HOME}/Registry/Environment_Registry.bejson.json&#34;)
+    if not os.path.exists(reg_path): return
+    
+    lock = SimpleLock(reg_path)
+    if not lock.acquire():
+        print(f&#34; [ServerLib] Timeout acquiring lock for {reg_path}&#34;)
+        return
+
+    try:
+        with open(reg_path, &#39;r&#39;) as f:
+            data = json.load(f)
+        
+        data[&#39;Values&#39;] = [v for v in data[&#39;Values&#39;] if not (v[0] == &#39;Running_Server&#39; and v[3] == name)]
+        now = datetime.utcnow().strftime(&#39;%Y-%m-%dT%H:%M:%SZ&#39;)
+        url = f&#34;http://localhost:{port}&#34;
+        record = [&#39;Running_Server&#39;, now, &#39;ServerLib&#39;, name, url, None, None, str(port), &#39;ONLINE&#39;, &#39;Global&#39;]
+        data[&#39;Values&#39;].append(record)
+        
+        # Atomic write via temp file
+        tmp_path = reg_path + &#34;.tmp&#34;
+        with open(tmp_path, &#39;w&#39;) as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp_path, reg_path)
+        
+        print(f&#34; [ServerLib] REGISTERED: {name} on {url}&#34;)
+    except Exception as e:
+        print(f&#34; [ServerLib] Registration Error: {e}&#34;)
+    finally:
+        lock.release()
+
+def unregister_server(name):
+    reg_path = resolve_path(&#34;{HOME}/Registry/Environment_Registry.bejson.json&#34;)
+    if not os.path.exists(reg_path): return
+    
+    lock = SimpleLock(reg_path)
+    if not lock.acquire(): return
+
+    try:
+        with open(reg_path, &#39;r&#39;) as f:
+            data = json.load(f)
+        
+        data[&#39;Values&#39;] = [v for v in data[&#39;Values&#39;] if not (v[0] == &#39;Running_Server&#39; and v[3] == name)]
+        
+        tmp_path = reg_path + &#34;.tmp&#34;
+        with open(tmp_path, &#39;w&#39;) as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp_path, reg_path)
+        
+        print(f&#34; [ServerLib] UNREGISTERED: {name}&#34;)
+    except Exception as e:
+        print(f&#34; [ServerLib] Unregistration Error: {e}&#34;)
+    finally:
+        lock.release()
+
+def start_flask_server_random(app_path, name=None, debug=False, host=&#39;127.0.0.1&#39;):
+    &#34;&#34;&#34;Starts a Flask server on a random port. Default host is 127.0.0.1 for security.&#34;&#34;&#34;
+    port = get_random_available_port()
+    if port is None:
+        print(&#34;FAIL | No available ports.&#34;)
+        return False
+
+    app_name = name or os.path.splitext(os.path.basename(app_path))[0]
+    register_server(app_name, port)
+    
+    url = f&#34;http://localhost:{port}&#34;
+    print(f&#34;--- BEJSON SERVER STARTER ---&#34;)
+    print(f&#34;Name: {app_name}&#34;)
+    print(f&#34;Host: {host}&#34;)
+    print(f&#34;Port: {port}&#34;)
+    print(f&#34;OPEN_URL:{url}&#34;)
+
+    copy_to_clipboard(url)
+    print(&#34; [ServerLib] URL copied to clipboard.&#34;)
+
+    open_url(url)
+
+    env = os.environ.copy()
+    env[&#39;FLASK_APP&#39;] = app_path
+    env[&#39;FLASK_DEBUG&#39;] = &#39;1&#39; if debug else &#39;0&#39;
+    
+    try:
+        # Secure default: host=127.0.0.1
+        subprocess.run([&#39;flask&#39;, &#39;run&#39;, &#39;--host&#39;, host, &#39;--port&#39;, str(port)], env=env)
+    finally:
+        unregister_server(app_name)
+
+if __name__ == &#39;__main__&#39;:
+    if len(sys.argv) &gt; 1:
+        start_flask_server_random(sys.argv[1])
+    else:
+        print(&#34;Usage: python3 lib_bejson_server.py &lt;app_path&gt;&#34;)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

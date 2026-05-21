@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_cms_content.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / CMS / lib_cms_content.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_cms_content.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_cms_content.py
+Family:       CMS
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Content handler and transformer for the CMS engine.
+&#34;&#34;&#34;
+
+import os
+import sys
+import uuid
+import re
+from datetime import datetime
+from typing import Dict, List, Optional
+
+# Ensure local directory is in path for relative imports
+LIB_DIR = os.path.dirname(os.path.abspath(__file__))
+if LIB_DIR not in sys.path:
+    sys.path.append(LIB_DIR)
+
+import lib_bejson_core as BEJSONCore
+
+def _slugify(text: str) -&gt; str:
+    text = text.lower()
+    text = re.sub(r&#39;[^a-z0-9]+&#39;, &#39;-&#39;, text)
+    return text.strip(&#39;-&#39;)
+
+# ---------------------------------------------------------------------------
+# PAGE CONTENT OPERATIONS (pages_db/&lt;uuid&gt;.json)
+# ---------------------------------------------------------------------------
+
+def _cms_content_init_page_file(file_path: str, title: str, html_body: str = &#34;&#34;) -&gt; None:
+    &#34;&#34;&#34;Initialize an individual page content file in 104db format.&#34;&#34;&#34;
+    record_types = [&#34;PageMeta&#34;, &#34;Content&#34;]
+    fields = [
+        {&#34;name&#34;: &#34;Record_Type_Parent&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;meta_title&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;PageMeta&#34;},
+        {&#34;name&#34;: &#34;meta_description&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;PageMeta&#34;},
+        {&#34;name&#34;: &#34;html_body&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;Content&#34;},
+        {&#34;name&#34;: &#34;markdown_body&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;Content&#34;},
+    ]
+    
+    doc = BEJSONCore.bejson_core_create_104db(record_types, fields, [])
+    
+    # Add Meta record
+    meta_row = [&#34;PageMeta&#34;, title, &#34;&#34;]
+    # Pad to match field count
+    meta_row.extend([None] * (len(fields) - len(meta_row)))
+    doc = BEJSONCore.bejson_core_add_record(doc, meta_row)
+    
+    # Add Content record
+    # Record_Type_Parent [0], meta_title [1], meta_description [2], html_body [3], markdown_body [4]
+    content_row = [&#34;Content&#34;, None, None, html_body, &#34;&#34;]
+    # Pad to match field count
+    content_row.extend([None] * (len(fields) - len(content_row)))
+    
+    doc = BEJSONCore.bejson_core_add_record(doc, content_row)
+    BEJSONCore.bejson_core_atomic_write(file_path, doc)
+
+def cms_content_get_page_body(pages_dir: str, page_uuid: str) -&gt; str:
+    &#34;&#34;&#34;Retrieve html_body from a page&#39;s individual JSON file.&#34;&#34;&#34;
+    file_path = os.path.join(pages_dir, f&#34;{page_uuid}.json&#34;)
+    if not os.path.exists(file_path):
+        return &#34;&#34;
+    
+    doc = BEJSONCore.bejson_core_load_file(file_path)
+    hb_idx = BEJSONCore.bejson_core_get_field_index(doc, &#34;html_body&#34;)
+    records = BEJSONCore.bejson_core_get_records_by_type(doc, &#34;Content&#34;)
+    
+    if records:
+        return records[0][hb_idx] or &#34;&#34;
+    return &#34;&#34;
+
+# ---------------------------------------------------------------------------
+# MASTER INDEX OPERATIONS (site_master.json)
+# ---------------------------------------------------------------------------
+
+def cms_content_create_page(
+    master_db_path: str, 
+    pages_dir: str, 
+    title: str, 
+    category_ref: str = &#34;Uncategorized&#34;, 
+    author_ref: str = &#34;Admin&#34;,
+    html_body: str = &#34;&#34;,
+    featured_img: str = &#34;&#34;
+) -&gt; str:
+    &#34;&#34;&#34;
+    Create a new page: generates UUID, updates master index, creates content file.
+    Returns the new page_uuid.
+    &#34;&#34;&#34;
+    page_uuid = str(uuid.uuid4())
+    page_slug = _slugify(title)
+    today = datetime.now().strftime(&#34;%Y-%m-%d&#34;)
+    
+    # 1. Update Master Index
+    doc = BEJSONCore.bejson_core_load_file(master_db_path)
+    
+    # Map fields
+    fields_map = {f[&#39;name&#39;]: i for i, f in enumerate(doc[&#34;Fields&#34;])}
+    
+    new_row = [None] * len(doc[&#34;Fields&#34;])
+    new_row[fields_map[&#34;Record_Type_Parent&#34;]] = &#34;PageRecord&#34;
+    new_row[fields_map[&#34;page_uuid&#34;]] = page_uuid
+    new_row[fields_map[&#34;page_title&#34;]] = title
+    new_row[fields_map[&#34;page_slug&#34;]] = page_slug
+    new_row[fields_map[&#34;category_ref&#34;]] = category_ref
+    new_row[fields_map[&#34;item_type&#34;]] = &#34;page&#34;
+    new_row[fields_map[&#34;created_at&#34;]] = today
+    new_row[fields_map[&#34;author_ref&#34;]] = author_ref
+    new_row[fields_map[&#34;featured_img&#34;]] = featured_img
+    
+    doc = BEJSONCore.bejson_core_add_record(doc, new_row)
+    BEJSONCore.bejson_core_atomic_write(master_db_path, doc)
+    
+    # 2. Create individual content file
+    os.makedirs(pages_dir, exist_ok=True)
+    page_file = os.path.join(pages_dir, f&#34;{page_uuid}.json&#34;)
+    _cms_content_init_page_file(page_file, title, html_body)
+    
+    return page_uuid
+
+def cms_content_update_page(
+    master_db_path: str,
+    pages_dir: str,
+    page_uuid: str,
+    updates: Dict
+) -&gt; None:
+    &#34;&#34;&#34;
+    Update page metadata in master and/or content in individual file.
+    &#39;updates&#39; can contain: title, category_ref, author_ref, featured_img, html_body.
+    &#34;&#34;&#34;
+    # 1. Update Master Index if needed
+    master_updates = {k: v for k, v in updates.items() if k in [&#34;title&#34;, &#34;category_ref&#34;, &#34;author_ref&#34;, &#34;featured_img&#34;]}
+    if master_updates:
+        doc = BEJSONCore.bejson_core_load_file(master_db_path)
+        t_idx = 0
+        u_idx = BEJSONCore.bejson_core_get_field_index(doc, &#34;page_uuid&#34;)
+        
+        found = False
+        for i, row in enumerate(doc[&#34;Values&#34;]):
+            if row[t_idx] == &#34;PageRecord&#34; and row[u_idx] == page_uuid:
+                for k, v in master_updates.items():
+                    # Handle title -&gt; page_title mapping
+                    f_key = &#34;page_title&#34; if k == &#34;title&#34; else k
+                    if k == &#34;title&#34;:
+                        row[BEJSONCore.bejson_core_get_field_index(doc, &#34;page_slug&#34;)] = _slugify(v)
+                    
+                    row[BEJSONCore.bejson_core_get_field_index(doc, f_key)] = v
+                found = True
+                break
+        if found:
+            BEJSONCore.bejson_core_atomic_write(master_db_path, doc)
+
+    # 2. Update Content File if needed
+    html_body = updates.get(&#34;html_body&#34;)
+    if html_body is not None or &#34;title&#34; in updates:
+        page_file = os.path.join(pages_dir, f&#34;{page_uuid}.json&#34;)
+        if os.path.exists(page_file):
+            pdoc = BEJSONCore.bejson_core_load_file(page_file)
+            pt_idx = 0
+            
+            if html_body is not None:
+                hb_idx = BEJSONCore.bejson_core_get_field_index(pdoc, &#34;html_body&#34;)
+                for row in pdoc[&#34;Values&#34;]:
+                    if row[pt_idx] == &#34;Content&#34;:
+                        row[hb_idx] = html_body
+                        
+            if &#34;title&#34; in updates:
+                mt_idx = BEJSONCore.bejson_core_get_field_index(pdoc, &#34;meta_title&#34;)
+                for row in pdoc[&#34;Values&#34;]:
+                    if row[pt_idx] == &#34;PageMeta&#34;:
+                        row[mt_idx] = updates[&#34;title&#34;]
+                        
+            BEJSONCore.bejson_core_atomic_write(page_file, pdoc)
+
+def cms_content_delete_page(master_db_path: str, pages_dir: str, page_uuid: str) -&gt; bool:
+    &#34;&#34;&#34;Delete page from master index and remove its content file.&#34;&#34;&#34;
+    # 1. Master Index
+    doc = BEJSONCore.bejson_core_load_file(master_db_path)
+    t_idx = 0
+    u_idx = BEJSONCore.bejson_core_get_field_index(doc, &#34;page_uuid&#34;)
+    
+    new_values = []
+    found = False
+    for row in doc[&#34;Values&#34;]:
+        if row[t_idx] == &#34;PageRecord&#34; and row[u_idx] == page_uuid:
+            found = True
+            continue
+        new_values.append(row)
+        
+    if found:
+        doc[&#34;Values&#34;] = new_values
+        BEJSONCore.bejson_core_atomic_write(master_db_path, doc)
+        
+        # 2. Content File
+        page_file = os.path.join(pages_dir, f&#34;{page_uuid}.json&#34;)
+        if os.path.exists(page_file):
+            os.remove(page_file)
+            
+    return found
+
+def cms_content_list_pages(master_db_path: str) -&gt; List[Dict]:
+    &#34;&#34;&#34;List all pages from master index as a list of dictionaries.&#34;&#34;&#34;
+    doc = BEJSONCore.bejson_core_load_file(master_db_path)
+    records = BEJSONCore.bejson_core_get_records_by_type(doc, &#34;PageRecord&#34;)
+    fields = BEJSONCore.bejson_core_get_fields(doc)
+    
+    results = []
+    for row in records:
+        item = {}
+        for i, f in enumerate(fields):
+            item[f[&#39;name&#39;]] = row[i]
+        results.append(item)
+    return results
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

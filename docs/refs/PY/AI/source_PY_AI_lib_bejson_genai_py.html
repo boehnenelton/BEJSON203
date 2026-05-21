@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_genai.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / AI / lib_bejson_genai.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_genai.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_genai.py
+Family:       AI
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Interface for Google Generative AI (GenAI) models.
+&#34;&#34;&#34;
+
+import os
+import json
+import time
+import random
+import sys
+from datetime import datetime
+from typing import Any, Callable, Dict, List, Optional
+
+# Add Lib directory to path for relative imports
+LIB_DIR = os.path.dirname(os.path.abspath(__file__))
+if LIB_DIR not in sys.path:
+    sys.path.append(LIB_DIR)
+
+CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), &#34;Core&#34;)
+if CORE_DIR not in sys.path:
+    sys.path.append(CORE_DIR)
+
+try:
+    from lib_bejson_env import resolve_path
+except ImportError:
+    def resolve_path(p): return p
+
+# ANSI Status Colors
+C_RED = &#34;\033[91m&#34;
+C_GREEN = &#34;\033[92m&#34;
+C_YELLOW = &#34;\033[93m&#34;
+C_NC = &#34;\033[0m&#34;
+C_BOLD = &#34;\033[1m&#34;
+
+DEFAULT_KEY_FILE = resolve_path(&#34;{HOME}/.env/gemini_keys.bejson&#34;)
+
+MODELS = [
+    &#34;gemini-3-flash-preview&#34;,
+    &#34;gemini-flash-lite-latest&#34;,
+    &#34;gemini-flash-latest&#34;,
+    &#34;gemini-2.5&#34;,
+    &#34;gemini-2.5-pro&#34;,
+    &#34;gemini-3-pro-preview&#34;,
+    &#34;gemini-3.1-pro-preview&#34;
+]
+
+class GenAIKeyManager:
+    def __init__(self, key_file: str = DEFAULT_KEY_FILE):
+        self.key_file = key_file
+        self.keys = []
+        self.current_index = 0
+        self.load_keys()
+
+    def load_keys(self):
+        &#34;&#34;&#34;Load keys from the centralized BEJSON 104a key file.&#34;&#34;&#34;
+        if not os.path.exists(self.key_file):
+            return
+        try:
+            with open(self.key_file, &#39;r&#39;) as f:
+                doc = json.load(f)
+                
+                # Identify &#39;key&#39; field index
+                fields = doc.get(&#34;Fields&#34;, [])
+                key_idx = -1
+                for i, field in enumerate(fields):
+                    if field.get(&#34;name&#34;) == &#34;key&#34;:
+                        key_idx = i
+                        break
+                
+                if key_idx != -1:
+                    # Extract keys from Values
+                    self.keys = [row[key_idx] for row in doc.get(&#34;Values&#34;, []) if len(row) &gt; key_idx and row[key_idx]]
+                    # Randomize order for true round-robin
+                    random.shuffle(self.keys)
+        except Exception:
+            self.keys = []
+
+    def get_next_key(self) -&gt; Optional[str]:
+        &#34;&#34;&#34;Get the next key in rotation.&#34;&#34;&#34;
+        if not self.keys:
+            self.load_keys() # Retry once
+        if not self.keys:
+            return None
+        
+        key = self.keys[self.current_index % len(self.keys)]
+        self.current_index += 1
+        return key
+
+    def get_key_count(self) -&gt; int:
+        return len(self.keys)
+
+class GenAIClient:
+    def __init__(self, key_manager: GenAIKeyManager = None):
+        self.km = key_manager or GenAIKeyManager()
+        self.status_callback: Optional[Callable[[str, str], None]] = None
+        
+        # Try to import SDK
+        try:
+            from google import genai
+            from google.genai import types
+            self.genai = genai
+            self.types = types
+            self.sdk_available = True
+        except ImportError:
+            self.sdk_available = False
+
+    def set_status_callback(self, callback: Callable[[str, str], None]):
+        &#34;&#34;&#34;Set a custom callback for status updates. (state, message)&#34;&#34;&#34;
+        self.status_callback = callback
+
+    def update_status(self, state: str, message: str):
+        &#34;&#34;&#34;Standardized status updates following policy (ALL CAPS).&#34;&#34;&#34;
+        msg = message.upper()
+        if self.status_callback:
+            self.status_callback(state, msg)
+        else:
+            # Default terminal status bar logic
+            color = C_NC
+            if state == &#34;error&#34;: color = C_RED
+            elif state == &#34;success&#34;: color = C_GREEN
+            elif state == &#34;wait&#34;: color = C_YELLOW
+            
+            # Simple ANSI line overwrite status
+            sys.stdout.write(f&#34;\r{C_BOLD}STATUS:{C_NC} {color}{msg}{C_NC} {&#39; &#39; * 20}\r&#34;)
+            sys.stdout.flush()
+
+    def embed_content(self, text: str, model: str = &#34;models/gemini-embedding-001&#34;) -&gt; Optional[List[float]]:
+        &#34;&#34;&#34;Generate embeddings for the given text.&#34;&#34;&#34;
+        if not self.sdk_available:
+            self.update_status(&#34;error&#34;, &#34;ERROR: google-genai SDK not installed.&#34;)
+            return None
+
+        key_count = self.km.get_key_count()
+        if key_count == 0:
+            self.update_status(&#34;error&#34;, &#34;ERROR: No API keys found.&#34;)
+            return None
+
+        for i in range(key_count):
+            api_key = self.km.get_next_key()
+            try:
+                client = self.genai.Client(api_key=api_key)
+                response = client.models.embed_content(model=model, contents=text)
+                return response.embeddings[0].values
+            except Exception:
+                continue
+        return None
+
+    def generate_content(self, prompt: str, model: str = &#34;gemini-3-flash-preview&#34;, system_instruction: str = None) -&gt; Optional[str]:
+        &#34;&#34;&#34;Generate content with automatic key rotation and mandatory status feedback.&#34;&#34;&#34;
+        if not self.sdk_available:
+            self.update_status(&#34;error&#34;, &#34;ERROR: google-genai SDK not installed.&#34;)
+            return None
+
+        if model not in MODELS:
+            # Policy: Only 2.5+
+            self.update_status(&#34;error&#34;, f&#34;ERROR: Model {model} not allowed by policy.&#34;)
+            return None
+
+        key_count = self.km.get_key_count()
+        if key_count == 0:
+            self.update_status(&#34;error&#34;, &#34;ERROR: No API keys found in key pool.&#34;)
+            return None
+
+        # Try keys round-robin
+        last_error = &#34;&#34;
+        for i in range(key_count):
+            api_key = self.km.get_next_key()
+            if not api_key: continue
+
+            try:
+                self.update_status(&#34;wait&#34;, f&#34;ATTEMPT {i+1}: DISPATCHING QUERY...&#34;)
+                client = self.genai.Client(api_key=api_key)
+                
+                config = None
+                if system_instruction:
+                    config = self.types.GenerateContentConfig(
+                        system_instruction=system_instruction,
+                        temperature=0.7
+                    )
+
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                    config=config
+                )
+                
+                self.update_status(&#34;success&#34;, &#34;QUERY SUCCESSFUL&#34;)
+                print() # Move past status line
+                return response.text
+
+            except Exception as e:
+                last_error = str(e)
+                self.update_status(&#34;error&#34;, f&#34;KEY FAILED: {last_error[:50]}...&#34;)
+                time.sleep(1) # Brief pause before next key
+                continue
+
+        self.update_status(&#34;error&#34;, &#34;ALL KEYS EXHAUSTED&#34;)
+        return None
+
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

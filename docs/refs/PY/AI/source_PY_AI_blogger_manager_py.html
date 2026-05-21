@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: blogger_manager.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / AI / blogger_manager.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 blogger_manager.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_blogger_manager.py
+Family:       AI
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Integration manager for Google Blogger API and content publishing.
+&#34;&#34;&#34;
+
+import os
+import sys
+import json
+from googleapiclient.discovery import build
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+
+class BloggerManager:
+    def __init__(self, client_secret_path, state_path):
+        self.client_secret_path = client_secret_path
+        self.state_path = state_path
+        self.scopes = [&#39;https://www.googleapis.com/auth/blogger&#39;]
+        self.token_path = os.path.expanduser(&#34;~/.env/blogger_token.json&#34;)
+        self.service = None
+
+    def authenticate(self):
+        &#34;&#34;&#34;Handles the OAuth 2.0 flow and returns a Blogger service object.&#34;&#34;&#34;
+        creds = None
+        
+        # 1. Try loading existing token
+        if os.path.exists(self.token_path):
+            creds = Credentials.from_authorized_user_file(self.token_path, self.scopes)
+
+        # 2. If no valid creds, refresh or run flow
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    self.client_secret_path, self.scopes)
+                # In Termux, this might need manual copy-paste if browser fails
+                creds = flow.run_local_server(port=0, open_browser=False)
+            
+            # Save the credentials for the next run
+            with open(self.token_path, &#39;w&#39;) as token:
+                token.write(creds.to_json())
+
+        self.service = build(&#39;blogger&#39;, &#39;v3&#39;, credentials=creds)
+        print(&#34;[SUCCESS] Blogger API Authenticated.&#34;)
+        return True
+
+    def list_blogs(self):
+        &#34;&#34;&#34;Lists all blogs for the authenticated user.&#34;&#34;&#34;
+        if not self.service: self.authenticate()
+        return self.service.blogs().listByUser(userId=&#39;self&#39;).execute()
+
+    def create_post(self, blog_id, title, content, is_draft=True):
+        &#34;&#34;&#34;Creates a new post.&#34;&#34;&#34;
+        if not self.service: self.authenticate()
+        body = {
+            &#34;kind&#34;: &#34;blogger#post&#34;,
+            &#34;title&#34;: title,
+            &#34;content&#34;: content
+        }
+        return self.service.posts().insert(blogId=blog_id, body=body, isDraft=is_draft).execute()
+
+    def update_post(self, blog_id, post_id, title=None, content=None):
+        &#34;&#34;&#34;Updates an existing post.&#34;&#34;&#34;
+        if not self.service: self.authenticate()
+        body = {}
+        if title: body[&#34;title&#34;] = title
+        if content: body[&#34;content&#34;] = content
+        return self.service.posts().patch(blogId=blog_id, postId=post_id, body=body).execute()
+
+    def delete_post(self, blog_id, post_id):
+        &#34;&#34;&#34;Deletes a post.&#34;&#34;&#34;
+        if not self.service: self.authenticate()
+        self.service.posts().delete(blogId=blog_id, postId=post_id).execute()
+        return True
+
+if __name__ == &#34;__main__&#34;:
+    print(&#34;Blogger Manager Library - v1.3.1 OFFICIAL&#34;)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

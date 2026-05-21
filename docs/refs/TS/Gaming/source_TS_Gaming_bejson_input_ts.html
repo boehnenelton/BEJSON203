@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: bejson_input.ts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">TS / Gaming / bejson_input.ts</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 bejson_input.ts</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+/**
+ * Library:      bejson_input.ts
+ * Family:       Gaming
+ * Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;TS&#34;]
+ * Status:       OFFICIAL
+ * Author:       Elton Boehnen
+ * Version:      2.0.1 OFFICIAL
+ * MFDB Version: 1.31
+ * Format_Creator: Elton Boehnen
+ * Date:         2026-05-18
+ * Description:  User input mapping and handling for interactive BEJSON applications.
+ */
+
+// bejson_input.ts
+export class BEJSONInput {
+  public deadzone: number;
+  public keys: Record&lt;string, boolean&gt;;
+  public justPressed: Record&lt;string, boolean&gt;;
+  public touch: { active: boolean; x: number; y: number; vector: { x: number; y: number } };
+  public controls: any;
+
+  constructor(options: any = {}) {
+    this.deadzone = options.deadzone || 12;
+    this.keys = {};
+    this.justPressed = {};
+    this.touch = { active: false, x: 0, y: 0, vector: { x: 0, y: 0 } };
+    
+    this.controls = {
+      joystick: { x: 80, y: 0, radius: 50, active: false, handleX: 0, handleY: 0 },
+      btnA: { x: 0, y: 0, radius: 30, pressed: false },
+      btnB: { x: 0, y: 0, radius: 30, pressed: false }
+    };
+
+    if (typeof window !== &#39;undefined&#39;) {
+      window.addEventListener(&#39;keydown&#39;, (e) =&gt; this._onKey(e, true));
+      window.addEventListener(&#39;keyup&#39;, (e) =&gt; this._onKey(e, false));
+      window.addEventListener(&#39;touchstart&#39;, (e) =&gt; this._onTouch(e, true), { passive: false });
+      window.addEventListener(&#39;touchmove&#39;, (e) =&gt; this._onTouch(e, true), { passive: false });
+      window.addEventListener(&#39;touchend&#39;, (e) =&gt; this._onTouch(e, false));
+    }
+  }
+
+  private _onKey(e: KeyboardEvent, isDown: boolean) {
+    if (isDown &amp;&amp; !this.keys[e.key]) this.justPressed[e.key] = true;
+    this.keys[e.key] = isDown;
+  }
+
+  private _onTouch(e: TouchEvent, isActive: boolean) {
+    if (!isActive) {
+      this.touch.active = false;
+      this.controls.joystick.active = false;
+      this.controls.joystick.handleX = 0;
+      this.controls.joystick.handleY = 0;
+      this.controls.btnA.pressed = false;
+      this.controls.btnB.pressed = false;
+      return;
+    }
+
+    const canvas = document.querySelector(&#39;canvas&#39;);
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    for (let i = 0; i &lt; e.touches.length; i++) {
+      const t = e.touches[i];
+      const tx = t.clientX - rect.left;
+      const ty = t.clientY - rect.top;
+
+      // Check Joystick (Floating Joystick / Dynamic Anchor fix)
+      const j = this.controls.joystick;
+      const distJ = Math.sqrt((tx - j.x)**2 + (ty - j.y)**2);
+      
+      if (distJ &lt; j.radius * 2 || j.active) {
+        j.active = true;
+        let dx = tx - j.x;
+        let dy = ty - j.y;
+        let dist = Math.sqrt(dx*dx + dy*dy);
+        const limit = j.radius;
+
+        if (dist &gt; limit) {
+          const angle = Math.atan2(dy, dx);
+          j.x = tx - Math.cos(angle) * limit;
+          j.y = ty - Math.sin(angle) * limit;
+          dx = tx - j.x;
+          dy = ty - j.y;
+          dist = limit;
+        }
+
+        j.handleX = dx;
+        j.handleY = dy;
+        this.touch.vector.x = j.handleX / limit;
+        this.touch.vector.y = j.handleY / limit;
+      }
+
+      // Check Buttons
+      if (this._checkCircle(tx, ty, this.controls.btnA)) {
+        if (!this.controls.btnA.pressed) this.justPressed[&#39;action&#39;] = true;
+        this.controls.btnA.pressed = true;
+      }
+      if (this._checkCircle(tx, ty, this.controls.btnB)) {
+        if (!this.controls.btnB.pressed) this.justPressed[&#39;cancel&#39;] = true;
+        this.controls.btnB.pressed = true;
+      }
+    }
+    if (e.cancelable) e.preventDefault();
+  }
+
+  private _checkCircle(tx: number, ty: number, circle: any) {
+    const dist = Math.sqrt((tx - circle.x)**2 + (ty - circle.y)**2);
+    return dist &lt; circle.radius;
+  }
+
+  private _isBoundDown(action: string) {
+    const bindings: Record&lt;string, string[]&gt; = {
+      up: [&#39;ArrowUp&#39;, &#39;w&#39;, &#39;W&#39;], down: [&#39;ArrowDown&#39;, &#39;s&#39;, &#39;S&#39;],
+      left: [&#39;ArrowLeft&#39;, &#39;a&#39;, &#39;A&#39;], right: [&#39;ArrowRight&#39;, &#39;d&#39;, &#39;D&#39;],
+      action: [&#39;Enter&#39;, &#39; &#39;], cancel: [&#39;Escape&#39;, &#39;x&#39;, &#39;X&#39;], menu: [&#39;m&#39;, &#39;M&#39;, &#39;Tab&#39;]
+    };
+    return bindings[action].some(k =&gt; this.keys[k]);
+  }
+
+  public getVector() {
+    let vx = 0, vy = 0;
+    if (this._isBoundDown(&#39;left&#39;)) vx -= 1;
+    if (this._isBoundDown(&#39;right&#39;)) vx += 1;
+    if (this._isBoundDown(&#39;up&#39;)) vy -= 1;
+    if (this._isBoundDown(&#39;down&#39;)) vy += 1;
+
+    if (this.controls.joystick.active) {
+      vx += this.touch.vector.x;
+      vy += this.touch.vector.y;
+    }
+
+    const mag = Math.sqrt(vx * vx + vy * vy);
+    if (mag &gt; 1) { vx /= mag; vy /= mag; }
+    return { x: vx, y: vy, action: this.justPressed[&#39;action&#39;], cancel: this.justPressed[&#39;cancel&#39;] };
+  }
+
+  public update() {
+    this.justPressed = {};
+  }
+
+  public renderControls(renderer: any) {
+    const j = this.controls.joystick;
+    const canvas = renderer.canvas;
+    const h = canvas.height / renderer.dpr;
+    const w = canvas.width / renderer.dpr;
+
+    j.y = h - 80;
+    
+    renderer.drawCircle(j.x, j.y, j.radius, &#34;rgba(255,255,255,0.2)&#34;, true);
+    renderer.drawCircle(j.x + j.handleX, j.y + j.handleY, j.radius/2, &#34;rgba(255,255,255,0.5)&#34;, true);
+
+    const bA = this.controls.btnA;
+    const bB = this.controls.btnB;
+    bA.x = w - 60; bA.y = h - 100;
+    bB.x = w - 120; bB.y = h - 60;
+
+    renderer.drawCircle(bA.x, bA.y, bA.radius, bA.pressed ? &#34;#f56565&#34; : &#34;rgba(255,255,255,0.3)&#34;, true);
+    renderer.drawText(&#34;A&#34;, bA.x - 5, bA.y + 5, { isHUD: true });
+
+    renderer.drawCircle(bB.x, bB.y, bB.radius, bB.pressed ? &#34;#4299e1&#34; : &#34;rgba(255,255,255,0.3)&#34;, true);
+    renderer.drawText(&#34;B&#34;, bB.x - 5, bB.y + 5, { isHUD: true });
+  }
+}
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

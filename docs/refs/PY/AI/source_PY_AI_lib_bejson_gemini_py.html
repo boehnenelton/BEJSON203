@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_gemini.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / AI / lib_bejson_gemini.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_gemini.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_gemini.py
+Family:       AI
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Integration wrapper for Google Gemini API with key rotation support.
+&#34;&#34;&#34;
+
+import os
+import sys
+import json
+import time
+import requests
+import random
+import copy
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+# Resolve paths
+LIB_DIR = os.environ.get(&#34;BEJSON_LIB_DIR&#34;, str(Path(__file__).resolve().parent))
+if LIB_DIR not in sys.path:
+    sys.path.insert(0, LIB_DIR)
+
+CORE_DIR = str(Path(LIB_DIR).parent / &#34;Core&#34;)
+if CORE_DIR not in sys.path:
+    sys.path.insert(0, CORE_DIR)
+
+try:
+    from lib_bejson_env import resolve_path
+except ImportError:
+    def resolve_path(p): return p
+
+STD_ADMIN_ROOT = resolve_path(&#34;{INTERNAL_STORAGE}/Admin&#34;)
+
+SCHEMA_KEY_REGISTRY = {
+    &#34;Format&#34;: &#34;BEJSON&#34;,
+    &#34;Format_Version&#34;: &#34;104a&#34;,
+    &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+    &#34;Schema_Name&#34;: &#34;GeminiKeyRegistry&#34;,
+    &#34;Records_Type&#34;: [&#34;ApiKey&#34;],
+    &#34;Fields&#34;: [
+        {&#34;name&#34;: &#34;key_slot&#34;, &#34;type&#34;: &#34;integer&#34;},
+        {&#34;name&#34;: &#34;key&#34;, &#34;type&#34;: &#34;string&#34;}
+    ],
+    &#34;Values&#34;: []
+}
+
+SCHEMA_MODEL_REGISTRY = {
+    &#34;Format&#34;: &#34;BEJSON&#34;,
+    &#34;Format_Version&#34;: &#34;104a&#34;,
+    &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+    &#34;Schema_Name&#34;: &#34;GeminiModelRegistry&#34;,
+    &#34;Records_Type&#34;: [&#34;GeminiModel&#34;],
+    &#34;Fields&#34;: [
+        {&#34;name&#34;: &#34;model_name&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;model_id&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;currently_active&#34;, &#34;type&#34;: &#34;boolean&#34;},
+        {&#34;name&#34;: &#34;thinking_enabled&#34;, &#34;type&#34;: &#34;boolean&#34;},
+        {&#34;name&#34;: &#34;google_search_enabled&#34;, &#34;type&#34;: &#34;boolean&#34;}
+    ],
+    &#34;Values&#34;: [
+        [
+                &#34;Gemini 3.1 Pro (Preview)&#34;,
+                &#34;gemini-3.1-pro-preview&#34;,
+                False,
+                True,
+                True
+        ],
+        [
+                &#34;Gemini 2.5 Pro&#34;,
+                &#34;gemini-2.5-pro&#34;,
+                False,
+                True,
+                True
+        ],
+        [
+                &#34;Gemini 3 Flash (Preview)&#34;,
+                &#34;gemini-3-flash-preview&#34;,
+                False,
+                False,
+                True
+        ],
+        [
+                &#34;Gemini 3.1 Flash-Lite (Preview)&#34;,
+                &#34;gemini-3.1-flash-lite-preview&#34;,
+                False,
+                False,
+                True
+        ],
+        [
+                &#34;Gemini 2.5 Flash&#34;,
+                &#34;gemini-2.5-flash&#34;,
+                True,
+                False,
+                False
+        ],
+        [
+                &#34;Gemini 3 Pro Image (Preview)&#34;,
+                &#34;gemini-3-pro-image-preview&#34;,
+                False,
+                False,
+                False
+        ],
+        [
+                &#34;Gemini 3.1 Flash Image (Preview)&#34;,
+                &#34;gemini-3.1-flash-image-preview&#34;,
+                False,
+                False,
+                False
+        ],
+        [
+                &#34;Gemini 3.1 Flash TTS (Preview)&#34;,
+                &#34;gemini-3.1-flash-tts-preview&#34;,
+                False,
+                False,
+                False
+        ],
+        [
+                &#34;Gemini 3.1 Flash Live (Preview)&#34;,
+                &#34;gemini-3.1-flash-live-preview&#34;,
+                False,
+                False,
+                True
+        ],
+        [
+                &#34;Gemma 4 31B IT&#34;,
+                &#34;gemma-4-31b-it&#34;,
+                False,
+                False,
+                False
+        ],
+        [
+                &#34;Gemma 4 26B MoE IT&#34;,
+                &#34;gemma-4-26b-a4b-it&#34;,
+                False,
+                False,
+                False
+        ]
+]
+}
+
+SCHEMA_AI_PROFILE = {
+    &#34;Format&#34;: &#34;BEJSON&#34;,
+    &#34;Format_Version&#34;: &#34;104&#34;,
+    &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+    &#34;Records_Type&#34;: [&#34;AI_Profile&#34;],
+    &#34;Parent_Hierarchy&#34;: &#34;/LLM_Configuration&#34;,
+    &#34;Fields&#34;: [
+        {&#34;name&#34;: &#34;Record_Type_Parent&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;Name&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;Archetype&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;Persona&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;SystemInstruction&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;ForbiddenTopics&#34;, &#34;type&#34;: &#34;array&#34;},
+        {&#34;name&#34;: &#34;Avatar_Type&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;Avatar_sourceUrl&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;Avatar_Data&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;MaxResponseTokens&#34;, &#34;type&#34;: &#34;integer&#34;},
+        {&#34;name&#34;: &#34;Creativity&#34;, &#34;type&#34;: &#34;number&#34;},
+        {&#34;name&#34;: &#34;Tone&#34;, &#34;type&#34;: &#34;array&#34;},
+        {&#34;name&#34;: &#34;Formality&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;Verbosity&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;EmotionalExpression_Enabled&#34;, &#34;type&#34;: &#34;boolean&#34;},
+        {&#34;name&#34;: &#34;EmotionalExpression_Intensity&#34;, &#34;type&#34;: &#34;number&#34;},
+        {&#34;name&#34;: &#34;GoogleSearch_Enabled&#34;, &#34;type&#34;: &#34;boolean&#34;},
+        {&#34;name&#34;: &#34;CodeInterpreter_Enabled&#34;, &#34;type&#34;: &#34;boolean&#34;},
+        {&#34;name&#34;: &#34;EphemeralMemory&#34;, &#34;type&#34;: &#34;boolean&#34;},
+        {&#34;name&#34;: &#34;CodeParsing_Mode&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;CodeParsing_Languages&#34;, &#34;type&#34;: &#34;array&#34;},
+        {&#34;name&#34;: &#34;CodeParsing_StructureValidation&#34;, &#34;type&#34;: &#34;boolean&#34;},
+        {&#34;name&#34;: &#34;CodeParsing_VersionControl&#34;, &#34;type&#34;: &#34;boolean&#34;},
+        {&#34;name&#34;: &#34;Thinking_Supported&#34;, &#34;type&#34;: &#34;boolean&#34;}
+    ],
+    &#34;Values&#34;: [
+        [
+            &#34;AI_Profile&#34;,
+            &#34;Gemini_Standard&#34;,
+            &#34;Assistant&#34;,
+            &#34;A helpful and professional AI assistant.&#34;,
+            &#34;You are a helpful assistant. Provide clear, accurate, and concise information.&#34;,
+            [], &#34;Emoji&#34;, &#34;&#34;, &#34;🤖&#34;, 65536, 0.7, [&#34;Professional&#34;, &#34;Helpful&#34;], &#34;Formal&#34;, &#34;Balanced&#34;, 
+            False, 0.0, True, True, True, &#34;complete&#34;, [&#34;python&#34;, &#34;javascript&#34;], True, True, True
+        ]
+    ]
+}
+
+# --- Environment &amp; Setup ---
+
+LIB_DIR = os.environ.get(&#34;BEJSON_LIB_DIR&#34;, str(Path(__file__).resolve().parent))
+if LIB_DIR not in sys.path:
+    sys.path.insert(0, LIB_DIR)
+
+# Also add sibling Core directory if it exists
+CORE_DIR = str(Path(LIB_DIR).parent / &#34;Core&#34;)
+if CORE_DIR not in sys.path:
+    sys.path.insert(0, CORE_DIR)
+
+try:
+    from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
+except ImportError:
+    # Minimal fallback logic for core operations
+    def bejson_core_load_file(p):
+        with open(p, &#39;r&#39;) as f: return json.load(f)
+    def bejson_core_get_field_index(d, n):
+        for i, f in enumerate(d.get(&#34;Fields&#34;, [])):
+            if f[&#34;name&#34;] == n: return i
+        return -1
+    def bejson_core_atomic_write(p, d):
+        with open(p, &#39;w&#39;) as f: json.dump(d, f, indent=2)
+
+# --- Registry Managers ---
+
+import logging
+
+class GeminiKeyRegistry:
+    def __init__(self, file_path: Union[str, Path]):
+        self.file_path = Path(file_path)
+        self.keys = []
+        try:
+            if not self.file_path.exists():
+                self.create_default()
+            self.load()
+        except Exception as e:
+            logging.error(f&#34;[GeminiLib] Fatal error initializing KeyRegistry: {e}&#34;)
+
+    def create_default(self):
+        try:
+            os.makedirs(self.file_path.parent, exist_ok=True)
+            bejson_core_atomic_write(str(self.file_path), SCHEMA_KEY_REGISTRY)
+        except Exception as e:
+            logging.warning(f&#34;[GeminiLib] Could not create default keys: {e}&#34;)
+
+    def load(self):
+        try:
+            data = bejson_core_load_file(str(self.file_path))
+            idx = bejson_core_get_field_index(data, &#34;key&#34;)
+            if idx != -1:
+                self.keys = [row[idx] for row in data[&#34;Values&#34;] if &#34;YOUR_GEMINI_KEY&#34; not in str(row[idx])]
+            if not self.keys:
+                logging.warning(f&#34;[GeminiLib] No valid keys found in {self.file_path}&#34;)
+        except Exception as e:
+            logging.warning(f&#34;[GeminiLib] Failed to load keys from {self.file_path}: {e}&#34;)
+            self.keys = []
+
+class GeminiModelRegistry:
+    def __init__(self, file_path: Union[str, Path]):
+        self.file_path = Path(file_path)
+        self.models = []
+        self.active_model_id = &#34;gemini-2.5-flash&#34;
+        try:
+            if not self.file_path.exists():
+                self.create_default()
+            self.load()
+        except Exception as e:
+            logging.error(f&#34;[GeminiLib] Error initializing ModelRegistry: {e}&#34;)
+            self._load_fallbacks()
+
+    def create_default(self):
+        try:
+            os.makedirs(self.file_path.parent, exist_ok=True)
+            bejson_core_atomic_write(str(self.file_path), SCHEMA_MODEL_REGISTRY)
+        except Exception as e:
+            logging.warning(f&#34;[GeminiLib] Could not create default models: {e}&#34;)
+
+    def _load_fallbacks(self):
+        logging.info(&#34;[GeminiLib] Loading hardcoded model fallbacks.&#34;)
+        for row in SCHEMA_MODEL_REGISTRY[&#34;Values&#34;]:
+            self.models.append({&#34;id&#34;: row[1], &#34;thinking&#34;: row[3], &#34;search&#34;: row[4]})
+
+    def load(self):
+        try:
+            data = bejson_core_load_file(str(self.file_path))
+            fields = [f[&#34;name&#34;] for f in data[&#34;Fields&#34;]]
+            id_idx = fields.index(&#34;model_id&#34;)
+            active_idx = fields.index(&#34;currently_active&#34;)
+            think_idx = fields.index(&#34;thinking_enabled&#34;) if &#34;thinking_enabled&#34; in fields else -1
+            search_idx = fields.index(&#34;google_search_enabled&#34;) if &#34;google_search_enabled&#34; in fields else -1
+            
+            self.models = []
+            for row in data[&#34;Values&#34;]:
+                m_info = {
+                    &#34;id&#34;: row[id_idx],
+                    &#34;thinking&#34;: row[think_idx] if think_idx != -1 else False,
+                    &#34;search&#34;: row[search_idx] if search_idx != -1 else False
+                }
+                self.models.append(m_info)
+                if row[active_idx] is True:
+                    self.active_model_id = row[id_idx]
+        except Exception as e:
+            logging.warning(f&#34;[GeminiLib] Failed to load models from {self.file_path}: {e}&#34;)
+            self._load_fallbacks()
+
+    def get_model_info(self, model_id: Optional[str] = None) -&gt; Dict[str, Any]:
+        target_id = model_id or self.active_model_id
+        for m in self.models:
+            if m[&#34;id&#34;] == target_id: return m
+        return {&#34;id&#34;: target_id, &#34;thinking&#34;: False, &#34;search&#34;: False}
+
+class GeminiProfile:
+    def __init__(self, file_path: Union[str, Path]):
+        self.file_path = Path(file_path)
+        self.instruction = &#34;&#34;
+        self.config = {}
+        try:
+            if not self.file_path.exists():
+                self.create_default()
+            self.load()
+        except Exception as e:
+            logging.error(f&#34;[GeminiLib] Error initializing Profile: {e}&#34;)
+            self._load_fallbacks()
+
+    def create_default(self):
+        try:
+            os.makedirs(self.file_path.parent, exist_ok=True)
+            bejson_core_atomic_write(str(self.file_path), SCHEMA_AI_PROFILE)
+        except Exception as e:
+            logging.warning(f&#34;[GeminiLib] Could not create default profile: {e}&#34;)
+
+    def _load_fallbacks(self):
+        logging.info(&#34;[GeminiLib] Loading hardcoded profile fallbacks.&#34;)
+        self.instruction = SCHEMA_AI_PROFILE[&#34;Values&#34;][0][4]
+        self.config = {f[&#34;name&#34;]: SCHEMA_AI_PROFILE[&#34;Values&#34;][0][i] for i, f in enumerate(SCHEMA_AI_PROFILE[&#34;Fields&#34;])}
+
+    def load(self):
+        try:
+            data = bejson_core_load_file(str(self.file_path))
+            fields = [f[&#34;name&#34;] for f in data[&#34;Fields&#34;]]
+            instr_idx = fields.index(&#34;SystemInstruction&#34;)
+            self.instruction = data[&#34;Values&#34;][0][instr_idx]
+            self.config = {f[&#34;name&#34;]: data[&#34;Values&#34;][0][i] for i, f in enumerate(data[&#34;Fields&#34;])}
+        except Exception as e:
+            logging.warning(f&#34;[GeminiLib] Failed to load profile from {self.file_path}: {e}&#34;)
+            self._load_fallbacks()
+
+# --- Unified Prompter Engine ---
+
+class GeminiStandardPrompter:
+    def __init__(
+        self, 
+        key_registry_path: Union[str, Path],
+        model_registry_path: Union[str, Path],
+        profile_path: Union[str, Path]
+    ):
+        self.key_reg = GeminiKeyRegistry(key_registry_path)
+        self.model_reg = GeminiModelRegistry(model_registry_path)
+        self.profile = GeminiProfile(profile_path)
+        self.current_key_idx = 0
+        self.last_request_time = 0
+        self.request_delay = 1.0
+
+    def _get_next_key(self) -&gt; Optional[str]:
+        keys = self.key_reg.keys
+        if not keys: return None
+        # MANDATE: Random rotation for load balancing and quota preservation
+        return random.choice(keys)
+
+    def prompt(self, user_input: str, model_id: Optional[str] = None) -&gt; str:
+        now = time.time()
+        diff = now - self.last_request_time
+        if diff &lt; self.request_delay: time.sleep(self.request_delay - diff)
+        
+        key = self._get_next_key()
+        if not key: return &#34;ERROR: No valid API keys.&#34;
+
+        m_info = self.model_reg.get_model_info(model_id)
+        
+        url = f&#34;https://generativelanguage.googleapis.com/v1beta/models/{m_info[&#39;id&#39;]}:generateContent?key={key}&#34;
+        payload = {
+            &#34;contents&#34;: [{&#34;parts&#34;: [{&#34;text&#34;: user_input}]}],
+            &#34;system_instruction&#34;: {&#34;parts&#34;: [{&#34;text&#34;: self.profile.instruction}]},
+            &#34;generationConfig&#34;: {
+                &#34;maxOutputTokens&#34;: self.profile.config.get(&#34;MaxResponseTokens&#34;, 65536),
+                &#34;temperature&#34;: self.profile.config.get(&#34;Creativity&#34;, 0.7)
+            }
+        }
+        if m_info[&#34;search&#34;] or self.profile.config.get(&#34;GoogleSearch_Enabled&#34;, False):
+            payload[&#34;tools&#34;] = [{&#34;google_search&#34;: {}}]
+        if m_info[&#34;thinking&#34;] or self.profile.config.get(&#34;Thinking_Supported&#34;, False):
+            payload[&#34;generationConfig&#34;][&#34;thinking_config&#34;] = {&#34;include_thoughts&#34;: True}
+
+        self.last_request_time = time.time()
+        try:
+            res = requests.post(url, json=payload, timeout=90)
+            res.raise_for_status()
+            data = res.json()
+            if &#34;candidates&#34; in data and data[&#34;candidates&#34;]:
+                return data[&#34;candidates&#34;][0][&#34;content&#34;][&#34;parts&#34;][0][&#34;text&#34;].strip()
+            return f&#34;ERROR: No candidates. {json.dumps(data)}&#34;
+        except Exception as e:
+            return f&#34;ERROR: {str(e)}&#34;
+
+# --- Global Standard Paths (2026) ---
+
+STD_ADMIN_ROOT = resolve_path(&#34;{INTERNAL_STORAGE}/Admin&#34;)
+STD_KEY_PATH = os.path.join(STD_ADMIN_ROOT, &#34;data/env/gemini_keys.bejson&#34;)
+STD_MODEL_PATH = os.path.join(STD_ADMIN_ROOT, &#34;resources/Schemas/gemini_model_registry.104a.bejson&#34;)
+STD_PROFILE_PATH = os.path.join(STD_ADMIN_ROOT, &#34;resources/Schemas/gemini_standard_profile.bejson&#34;)
+
+def get_standard_prompter():
+    return GeminiStandardPrompter(STD_KEY_PATH, STD_MODEL_PATH, STD_PROFILE_PATH)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

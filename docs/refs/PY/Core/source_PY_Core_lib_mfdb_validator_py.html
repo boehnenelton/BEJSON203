@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_mfdb_validator.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / Core / lib_mfdb_validator.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_mfdb_validator.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_mfdb_validator.py
+Family:       Core
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Bidirectional path and manifest-entity relationship validator.
+&#34;&#34;&#34;
+
+import json
+import os
+import zipfile
+from dataclasses import dataclass, field as dc_field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+
+from lib_bejson_validator import (
+    BEJSONValidationError,
+    validate_bejson,
+    ValidationResult
+)
+
+try:
+    from lib_bejson_errors import *
+except ImportError:
+    # Error codes (30–49) fallback
+    E_MFDB_NOT_MANIFEST           = 30
+    E_MFDB_NOT_ENTITY_FILE        = 31
+    E_MFDB_MANIFEST_RECORDS_TYPE  = 32
+    E_MFDB_ENTITY_NOT_FOUND       = 33
+    E_MFDB_ENTITY_NAME_MISMATCH   = 34
+    E_MFDB_DUPLICATE_ENTRY        = 35
+    E_MFDB_NO_PARENT_HIERARCHY    = 36
+    E_MFDB_MANIFEST_NOT_FOUND     = 37
+    E_MFDB_BIDIRECTIONAL_FAIL     = 38
+    E_MFDB_FK_UNRESOLVED          = 39
+    E_MFDB_MISSING_REQUIRED_FIELD = 40
+    E_MFDB_NULL_REQUIRED          = 41
+    E_MFDB_INVALID_ARCHIVE        = 42
+
+class MFDBValidationError(Exception):
+    def __init__(self, message: str, code: int, context: dict = None):
+        super().__init__(message)
+        self.code = code
+        self.context = context or {}
+
+@dataclass
+class MFDBValidationResult:
+    valid: bool = True
+    errors: List[str] = dc_field(default_factory=list)
+    warnings: List[str] = dc_field(default_factory=list)
+    findings: Dict[str, Any] = dc_field(default_factory=dict)
+    
+    def add_error(self, message: str, location: str = &#34;&#34;):
+        self.valid = False
+        entry = f&#34;ERROR | Location: {location} | Message: {message}&#34; if location else f&#34;ERROR | Message: {message}&#34;
+        self.errors.append(entry)
+
+    def add_warning(self, message: str, location: str = &#34;&#34;):
+        entry = f&#34;WARNING | Location: {location} | Message: {message}&#34; if location else f&#34;WARNING | Message: {message}&#34;
+        self.warnings.append(entry)
+
+# Internal helpers
+def _load_json(path: str) -&gt; dict:
+    p = Path(path)
+    if p.is_file() and not path.lower().endswith(&#34;.zip&#34;):
+        return json.loads(p.read_text(encoding=&#34;utf-8&#34;))
+    if path.lower().endswith(&#34;.zip&#34;) and p.is_file():
+        with zipfile.ZipFile(path, &#34;r&#34;) as z:
+            if &#34;104a.mfdb.bejson&#34; in z.namelist():
+                return json.loads(z.read(&#34;104a.mfdb.bejson&#34;).decode(&#34;utf-8&#34;))
+            raise FileNotFoundError(f&#34;104a.mfdb.bejson not found in archive: {path}&#34;)
+    return json.loads(p.read_text(encoding=&#34;utf-8&#34;))
+
+def _rows_as_dicts(doc: dict) -&gt; list[dict]:
+    names = [f[&#34;name&#34;] for f in doc[&#34;Fields&#34;]]
+    return [dict(zip(names, row)) for row in doc[&#34;Values&#34;]]
+
+def _resolve_entity_path(manifest_path: str, file_path_rel: str) -&gt; str:
+    if manifest_path.lower().endswith(&#34;.zip&#34;):
+        return os.path.join(manifest_path, file_path_rel)
+    manifest_dir = os.path.dirname(os.path.abspath(manifest_path))
+    return os.path.normpath(os.path.join(manifest_dir, file_path_rel))
+
+# Validation functions
+def validate_mfdb_archive(archive_path: str) -&gt; MFDBValidationResult:
+    res = MFDBValidationResult()
+    p = Path(archive_path)
+    if not p.exists():
+        res.add_error(f&#34;Archive not found: {archive_path}&#34;, &#34;File System&#34;)
+        return res
+    try:
+        with zipfile.ZipFile(archive_path, &#39;r&#39;) as zip_ref:
+            if &#34;104a.mfdb.bejson&#34; not in zip_ref.namelist():
+                res.add_error(&#34;Archive missing 104a.mfdb.bejson at root&#34;, &#34;Zip Structure&#34;)
+    except Exception as e:
+        res.add_error(f&#34;Invalid zip: {e}&#34;, &#34;Zip Parser&#34;)
+    return res
+
+def validate_mfdb_manifest(manifest_path: str) -&gt; MFDBValidationResult:
+    res = MFDBValidationResult()
+    p = Path(manifest_path)
+    if not p.exists():
+        res.add_error(f&#34;Manifest not found: {manifest_path}&#34;, &#34;File System&#34;)
+        return res
+    
+    bej_res = validate_bejson(manifest_path, is_file=True)
+    if not bej_res.valid:
+        for err in bej_res.errors: res.add_error(err, &#34;BEJSON Validation&#34;)
+        return res
+
+    doc = _load_json(manifest_path)
+    if doc.get(&#34;Format_Version&#34;) != &#34;104a&#34; or doc.get(&#34;Records_Type&#34;) != [&#34;mfdb&#34;]:
+        res.add_error(&#34;Invalid manifest format or records type&#34;, &#34;Manifest&#34;)
+        return res
+
+    field_names = [f[&#34;name&#34;] for f in doc.get(&#34;Fields&#34;, [])]
+    for req in (&#34;entity_name&#34;, &#34;file_path&#34;):
+        if req not in field_names: res.add_error(f&#34;Missing required field: {req}&#34;, &#34;Fields&#34;)
+
+    seen_names, seen_paths = set(), set()
+    for i, entry in enumerate(_rows_as_dicts(doc)):
+        en, fp = entry.get(&#34;entity_name&#34;), entry.get(&#34;file_path&#34;)
+        if not en or not fp: res.add_error(f&#34;Record {i}: null entity_name or file_path&#34;, &#34;Values&#34;)
+        if en in seen_names: res.add_error(f&#34;Duplicate entity: {en}&#34;, &#34;Values&#34;)
+        if fp in seen_paths: res.add_error(f&#34;Duplicate path: {fp}&#34;, &#34;Values&#34;)
+        seen_names.add(en); seen_paths.add(fp)
+        
+        resolved = _resolve_entity_path(manifest_path, fp)
+        if not os.path.exists(resolved): res.add_error(f&#34;Entity file not found: {fp}&#34;, &#34;File System&#34;)
+    
+    return res
+
+def validate_mfdb_entity_file(entity_path: str, check_bidirectional: bool = True) -&gt; MFDBValidationResult:
+    res = MFDBValidationResult()
+    p = Path(entity_path)
+    if not p.exists():
+        res.add_error(f&#34;Entity file not found: {entity_path}&#34;, &#34;File System&#34;)
+        return res
+
+    bej_res = validate_bejson(entity_path, is_file=True)
+    if not bej_res.valid:
+        for err in bej_res.errors: res.add_error(err, &#34;BEJSON Validation&#34;)
+        return res
+
+    doc = _load_json(entity_path)
+    if doc.get(&#34;Format_Version&#34;) != &#34;104&#34;:
+        res.add_error(&#34;Entity file must be 104&#34;, &#34;Format_Version&#34;)
+        return res
+
+    ph = doc.get(&#34;Parent_Hierarchy&#34;)
+    if not ph:
+        res.add_error(&#34;Missing Parent_Hierarchy&#34;, &#34;Structure&#34;)
+        return res
+
+    manifest_path = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(entity_path)), ph))
+    if not os.path.exists(manifest_path):
+        res.add_error(f&#34;Manifest not found at {manifest_path}&#34;, &#34;Parent_Hierarchy&#34;)
+        return res
+
+    return res
+
+def validate_mfdb_database(manifest_path: str, strict_fk: bool = False) -&gt; MFDBValidationResult:
+    res = validate_mfdb_manifest(manifest_path)
+    if not res.valid: return res
+    
+    doc = _load_json(manifest_path)
+    for entry in _rows_as_dicts(doc):
+        resolved = _resolve_entity_path(manifest_path, entry[&#34;file_path&#34;])
+        ent_res = validate_mfdb_entity_file(resolved)
+        if not ent_res.valid:
+            for err in ent_res.errors: res.add_error(err, f&#34;Entity:{entry[&#39;entity_name&#39;]}&#34;)
+    return res
+
+# Compatibility wrappers
+def mfdb_validator_validate_manifest(p):
+    res = validate_mfdb_manifest(p)
+    if not res.valid: raise MFDBValidationError(res.errors[0], E_MFDB_NOT_MANIFEST)
+    return True
+
+def mfdb_validator_validate_database(p, strict_fk=False):
+    res = validate_mfdb_database(p, strict_fk=strict_fk)
+    if not res.valid: raise MFDBValidationError(res.errors[0], E_MFDB_NOT_MANIFEST)
+    return True
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

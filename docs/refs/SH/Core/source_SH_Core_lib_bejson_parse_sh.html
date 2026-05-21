@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_parse.sh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">SH / Core / lib_bejson_parse.sh</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_parse.sh</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+# Library:      lib_bejson_parse.sh
+# Family:       Core
+# Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;SH&#34;]
+# Status:       OFFICIAL
+# Author:       Elton Boehnen
+# Version:      2.0.1 OFFICIAL
+# MFDB Version: 1.31
+# Format_Creator: Elton Boehnen
+# Date:         2026-05-18
+# Description:  Rapid indexing and retrieval engine for dense tabular data.
+
+# 104db schemas. Sources lib_bejson_core.sh and lib_bejson_validator.sh.
+# Author:      Elton Boehnen
+# Version:     &#34;2.0.1 OFFICIAL&#34;,
+# Compatibility: Bash 4.0+, Termux/Android
+# Dependencies:  lib_bejson_core.sh, lib_bejson_validator.sh, jq, zip
+
+set -o pipefail
+set -o nounset
+
+# ------------------------------------------------------------------
+# Source BEJSON ecosystem — core + validator
+# ------------------------------------------------------------------
+BEJSON_PARSE_DIR=&#34;$(cd &#34;$(dirname &#34;${BASH_SOURCE[0]}&#34;)&#34; &amp;&amp; pwd)&#34;
+
+if [[ -f &#34;$BEJSON_PARSE_DIR/lib_bejson_core.sh&#34; ]]; then
+    source &#34;$BEJSON_PARSE_DIR/lib_bejson_core.sh&#34;
+fi
+
+if [[ -f &#34;$BEJSON_PARSE_DIR/lib_bejson_validator.sh&#34; ]]; then
+    source &#34;$BEJSON_PARSE_DIR/lib_bejson_validator.sh&#34;
+fi
+
+# Default output directory
+BEJSON_PARSE_DEFAULT_OUT=&#34;${BEJSON_PARSE_DIR}/output&#34;
+
+# Globals populated by bejson_extract_data
+BEJSON_PROJECT_NAME=&#34;My_Project&#34;
+BEJSON_FILES_NAMES=()
+BEJSON_FILES_CONTENTS=()
+
+# ------------------------------------------------------------------
+# PARSER CORE
+# ------------------------------------------------------------------
+
+bejson_parse_json() {
+    local text=&#34;$1&#34;
+
+    # 1. Enforce optimal parser (jq &gt;= 1.6)
+    if declare -f bejson_validator_check_dependencies &gt;/dev/null 2&gt;&amp;1; then
+        bejson_validator_check_dependencies || return 1
+    elif ! command -v jq &gt;/dev/null 2&gt;&amp;1; then
+        echo &#34;ERROR: jq is required for bejson_parse_json&#34; &gt;&amp;2
+        return 1
+    fi
+
+    # 2. Extract JSON using awk/sed to safely strip wrappers
+    # First priority: Markdown blocks
+    local clean
+    clean=$(echo &#34;$text&#34; | awk &#39;
+        BEGIN { found=0 }
+        /```json/ { found=1; next }
+        /```/ &amp;&amp; found { exit }
+        found { print }
+    &#39;)
+
+    # Second priority: Balanced braces heuristic (tr/sed)
+    if [[ -z &#34;$clean&#34; ]] || ! echo &#34;$clean&#34; | jq &#39;.&#39; &gt;/dev/null 2&gt;&amp;1; then
+        clean=$(echo &#34;$text&#34; | tr &#39;\n&#39; &#39;\f&#39; | sed &#39;s/^[^{]*//; s/}[^}]*$/}/&#39; | tr &#39;\f&#39; &#39;\n&#39;)
+    fi
+
+    # 3. Pipe to jq &#39;.&#39; for standard validation and extraction
+    if echo &#34;$clean&#34; | jq &#39;.&#39; &gt; /dev/null 2&gt;&amp;1; then
+        echo &#34;$clean&#34; | jq &#39;.&#39;
+        return 0
+    fi
+
+    # Final fallback for raw JSON
+    if echo &#34;$text&#34; | jq &#39;.&#39; &gt; /dev/null 2&gt;&amp;1; then
+        echo &#34;$text&#34; | jq &#39;.&#39;
+        return 0
+    fi
+
+    echo &#34;ERROR: bejson_parse_json — could not parse JSON from input&#34; &gt;&amp;2
+    return 1
+}
+
+bejson_extract_data() {
+    local json=&#34;$1&#34;
+    BEJSON_PROJECT_NAME=&#34;My_Project&#34;
+    BEJSON_FILES_NAMES=()
+    BEJSON_FILES_CONTENTS=()
+
+    _bejson_parse_get_project_name() {
+        local j=&#34;$1&#34;
+        local result=&#34;My_Project&#34;
+        local cands=(&#34;zipfilename&#34; &#34;projectname&#34; &#34;containername&#34;)
+        for cand in &#34;${cands[@]}&#34;; do
+            local idx
+            idx=$(echo &#34;$j&#34; | jq --arg c &#34;$cand&#34; &#39;
+                .Fields | to_entries[] |
+                select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) == $c) |
+                .key
+            &#39; 2&gt;/dev/null | head -1)
+            if [[ -n &#34;$idx&#34; ]]; then
+                local val
+                val=$(echo &#34;$j&#34; | jq -r --argjson i &#34;$idx&#34; &#39;
+                    .Values[] |
+                    if (. | length) &gt; $i then .[$i] else null end |
+                    select(. != null and . != &#34;&#34;) |
+                    tostring
+                &#39; 2&gt;/dev/null | head -1)
+                if [[ -n &#34;$val&#34; &amp;&amp; &#34;$val&#34; != &#34;null&#34; ]]; then
+                    result=&#34;$val&#34;
+                    break
+                fi
+            fi
+        done
+        echo &#34;$result&#34;
+    }
+
+    BEJSON_PROJECT_NAME=$( _bejson_parse_get_project_name &#34;$json&#34; )
+    BEJSON_PROJECT_NAME=$(echo &#34;$BEJSON_PROJECT_NAME&#34; | sed &#39;s/[&lt;&gt;:&#34;\/\\|?*]/_/g&#39;)
+
+    for i in $(seq 1 50); do
+        local name_key=&#34;file${i}name&#34;
+        local cont_key=&#34;file${i}content&#34;
+        local name_idx cont_idx
+        name_idx=$(echo &#34;$json&#34; | jq --arg k &#34;$name_key&#34; &#39;
+            .Fields | to_entries[] |
+            select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) == $k) |
+            .key
+        &#39; 2&gt;/dev/null | head -1)
+        cont_idx=$(echo &#34;$json&#34; | jq --arg k &#34;$cont_key&#34; &#39;
+            .Fields | to_entries[] |
+            select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) == $k) |
+            .key
+        &#39; 2&gt;/dev/null | head -1)
+        [[ -z &#34;$name_idx&#34; || -z &#34;$cont_idx&#34; ]] &amp;&amp; continue
+        local row_count=$(echo &#34;$json&#34; | jq &#39;.Values | length&#39;)
+        for r in $(seq 0 $(( row_count - 1 ))); do
+            local fname fcont
+            fname=$(echo &#34;$json&#34; | jq -r --argjson r &#34;$r&#34; --argjson ni &#34;$name_idx&#34; &#39;.Values[$r][$ni] // empty | select(. != null and . != &#34;&#34;)&#39; 2&gt;/dev/null)
+            fcont=$(echo &#34;$json&#34; | jq -r --argjson r &#34;$r&#34; --argjson ci &#34;$cont_idx&#34; &#39;.Values[$r][$ci] // empty | select(. != null and . != &#34;&#34;)&#39; 2&gt;/dev/null)
+            if [[ -n &#34;$fname&#34; &amp;&amp; -n &#34;$fcont&#34; ]]; then
+                BEJSON_FILES_NAMES+=(&#34;$fname&#34;)
+                BEJSON_FILES_CONTENTS+=(&#34;$fcont&#34;)
+            fi
+        done
+    done
+    [[ ${#BEJSON_FILES_NAMES[@]} -eq 0 ]] &amp;&amp; return 1
+    return 0
+}
+
+bejson_save_files() {
+    local proj=&#34;${1:-My_Project}&#34;
+    local base_dir=&#34;${2:-$BEJSON_PARSE_DEFAULT_OUT}&#34;
+    local overwrite=&#34;${3:-false}&#34;
+    mkdir -p &#34;$base_dir&#34; 2&gt;/dev/null
+    local target
+    if [[ &#34;$overwrite&#34; == &#34;true&#34; ]]; then
+        target=&#34;${base_dir}/${proj}&#34;
+    else
+        target=&#34;${base_dir}/$(date +&#34;%Y%m%d_%H%M%S&#34;)_${proj}&#34;
+    fi
+    mkdir -p &#34;$target&#34; 2&gt;/dev/null
+    for i in $(seq 0 $(( ${#BEJSON_FILES_NAMES[@]} - 1 ))); do
+        local fpath=&#34;${target}/${BEJSON_FILES_NAMES[$i]}&#34;
+        mkdir -p &#34;$(dirname &#34;$fpath&#34;)&#34;
+        printf &#39;%s&#39; &#34;${BEJSON_FILES_CONTENTS[$i]}&#34; &gt; &#34;$fpath&#34;
+    done
+    sync &#34;$target&#34; 2&gt;/dev/null || sync 2&gt;/dev/null || true
+    echo &#34;{\&#34;success\&#34;:true,\&#34;path\&#34;:\&#34;$target\&#34;,\&#34;file_count\&#34;:${#BEJSON_FILES_NAMES[@]}}&#34;
+}
+
+export -f bejson_parse_json
+export -f bejson_extract_data
+export -f bejson_save_files
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

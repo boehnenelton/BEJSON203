@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_parse.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / Core / lib_bejson_parse.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_parse.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_parse.py
+Family:       Core
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Rapid indexing and retrieval engine for dense tabular data.
+&#34;&#34;&#34;
+
+import datetime
+import json
+import os
+import re
+import shutil
+import tempfile
+import zipfile
+from pathlib import Path
+
+# ------------------------------------------------------------------
+# BEJSON ecosystem — core + validator sourced here
+# ------------------------------------------------------------------
+from lib_bejson_core import (
+    BEJSONCoreError,
+    bejson_core_is_valid,
+    bejson_core_get_version,
+    bejson_core_get_stats,
+)
+from lib_bejson_validator import (
+    BEJSONValidationError,
+    bejson_validator_validate_string,
+    bejson_validator_get_report,
+)
+
+# Default output dir (callers may override via cfg)
+_SCRIPT_DIR  = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_OUT  = os.path.join(_SCRIPT_DIR, &#34;output&#34;)
+
+# ------------------------------------------------------------------
+# ATOMIC WRITE HELPER (Generic)
+# ------------------------------------------------------------------
+
+def _atomic_write_text(file_path: str, content: str) -&gt; None:
+    &#34;&#34;&#34;Write text to file_path atomically with fsync.&#34;&#34;&#34;
+    path = Path(file_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    
+    temp_dir = str(path.parent)
+    fd, tmp_path = tempfile.mkstemp(dir=temp_dir, suffix=&#34;.tmp&#34;, prefix=&#34;.parse_&#34;)
+    try:
+        with os.fdopen(fd, &#34;w&#34;, encoding=&#34;utf-8&#34;) as tmp:
+            tmp.write(content)
+            tmp.flush()
+            os.fsync(tmp.fileno())
+        os.rename(tmp_path, file_path)
+        # fsync the directory
+        dir_fd = os.open(str(path.parent), os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+    except Exception:
+        if os.path.exists(tmp_path):
+            os.unlink(tmp_path)
+        raise
+
+# ------------------------------------------------------------------
+# PARSER CORE
+# ------------------------------------------------------------------
+
+def parse_json(text):
+    &#34;&#34;&#34;Extract and parse JSON using strictly string methods and json module.&#34;&#34;&#34;
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        start = text.find(&#34;{&#34;)
+        end = text.rfind(&#34;}&#34;)
+        if start != -1 and end != -1 and end &gt; start:
+            return json.loads(text[start:end+1])
+        raise
+def extract_data(data):
+    fields = data.get(&#34;Fields&#34;, [])
+    values = data.get(&#34;Values&#34;, [])
+    if not values:
+        return &#34;My_Project&#34;, []
+
+    f_map = {}
+    for i, f in enumerate(fields):
+        key = re.sub(r&#39;[^a-z0-9]&#39;, &#39;&#39;, f[&#34;name&#34;].lower())
+        f_map[key] = i
+
+    def get_val(row, key):
+        idx = f_map.get(key)
+        if idx is not None and idx &lt; len(row):
+            v = row[idx]
+            if v is not None:
+                return str(v).strip()
+        return None
+
+    project_name = &#34;My_Project&#34;
+    for row in values:
+        for key in (&#34;projectname&#34;, &#34;zipfilename&#34;, &#34;containername&#34;):
+            v = get_val(row, key)
+            if v:
+                project_name = v
+                break
+        if project_name != &#34;My_Project&#34;:
+            break
+
+    project_name = re.sub(r&#39;[&lt;&gt;:&#34;/\\|?*]&#39;, &#39;_&#39;, project_name)
+
+    files = []
+    for row in values:
+        for i in range(1, 51):
+            fname = get_val(row, &#34;file&#34; + str(i) + &#34;name&#34;)
+            fcont = get_val(row, &#34;file&#34; + str(i) + &#34;content&#34;)
+            if fname and fcont:
+                files.append({&#34;name&#34;: fname, &#34;content&#34;: fcont})
+
+    return project_name, files
+
+
+def save_files(proj, files, cfg):
+    base_dir = cfg.get(&#34;output_path&#34;) or DEFAULT_OUT
+    if not os.path.isdir(base_dir):
+        try:
+            os.makedirs(base_dir, exist_ok=True)
+        except Exception as e:
+            return {&#34;success&#34;: False, &#34;message&#34;: &#34;Cannot create output dir: &#34; + str(e)}
+
+    overwrite = cfg.get(&#34;overwrite_enabled&#34;, False)
+
+    if overwrite:
+        target     = os.path.join(base_dir, proj)
+        bak_target = os.path.join(base_dir, proj + &#34;_BACKUP&#34;)
+        if os.path.exists(target):
+            if os.path.exists(bak_target):
+                shutil.rmtree(bak_target, ignore_errors=True)
+            try:
+                shutil.copytree(target, bak_target)
+            except Exception as e:
+                print(&#34;Backup warning: &#34; + str(e))
+    else:
+        ts     = datetime.datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+        target = os.path.join(base_dir, ts + &#34;_&#34; + proj)
+
+    try:
+        os.makedirs(target, exist_ok=True)
+
+        for f in files:
+            fpath = os.path.join(target, f[&#34;name&#34;])
+            _atomic_write_text(fpath, f[&#34;content&#34;])
+
+        # Build report
+        ts_now   = datetime.datetime.now().strftime(&#34;%Y-%m-%d %H:%M:%S&#34;)
+        mode_str = &#34;Merge/Update (overwrite)&#34; if overwrite else &#34;Timestamped (new folder)&#34;
+        lines    = []
+        lines.append(&#34;=&#34; * 52)
+        lines.append(&#34;  STRUCTURED PARSER — BUILD REPORT&#34;)
+        lines.append(&#34;=&#34; * 52)
+        lines.append(&#34;Project    : &#34; + proj)
+        lines.append(&#34;Generated  : &#34; + ts_now)
+        lines.append(&#34;Mode       : &#34; + mode_str)
+        lines.append(&#34;Output Dir : &#34; + target)
+        lines.append(&#34;Files      : &#34; + str(len(files)))
+        lines.append(&#34;-&#34; * 52)
+        lines.append(&#34;FILE LIST&#34;)
+        lines.append(&#34;-&#34; * 52)
+        for idx, f in enumerate(files):
+            size_b = len(f[&#34;content&#34;].encode(&#34;utf-8&#34;))
+            if size_b &gt;= 1024:
+                size_s = str(round(size_b / 1024.0, 1)) + &#34; KB&#34;
+            else:
+                size_s = str(size_b) + &#34; B&#34;
+            lines.append(&#34;  [&#34; + str(idx + 1).zfill(2) + &#34;] &#34; + f[&#34;name&#34;] + &#34;  (&#34; + size_s + &#34;)&#34;)
+        lines.append(&#34;-&#34; * 52)
+        lines.append(&#34;Zip        : &#34; + proj + &#34;_update.zip&#34;)
+        lines.append(&#34;=&#34; * 52)
+        report_text = &#34;\n&#34;.join(lines) + &#34;\n&#34;
+
+        # Write report to disk atomically
+        report_path = os.path.join(target, &#34;_REPORT.txt&#34;)
+        _atomic_write_text(report_path, report_text)
+
+        # Build zip (files + report)
+        zip_path = os.path.join(target, proj + &#34;_update.zip&#34;)
+        # Zip is somewhat atomic if we write to temp and rename, but zipfile doesn&#39;t support fsync directly easily.
+        # For this library, we&#39;ll focus on the text files being atomic.
+        with zipfile.ZipFile(zip_path, &#34;w&#34;, zipfile.ZIP_DEFLATED) as zf:
+            for f in files:
+                zf.writestr(f[&#34;name&#34;], f[&#34;content&#34;])
+            zf.writestr(&#34;_REPORT.txt&#34;, report_text)
+
+        return {
+            &#34;success&#34;:    True,
+            &#34;message&#34;:    &#34;Saved &#34; + str(len(files)) + &#34; file(s)&#34;,
+            &#34;path&#34;:       target,
+            &#34;file_count&#34;: len(files),
+        }
+
+    except Exception as e:
+        return {&#34;success&#34;: False, &#34;message&#34;: str(e)}
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

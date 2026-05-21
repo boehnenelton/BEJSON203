@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_mfdb_core.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / Core / lib_mfdb_core.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_mfdb_core.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_mfdb_core.py
+Family:       Core
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Multi-file database orchestrator managing manifests and entity synchronization.
+&#34;&#34;&#34;
+
+# v1.21 adds Dynamic Recovery and Self-Healing.
+
+import json
+import os
+import shutil
+import tempfile
+import zipfile
+import hashlib
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+from lib_bejson_core import (
+    BEJSONCoreError,
+    bejson_core_atomic_write,
+    bejson_core_add_record,
+    bejson_core_remove_record,
+    bejson_core_update_field,
+    bejson_core_load_file,
+    bejson_core_get_record_count,
+    bejson_core_filter_rows,
+    bejson_core_sort_by_field,
+    bejson_core_get_field_index,
+)
+from lib_mfdb_validator import (
+    MFDBValidationError,
+    mfdb_validator_validate_manifest,
+    _load_json,
+    _rows_as_dicts,
+    _resolve_entity_path,
+    E_MFDB_BIDIRECTIONAL_FAIL,
+    E_MFDB_ENTITY_NOT_FOUND,
+    E_MFDB_MANIFEST_NOT_FOUND,
+)
+
+try:
+    from lib_bejson_errors import *
+except ImportError:
+    # Fallback if registry is missing
+    E_MFDB_CORE_MANIFEST_NOT_FOUND  = 50
+    E_MFDB_CORE_ENTITY_NOT_FOUND    = 51
+    E_MFDB_CORE_WRITE_FAILED        = 52
+    E_MFDB_CORE_CREATE_FAILED       = 53
+    E_MFDB_CORE_INVALID_OPERATION   = 54
+    E_MFDB_CORE_INDEX_OUT_OF_BOUNDS = 55
+    E_MFDB_CORE_JOIN_FAILED         = 56
+    E_MFDB_CORE_ARCHIVE_ERROR       = 70
+    E_MFDB_CORE_MOUNT_CONFLICT      = 71
+
+
+class MFDBCoreError(Exception):
+    &#34;&#34;&#34;Raised when an MFDB core operation fails.&#34;&#34;&#34;
+    def __init__(self, message: str, code: int):
+        super().__init__(message)
+        self.code = code
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+def _get_manifest_entries(manifest_path: str) -&gt; list[dict]:
+    doc = _load_json(manifest_path)
+    return _rows_as_dicts(doc)
+
+
+def _get_manifest_entry(manifest_path: str, entity_name: str) -&gt; dict:
+    entries = _get_manifest_entries(manifest_path)
+    entry   = next((e for e in entries if e.get(&#34;entity_name&#34;) == entity_name), None)
+    if entry is None:
+        raise MFDBCoreError(
+            f&#34;Entity &#39;{entity_name}&#39; not found in manifest: {manifest_path}&#34;,
+            E_MFDB_CORE_ENTITY_NOT_FOUND,
+        )
+    return entry
+
+
+
+def _read_file_content(path: str) -&gt; str:
+    &#34;&#34;&#34;Reads file content, supporting .mfdb.zip archives.&#34;&#34;&#34;
+    p = Path(path)
+    if p.is_file() and not path.lower().endswith(&#34;.zip&#34;):
+        return p.read_text(encoding=&#34;utf-8&#34;)
+    
+    # Check for zip path parts
+    parts = p.parts
+    for i, part in enumerate(parts):
+        if part.lower().endswith(&#34;.zip&#34;):
+            zip_path = str(Path(*parts[:i+1]))
+            inner_path = &#34;/&#34;.join(parts[i+1:])
+            if os.path.exists(zip_path):
+                with zipfile.ZipFile(zip_path, &#34;r&#34;) as z:
+                    if inner_path in z.namelist():
+                        return z.read(inner_path).decode(&#34;utf-8&#34;)
+                    elif not inner_path and &#34;104a.mfdb.bejson&#34; in z.namelist():
+                         return z.read(&#34;104a.mfdb.bejson&#34;).decode(&#34;utf-8&#34;)
+    
+    return p.read_text(encoding=&#34;utf-8&#34;)
+
+def _get_entity_path(manifest_path: str, entity_name: str) -&gt; str:
+    entry = _get_manifest_entry(manifest_path, entity_name)
+    return _resolve_entity_path(manifest_path, entry[&#34;file_path&#34;])
+
+
+def _load_entity_doc(manifest_path: str, entity_name: str) -&gt; dict:
+    &#34;&#34;&#34;Load and validate the raw BEJSON 104 doc for an entity.&#34;&#34;&#34;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    content = _read_file_content(entity_path)
+    from lib_bejson_core import bejson_core_load_string
+    return bejson_core_load_string(content)
+
+
+def _write_entity_doc(doc: dict, entity_path: str) -&gt; None:
+    bejson_core_atomic_write(entity_path, doc)
+
+
+def _write_manifest_doc(doc: dict, manifest_path: str) -&gt; None:
+    bejson_core_atomic_write(manifest_path, doc)
+
+
+def _update_manifest_record_count(
+    manifest_path: str, entity_name: str, count: int
+) -&gt; None:
+    &#34;&#34;&#34;Write a corrected record_count into the manifest for one entity.&#34;&#34;&#34;
+    doc        = _load_json(manifest_path)
+    fn_list    = [f[&#34;name&#34;] for f in doc[&#34;Fields&#34;]]
+    if &#34;record_count&#34; not in fn_list or &#34;entity_name&#34; not in fn_list:
+        return
+    rc_idx = fn_list.index(&#34;record_count&#34;)
+    en_idx = fn_list.index(&#34;entity_name&#34;)
+    for row in doc[&#34;Values&#34;]:
+        if row[en_idx] == entity_name:
+            row[rc_idx] = count
+            break
+    _write_manifest_doc(doc, manifest_path)
+
+
+def _calculate_file_hash(file_path: str) -&gt; str:
+    &#34;&#34;&#34;Generate SHA-256 hash for archive integrity checks.&#34;&#34;&#34;
+    sha256 = hashlib.sha256()
+    with open(file_path, &#34;rb&#34;) as f:
+        for chunk in iter(lambda: f.read(4096), b&#34;&#34;):
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+
+# ---------------------------------------------------------------------------
+# MFDBArchive (v1.2 Feature)
+# ---------------------------------------------------------------------------
+
+class MFDBArchive:
+    &#34;&#34;&#34;
+    Handles .mfdb.zip packaging, virtual mounting, and atomic repacking.
+    Standardized in MFDB v1.2 for portable transport.
+    Enhanced for CoreEvolution with sticky mounting and validation safety.
+    &#34;&#34;&#34;
+
+    @staticmethod
+    def mount(archive_path: str, target_dir: str, force: bool = False, sticky: bool = True) -&gt; str:
+        &#34;&#34;&#34;
+        Extract an MFDB archive to a workspace and create a session lock.
+        If sticky=True, it reuses existing valid extracted files.
+        Returns the absolute path to the extracted manifest.
+        &#34;&#34;&#34;
+        arc_p = Path(archive_path)
+        if not arc_p.exists():
+            raise MFDBCoreError(f&#34;Archive not found: {archive_path}&#34;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        target_p = Path(target_dir)
+        lock_file = target_p / &#34;.mfdb_lock&#34;
+        manifest_path = target_p / &#34;104a.mfdb.bejson&#34;
+
+        # Sticky check: If valid files exist and hash matches, just return manifest
+        if sticky and lock_file.exists() and manifest_path.exists():
+            try:
+                with open(lock_file, &#34;r&#34;) as f:
+                    lock_data = json.load(f)
+                
+                # Check if archive hash matches the one we mounted
+                current_arc_hash = _calculate_file_hash(archive_path)
+                if lock_data.get(&#34;original_hash&#34;) == current_arc_hash:
+                    # Validate the database structure before trusting the sticky mount
+                    from lib_mfdb_validator import mfdb_validator_validate_database
+                    if mfdb_validator_validate_database(str(manifest_path)):
+                        return str(manifest_path.absolute())
+            except Exception:
+                pass # Fall through to full re-extract if sticky fails
+
+        if lock_file.exists() and not force:
+            with open(lock_file, &#34;r&#34;) as f:
+                lock_data = json.load(f)
+            if lock_data.get(&#34;pid&#34;) != os.getpid():
+                raise MFDBCoreError(
+                    f&#34;Workspace {target_dir} is already locked by PID {lock_data.get(&#39;pid&#39;)}&#34;,
+                    E_MFDB_CORE_MOUNT_CONFLICT
+                )
+
+        # Clear existing workspace if it was invalid or if we are forcing re-extract
+        if target_p.exists():
+            shutil.rmtree(target_dir)
+        target_p.mkdir(parents=True, exist_ok=True)
+
+        with zipfile.ZipFile(archive_path, &#39;r&#39;) as zip_ref:
+            zip_ref.extractall(target_dir)
+
+        if not manifest_path.exists():
+            shutil.rmtree(target_dir)
+            raise MFDBCoreError(&#34;Invalid MFDB Archive: 104a.mfdb.bejson missing.&#34;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        # Create session lock with metadata
+        lock_data = {
+            &#34;pid&#34;: os.getpid(),
+            &#34;mounted_at&#34;: datetime.now(timezone.utc).isoformat(),
+            &#34;original_hash&#34;: _calculate_file_hash(archive_path),
+            &#34;archive_path&#34;: str(arc_p.absolute())
+        }
+        with open(lock_file, &#34;w&#34;) as f:
+            json.dump(lock_data, f)
+
+        return str(manifest_path.absolute())
+
+    @staticmethod
+    def commit(mount_dir: str, archive_path: Optional[str] = None, validate: bool = True) -&gt; str:
+        &#34;&#34;&#34;
+        Repack the workspace into a .mfdb.zip file atomically.
+        Refuses to write if validation fails (if validate=True).
+        &#34;&#34;&#34;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &#34;.mfdb_lock&#34;
+        manifest_path = mount_p / &#34;104a.mfdb.bejson&#34;
+        
+        if not lock_file.exists():
+            raise MFDBCoreError(f&#34;No active mount session found in {mount_dir}&#34;, E_MFDB_CORE_INVALID_OPERATION)
+
+        if validate:
+            if not manifest_path.exists():
+                raise MFDBCoreError(&#34;Commit rejected: Manifest missing in workspace.&#34;, E_MFDB_CORE_WRITE_FAILED)
+            
+            # Run full database validation before repacking
+            from lib_mfdb_validator import mfdb_validator_validate_database
+            try:
+                mfdb_validator_validate_database(str(manifest_path))
+            except Exception as e:
+                raise MFDBCoreError(f&#34;Commit rejected: Validation failed. {str(e)}&#34;, E_MFDB_CORE_WRITE_FAILED)
+
+        with open(lock_file, &#34;r&#34;) as f:
+            lock_data = json.load(f)
+
+        dest_path = archive_path or lock_data.get(&#34;archive_path&#34;)
+        if not dest_path:
+            raise MFDBCoreError(&#34;Destination archive path unknown.&#34;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        # Create new archive in temp location
+        fd, temp_arc = tempfile.mkstemp(suffix=&#34;.mfdb.zip&#34;)
+        os.close(fd)
+
+        try:
+            with zipfile.ZipFile(temp_arc, &#39;w&#39;, zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(mount_dir):
+                    for file in files:
+                        if file == &#34;.mfdb_lock&#34;: continue
+                        file_path = Path(root) / file
+                        arc_name = file_path.relative_to(mount_dir)
+                        zipf.write(file_path, arc_name)
+            
+            # Atomic swap
+            shutil.move(temp_arc, dest_path)
+            
+            # Update lock with new hash to maintain sticky state
+            lock_data[&#34;original_hash&#34;] = _calculate_file_hash(dest_path)
+            with open(lock_file, &#34;w&#34;) as f:
+                json.dump(lock_data, f)
+                
+        except Exception as e:
+            if os.path.exists(temp_arc): os.remove(temp_arc)
+            raise MFDBCoreError(f&#34;Commit failed: {str(e)}&#34;, E_MFDB_CORE_WRITE_FAILED)
+
+        return dest_path
+
+
+    @staticmethod
+    def resurrect_file(mount_dir: str, relative_path: str) -&gt; bool:
+        &#34;&#34;&#34;
+        Surgically extract a single file from the .mfdb.zip archive into the workspace.
+        Used for recovery when an entity file is missing or corrupted.
+        &#34;&#34;&#34;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &#34;.mfdb_lock&#34;
+        if not lock_file.exists():
+            return False
+
+        with open(lock_file, &#34;r&#34;) as f:
+            lock_data = json.load(f)
+        
+        archive_path = lock_data.get(&#34;archive_path&#34;)
+        if not archive_path or not os.path.exists(archive_path):
+            return False
+
+        try:
+            with zipfile.ZipFile(archive_path, &#39;r&#39;) as zip_ref:
+                # Check if file exists in zip
+                if relative_path in zip_ref.namelist():
+                    zip_ref.extract(relative_path, mount_dir)
+                    return True
+        except Exception:
+            pass
+        return False
+
+    @staticmethod
+    def unmount(mount_dir: str, cleanup: bool = True):
+        &#34;&#34;&#34;Release the lock and optionally delete the workspace.&#34;&#34;&#34;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &#34;.mfdb_lock&#34;
+        if lock_file.exists():
+            os.remove(lock_file)
+        if cleanup and mount_p.exists():
+            shutil.rmtree(mount_dir)
+
+
+# ---------------------------------------------------------------------------
+# Discovery
+# ---------------------------------------------------------------------------
+
+def mfdb_core_discover(file_path: str) -&gt; str:
+    &#34;&#34;&#34;
+    Identify the MFDB role of any file.
+    Returns one of: &#39;manifest&#39;, &#39;entity&#39;, &#39;archive&#39;, &#39;standalone&#39;
+    &#34;&#34;&#34;
+    p = Path(file_path)
+    if not p.exists():
+        raise MFDBCoreError(f&#34;File not found: {file_path}&#34;, E_MFDB_CORE_MANIFEST_NOT_FOUND)
+
+    if p.suffix == &#34;.zip&#34; and &#34;.mfdb&#34; in p.name:
+        return &#34;archive&#34;
+
+    try:
+        doc = _load_json(file_path)
+    except Exception:
+        return &#34;standalone&#34;
+
+    version  = doc.get(&#34;Format_Version&#34;, &#34;&#34;)
+    filename = p.name
+    if version == &#34;104a&#34; and filename.endswith(&#34;.mfdb.bejson&#34;):
+        return &#34;manifest&#34;
+    if version == &#34;104&#34; and doc.get(&#34;Parent_Hierarchy&#34;):
+        return &#34;entity&#34;
+    return &#34;standalone&#34;
+
+
+# ---------------------------------------------------------------------------
+# Recovery &amp; Repair (v1.21 Feature)
+# ---------------------------------------------------------------------------
+
+def mfdb_core_deep_verify(manifest_path: str) -&gt; List[Dict[str, Any]]:
+    &#34;&#34;&#34;
+    Performs a deep audit of the entire MFDB database.
+    Checks for:
+      - Positional integrity (field vs value length)
+      - Type adherence (basic primitives)
+      - Manifest-entity consistency (record counts)
+      - Foreign key potential breakage (optional warnings)
+    Returns a list of finding dicts.
+    &#34;&#34;&#34;
+    findings = []
+    manifest_doc = bejson_core_load_file(manifest_path)
+    entries = _rows_as_dicts(manifest_doc)
+    
+    for entry in entries:
+        entity_name = entry.get(&#34;entity_name&#34;)
+        file_path_rel = entry.get(&#34;file_path&#34;)
+        expected_count = entry.get(&#34;record_count&#34;)
+        
+        entity_path = _resolve_entity_path(manifest_path, file_path_rel)
+        if not os.path.exists(entity_path):
+            findings.append({&#34;entity&#34;: entity_name, &#34;error&#34;: &#34;MISSING_FILE&#34;, &#34;path&#34;: file_path_rel})
+            continue
+            
+        try:
+            entity_doc = bejson_core_load_file(entity_path)
+            # 1. Check positional integrity
+            fields = entity_doc.get(&#34;Fields&#34;, [])
+            field_count = len(fields)
+            values = entity_doc.get(&#34;Values&#34;, [])
+            actual_count = len(values)
+            
+            if expected_count is not None and expected_count != actual_count:
+                findings.append({
+                    &#34;entity&#34;: entity_name, 
+                    &#34;warning&#34;: &#34;COUNT_MISMATCH&#34;, 
+                    &#34;expected&#34;: expected_count, 
+                    &#34;actual&#34;: actual_count
+                })
+            
+            for i, row in enumerate(values):
+                if len(row) != field_count:
+                    findings.append({
+                        &#34;entity&#34;: entity_name, 
+                        &#34;error&#34;: &#34;POSITIONAL_VIOLATION&#34;, 
+                        &#34;row&#34;: i, 
+                        &#34;expected&#34;: field_count, 
+                        &#34;actual&#34;: len(row)
+                    })
+                
+                # 2. Basic Type verification
+                for j, val in enumerate(row):
+                    if val is None: continue
+                    f_type = fields[j].get(&#34;type&#34;)
+                    if f_type == &#34;integer&#34; and not isinstance(val, int):
+                         findings.append({&#34;entity&#34;: entity_name, &#34;warning&#34;: &#34;TYPE_MISMATCH&#34;, &#34;row&#34;: i, &#34;field&#34;: fields[j][&#34;name&#34;], &#34;expected&#34;: &#34;integer&#34;, &#34;actual&#34;: type(val).__name__})
+                    elif f_type == &#34;number&#34; and not isinstance(val, (int, float)):
+                         findings.append({&#34;entity&#34;: entity_name, &#34;warning&#34;: &#34;TYPE_MISMATCH&#34;, &#34;row&#34;: i, &#34;field&#34;: fields[j][&#34;name&#34;], &#34;expected&#34;: &#34;number&#34;, &#34;actual&#34;: type(val).__name__})
+                    elif f_type == &#34;boolean&#34; and not isinstance(val, bool):
+                         findings.append({&#34;entity&#34;: entity_name, &#34;warning&#34;: &#34;TYPE_MISMATCH&#34;, &#34;row&#34;: i, &#34;field&#34;: fields[j][&#34;name&#34;], &#34;expected&#34;: &#34;boolean&#34;, &#34;actual&#34;: type(val).__name__})
+
+        except Exception as e:
+            findings.append({&#34;entity&#34;: entity_name, &#34;error&#34;: &#34;CORRUPT_JSON&#34;, &#34;message&#34;: str(e)})
+            
+    return findings
+
+
+def mfdb_core_self_heal(manifest_path: str) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Attempts to fix common issues identified by deep_verify.
+    Actions:
+      - Resyncs record_count in manifest.
+      - Padds short records with nulls (Positional Repair).
+      - Removes invalid records if necessary (Extreme measure).
+    Returns a report of actions taken.
+    &#34;&#34;&#34;
+    report = {&#34;actions&#34;: [], &#34;remaining_errors&#34;: []}
+    findings = mfdb_core_deep_verify(manifest_path)
+    
+    needs_manifest_sync = False
+    
+    for f in findings:
+        entity = f.get(&#34;entity&#34;)
+        if f.get(&#34;warning&#34;) == &#34;COUNT_MISMATCH&#34;:
+            _update_manifest_record_count(manifest_path, entity, f[&#34;actual&#34;])
+            report[&#34;actions&#34;].append(f&#34;Resynced record_count for {entity} to {f[&#39;actual&#39;]}&#34;)
+        
+        elif f.get(&#34;error&#34;) == &#34;POSITIONAL_VIOLATION&#34;:
+            # Attempt repair
+            entity_path = _get_entity_path(manifest_path, entity)
+            try:
+                doc = bejson_core_load_file(entity_path)
+                field_count = len(doc[&#34;Fields&#34;])
+                repaired = 0
+                for i, row in enumerate(doc[&#34;Values&#34;]):
+                    if len(row) &lt; field_count:
+                        doc[&#34;Values&#34;][i] = row + [None] * (field_count - len(row))
+                        repaired += 1
+                    elif len(row) &gt; field_count:
+                        doc[&#34;Values&#34;][i] = row[:field_count]
+                        repaired += 1
+                if repaired &gt; 0:
+                    bejson_core_atomic_write(entity_path, doc, create_backup=True)
+                    report[&#34;actions&#34;].append(f&#34;Repaired {repaired} positional violations in {entity}&#34;)
+            except Exception as e:
+                report[&#34;remaining_errors&#34;].append(f&#34;Failed to repair {entity}: {str(e)}&#34;)
+        
+        elif f.get(&#34;error&#34;) == &#34;MISSING_FILE&#34;:
+            # Attempt resurrection
+            mount_dir = os.path.dirname(os.path.abspath(manifest_path))
+            if MFDBArchive.resurrect_file(mount_dir, f[&#34;path&#34;]):
+                report[&#34;actions&#34;].append(f&#34;Resurrected missing entity file: {f[&#39;path&#39;]}&#34;)
+            else:
+                report[&#34;remaining_errors&#34;].append(f&#34;Could not resurrect {entity}&#34;)
+        
+        elif f.get(&#34;error&#34;):
+            report[&#34;remaining_errors&#34;].append(f&#34;{entity}: {f[&#39;error&#39;]} - {f.get(&#39;message&#39;, &#39;&#39;)}&#34;)
+
+    return report
+
+
+def _mfdb_core_repair_hierarchy(entity_path: str, new_hierarchy: str) -&gt; bool:
+    &#34;&#34;&#34;Surgically update the Parent_Hierarchy header in a BEJSON 104 file.&#34;&#34;&#34;
+    try:
+        doc = bejson_core_load_file(entity_path)
+        doc[&#34;Parent_Hierarchy&#34;] = new_hierarchy
+        bejson_core_atomic_write(entity_path, doc, create_backup=True)
+        return True
+    except Exception:
+        return False
+
+
+def mfdb_core_smart_repair(manifest_path: str, error: MFDBValidationError) -&gt; bool:
+    &#34;&#34;&#34;
+    Attempt to automatically repair the MFDB workspace based on a validation error.
+    Supported:
+      - E_MFDB_ENTITY_NOT_FOUND (33): Resurrects from archive.
+      - E_MFDB_BIDIRECTIONAL_FAIL (38) / E_MFDB_MANIFEST_NOT_FOUND (37): Patches Parent_Hierarchy.
+    &#34;&#34;&#34;
+    mount_dir = os.path.dirname(os.path.abspath(manifest_path))
+    ctx = error.context
+
+    if error.code == E_MFDB_ENTITY_NOT_FOUND or error.code == 33:
+        rel_path = ctx.get(&#34;file_path_rel&#34;)
+        if rel_path:
+            return MFDBArchive.resurrect_file(mount_dir, rel_path)
+
+    if error.code == E_MFDB_BIDIRECTIONAL_FAIL or error.code == E_MFDB_MANIFEST_NOT_FOUND:
+        entity_path = ctx.get(&#34;actual_path&#34;)
+        new_hierarchy = ctx.get(&#34;suggested_hierarchy&#34;)
+        # If suggested_hierarchy is missing but we are in a mount_dir, 
+        # assume standard v1.21 structure
+        if not new_hierarchy and entity_path:
+             new_hierarchy = &#34;../104a.mfdb.bejson&#34;
+
+        if entity_path and new_hierarchy:
+            return _mfdb_core_repair_hierarchy(entity_path, new_hierarchy)
+
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Read operations
+# ---------------------------------------------------------------------------
+
+
+def mfdb_core_load_manifest(manifest_path: str) -&gt; list[dict]:
+    &#34;&#34;&#34;
+    Validate and load the manifest.
+    Returns all manifest records as a list of field-name-keyed dicts.
+    &#34;&#34;&#34;
+    mfdb_validator_validate_manifest(manifest_path)
+    return _get_manifest_entries(manifest_path)
+
+
+def mfdb_core_load_entity(manifest_path: str, entity_name: str) -&gt; list[dict]:
+    &#34;&#34;&#34;
+    Load all records for a named entity.
+    Returns a list of field-name-keyed dicts (dense - no null-padding).
+    &#34;&#34;&#34;
+    doc = _load_entity_doc(manifest_path, entity_name)
+    return _rows_as_dicts(doc)
+
+
+def mfdb_core_get_entity_doc(manifest_path: str, entity_name: str) -&gt; dict:
+    &#34;&#34;&#34;Return the raw BEJSON 104 document dict for a named entity.&#34;&#34;&#34;
+    return _load_entity_doc(manifest_path, entity_name)
+
+
+def mfdb_core_get_stats(manifest_path: str) -&gt; dict:
+    &#34;&#34;&#34;Return a summary statistics dict for the entire MFDB.&#34;&#34;&#34;
+    doc     = _load_json(manifest_path)
+    entries = _rows_as_dicts(doc)
+
+    entity_stats = []
+    for entry in entries:
+        resolved = _resolve_entity_path(manifest_path, entry[&#34;file_path&#34;])
+        if os.path.exists(resolved):
+            edoc        = _load_json(resolved)
+            rec_count   = len(edoc.get(&#34;Values&#34;, []))
+            field_count = len(edoc.get(&#34;Fields&#34;, []))
+        else:
+            rec_count   = -1
+            field_count = -1
+
+        entity_stats.append({
+            &#34;entity_name&#34;:  entry[&#34;entity_name&#34;],
+            &#34;file_path&#34;:    entry[&#34;file_path&#34;],
+            &#34;record_count&#34;: rec_count,
+            &#34;field_count&#34;:  field_count,
+            &#34;primary_key&#34;:  entry.get(&#34;primary_key&#34;),
+        })
+
+    return {
+        &#34;db_name&#34;:        doc.get(&#34;DB_Name&#34;, &#34;&#34;),
+        &#34;schema_version&#34;: doc.get(&#34;Schema_Version&#34;, &#34;&#34;),
+        &#34;entity_count&#34;:   len(entries),
+        &#34;entities&#34;:       entity_stats,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Query operations
+# ---------------------------------------------------------------------------
+
+def mfdb_core_query_entity(
+    manifest_path: str,
+    entity_name: str,
+    predicate: Callable[[dict], bool],
+) -&gt; list[dict]:
+    &#34;&#34;&#34;Return all records from an entity for which predicate(record) is True.&#34;&#34;&#34;
+    records = mfdb_core_load_entity(manifest_path, entity_name)
+    return [r for r in records if predicate(r)]
+
+
+def mfdb_core_build_index(
+    manifest_path: str,
+    entity_name: str,
+    field_name: str,
+) -&gt; dict:
+    &#34;&#34;&#34;Build an in-memory hash index on a field for fast lookups.&#34;&#34;&#34;
+    records = mfdb_core_load_entity(manifest_path, entity_name)
+    return {r[field_name]: r for r in records if r.get(field_name) is not None}
+
+
+def mfdb_core_join(
+    manifest_path: str,
+    from_entity:   str,
+    to_entity:     str,
+    from_fk:       str,
+    to_pk:         str,
+) -&gt; list[dict]:
+    &#34;&#34;&#34;Cross-entity equi-join.&#34;&#34;&#34;
+    from_records = mfdb_core_load_entity(manifest_path, from_entity)
+    to_index     = mfdb_core_build_index(manifest_path, to_entity, to_pk)
+
+    results = []
+    for record in from_records:
+        fk_val = record.get(from_fk)
+        target = to_index.get(fk_val, {})
+        merged = dict(record)
+        for k, v in target.items():
+            merged[f&#34;{to_entity}__{k}&#34;] = v
+        results.append(merged)
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Write operations
+# ---------------------------------------------------------------------------
+
+def mfdb_core_add_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    values:        list,
+    sync_count:    bool = True,
+) -&gt; dict:
+    &#34;&#34;&#34;Append a record to an entity file.&#34;&#34;&#34;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_add_record(doc, values)
+    _write_entity_doc(doc, entity_path)
+    if sync_count:
+        _update_manifest_record_count(manifest_path, entity_name, len(doc[&#34;Values&#34;]))
+    return doc
+
+
+def mfdb_core_remove_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    record_index:  int,
+    sync_count:    bool = True,
+) -&gt; dict:
+    &#34;&#34;&#34;Remove a record at record_index from an entity file.&#34;&#34;&#34;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_remove_record(doc, record_index)
+    _write_entity_doc(doc, entity_path)
+    if sync_count:
+        _update_manifest_record_count(manifest_path, entity_name, len(doc[&#34;Values&#34;]))
+    return doc
+
+
+def mfdb_core_update_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    record_index:  int,
+    field_name:    str,
+    new_value:     Any,
+) -&gt; dict:
+    &#34;&#34;&#34;Update a single named field in a specific record of an entity file.&#34;&#34;&#34;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_update_field(doc, record_index, field_name, new_value)
+    _write_entity_doc(doc, entity_path)
+    return doc
+
+
+# ---------------------------------------------------------------------------
+# Manifest sync
+# ---------------------------------------------------------------------------
+
+def mfdb_core_sync_manifest_count(manifest_path: str, entity_name: str) -&gt; int:
+    &#34;&#34;&#34;Re-count actual rows in an entity file and update the manifest.&#34;&#34;&#34;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    edoc        = _load_json(entity_path)
+    count       = len(edoc.get(&#34;Values&#34;, []))
+    _update_manifest_record_count(manifest_path, entity_name, count)
+    return count
+
+
+def mfdb_core_sync_all_counts(manifest_path: str) -&gt; dict:
+    &#34;&#34;&#34;Sync record_count for every entity listed in the manifest.&#34;&#34;&#34;
+    entries = _get_manifest_entries(manifest_path)
+    results = {}
+    for entry in entries:
+        name = entry[&#34;entity_name&#34;]
+        results[name] = mfdb_core_sync_manifest_count(manifest_path, name)
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Database creation
+# ---------------------------------------------------------------------------
+
+def mfdb_core_create_entity_file(
+    manifest_path:  str,
+    entity_name:    str,
+    fields:         list[dict],
+    description:    str = &#34;&#34;,
+    primary_key:    str = &#34;&#34;,
+    schema_version: str = &#34;1.0&#34;,
+    file_path_rel:  str = &#34;&#34;,
+) -&gt; str:
+    &#34;&#34;&#34;Create a new entity file and register it in an existing manifest.&#34;&#34;&#34;
+    manifest_dir = os.path.dirname(os.path.abspath(manifest_path))
+
+    if not file_path_rel:
+        file_path_rel = f&#34;data/{entity_name.lower()}.bejson&#34;
+
+    resolved = os.path.normpath(os.path.join(manifest_dir, file_path_rel))
+    os.makedirs(os.path.dirname(resolved), exist_ok=True)
+
+    entity_dir         = os.path.dirname(resolved)
+    rel_to_manifest    = os.path.relpath(manifest_path, entity_dir)
+
+    entity_doc = {
+        &#34;Format&#34;:           &#34;BEJSON&#34;,
+        &#34;Format_Version&#34;:   &#34;104&#34;,
+        &#34;Format_Creator&#34;:   &#34;Elton Boehnen&#34;,
+        &#34;Parent_Hierarchy&#34;: rel_to_manifest,
+        &#34;Records_Type&#34;:     [entity_name],
+        &#34;Fields&#34;:           fields,
+        &#34;Values&#34;:           [],
+    }
+    bejson_core_atomic_write(resolved, entity_doc)
+
+    manifest_doc = _load_json(manifest_path)
+    fn_list      = [f[&#34;name&#34;] for f in manifest_doc[&#34;Fields&#34;]]
+
+    new_row = []
+    for fn in fn_list:
+        if   fn == &#34;entity_name&#34;:    new_row.append(entity_name)
+        elif fn == &#34;file_path&#34;:      new_row.append(file_path_rel)
+        elif fn == &#34;description&#34;:    new_row.append(description or None)
+        elif fn == &#34;record_count&#34;:   new_row.append(0)
+        elif fn == &#34;schema_version&#34;: new_row.append(schema_version)
+        elif fn == &#34;primary_key&#34;:    new_row.append(primary_key or None)
+        else:                        new_row.append(None)
+
+    manifest_doc[&#34;Values&#34;].append(new_row)
+    _write_manifest_doc(manifest_doc, manifest_path)
+
+    return resolved
+
+
+def mfdb_core_create_database(
+    root_dir:       str,
+    db_name:        str,
+    entities:       list[dict],
+    db_description: str = &#34;&#34;,
+    schema_version: str = &#34;1.0.0&#34;,
+    author:         str = &#34;Elton Boehnen&#34;,
+    mfdb_version:   str = &#34;1.3.1&#34;,
+    network_role: str = &#34;Master&#34;,
+) -&gt; str:
+    &#34;&#34;&#34;Create a new MFDB from scratch.&#34;&#34;&#34;
+    root = Path(root_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    manifest_path = str(root / &#34;104a.mfdb.bejson&#34;)
+
+    manifest_fields = [
+        {&#34;name&#34;: &#34;entity_name&#34;,    &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;file_path&#34;,      &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;description&#34;,    &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;record_count&#34;,   &#34;type&#34;: &#34;integer&#34;},
+        {&#34;name&#34;: &#34;schema_version&#34;, &#34;type&#34;: &#34;string&#34;},
+        {&#34;name&#34;: &#34;primary_key&#34;,    &#34;type&#34;: &#34;string&#34;},
+    ]
+
+    manifest_values     = []
+    entity_defs_to_file = []
+
+    for entity in entities:
+        name   = entity[&#34;name&#34;]
+        fp_rel = entity.get(&#34;file_path&#34;, f&#34;data/{name.lower()}.bejson&#34;)
+        desc   = entity.get(&#34;description&#34;, &#34;&#34;)
+        pk     = entity.get(&#34;primary_key&#34;, &#34;&#34;)
+        sv     = entity.get(&#34;schema_version&#34;, &#34;1.0&#34;)
+        fields = entity[&#34;fields&#34;]
+
+        manifest_values.append([name, fp_rel, desc or None, 0, sv, pk or None])
+        entity_defs_to_file.append((name, fp_rel, fields))
+
+    created_at = datetime.now(timezone.utc).strftime(&#34;%Y-%m-%dT%H:%M:%SZ&#34;)
+
+    manifest_doc = {
+        &#34;Format&#34;:          &#34;BEJSON&#34;,
+        &#34;Format_Version&#34;:  &#34;104a&#34;,
+        &#34;Format_Creator&#34;:  &#34;Elton Boehnen&#34;,
+        &#34;MFDB_Version&#34;:    mfdb_version,
+        &#34;Network_Role&#34;: network_role,
+        &#34;DB_Name&#34;:         db_name,
+        &#34;DB_Description&#34;:  db_description,
+        &#34;Schema_Version&#34;:  schema_version,
+        &#34;Author&#34;:          author,
+        &#34;Created_At&#34;:      created_at,
+        &#34;Records_Type&#34;:    [&#34;mfdb&#34;],
+        &#34;Fields&#34;:          manifest_fields,
+        &#34;Values&#34;:          manifest_values,
+    }
+
+    bejson_core_atomic_write(manifest_path, manifest_doc)
+
+    for entity_name, fp_rel, fields in entity_defs_to_file:
+        resolved   = os.path.normpath(os.path.join(root_dir, fp_rel))
+        entity_dir = os.path.dirname(resolved)
+        os.makedirs(entity_dir, exist_ok=True)
+
+        rel_to_manifest = os.path.relpath(manifest_path, entity_dir)
+
+        entity_doc = {
+            &#34;Format&#34;:           &#34;BEJSON&#34;,
+            &#34;Format_Version&#34;:   &#34;104&#34;,
+            &#34;Format_Creator&#34;:   &#34;Elton Boehnen&#34;,
+            &#34;Parent_Hierarchy&#34;: rel_to_manifest,
+            &#34;Records_Type&#34;:     [entity_name],
+            &#34;Fields&#34;:           fields,
+            &#34;Values&#34;:           [],
+        }
+        bejson_core_atomic_write(resolved, entity_doc)
+
+    return manifest_path
+
+def mfdb_core_resolve_path(path_str: str) -&gt; str:
+    &#34;&#34;&#34;
+    Hardening: Resolve system placeholders in paths using lib_bejson_env.
+    Supports: {INTERNAL_STORAGE}, {SC_ROOT}, {PROJECTS_MGMT}, {ADMIN_LAYER}, 
+             internal_storage, ~, and environment variables in ${VAR} format.
+    &#34;&#34;&#34;
+    if not path_str:
+        return path_str
+    
+    try:
+        from lib_bejson_env import resolve_path
+        return resolve_path(path_str)
+    except ImportError:
+        # Minimal fallback without hardcoded absolute strings
+        # Defaults are handled inside resolve_path if imported, 
+        # otherwise we just expand ~ and vars
+        resolved = str(path_str)
+        # Expansion only
+        resolved = os.path.expanduser(resolved)
+        resolved = os.path.expandvars(resolved)
+        return os.path.normpath(resolved)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

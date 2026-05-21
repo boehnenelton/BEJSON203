@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_physics.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / Gaming / lib_bejson_physics.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_physics.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_physics.py
+Family:       Gaming
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  2D/3D physics calculation engine for BEJSON-based simulations.
+&#34;&#34;&#34;
+
+import math
+
+class BEJSONPhysics:
+    &#34;&#34;&#34;
+    Mirror of lib_bejson_physics.js
+    Python/Flask-compatible 2D physics engine using BEJSON 104.
+    &#34;&#34;&#34;
+    def __init__(self, world_name=&#34;PhysicsWorld&#34;):
+        self.bejson = {
+            &#34;Format&#34;: &#34;BEJSON&#34;,
+            &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+            &#34;Format_Version&#34;: &#34;104&#34;,
+            &#34;Records_Type&#34;: [&#34;Body&#34;],
+            &#34;Fields&#34;: [
+                { &#34;name&#34;: &#34;id&#34;, &#34;type&#34;: &#34;string&#34; },
+                { &#34;name&#34;: &#34;x&#34;, &#34;type&#34;: &#34;number&#34; },
+                { &#34;name&#34;: &#34;y&#34;, &#34;type&#34;: &#34;number&#34; },
+                { &#34;name&#34;: &#34;width&#34;, &#34;type&#34;: &#34;number&#34; },
+                { &#34;name&#34;: &#34;height&#34;, &#34;type&#34;: &#34;number&#34; },
+                { &#34;name&#34;: &#34;vx&#34;, &#34;type&#34;: &#34;number&#34; },
+                { &#34;name&#34;: &#34;vy&#34;, &#34;type&#34;: &#34;number&#34; },
+                { &#34;name&#34;: &#34;mass&#34;, &#34;type&#34;: &#34;number&#34; },
+                { &#34;name&#34;: &#34;isStatic&#34;, &#34;type&#34;: &#34;boolean&#34; },
+                { &#34;name&#34;: &#34;groups&#34;, &#34;type&#34;: &#34;array&#34; }
+            ],
+            &#34;Values&#34;: []
+        }
+        self.gravity = {&#34;x&#34;: 0, &#34;y&#34;: 9.8}
+
+    def add_body(self, body_id, x, y, width, height, **options):
+        vx = options.get(&#34;vx&#34;, 0)
+        vy = options.get(&#34;vy&#34;, 0)
+        mass = options.get(&#34;mass&#34;, 1)
+        is_static = options.get(&#34;isStatic&#34;, False)
+        groups = options.get(&#34;groups&#34;, [&#34;default&#34;])
+        
+        self.bejson[&#34;Values&#34;].append([
+            body_id, x, y, width, height, vx, vy, mass, is_static, groups
+        ])
+
+    def step(self, dt):
+        values = self.bejson[&#34;Values&#34;]
+        # 1. Integration
+        for row in values:
+            if row[8]: # isStatic
+                continue
+            
+            # Apply gravity
+            row[5] += self.gravity[&#34;x&#34;] * dt # vx
+            row[6] += self.gravity[&#34;y&#34;] * dt # vy
+            
+            # Apply velocity to position
+            row[1] += row[5] * dt # x
+            row[2] += row[6] * dt # y
+
+        # 2. Collision (Simplified)
+        for i in range(len(values)):
+            body_a = values[i]
+            for j in range(i + 1, len(values)):
+                body_b = values[j]
+                if self._check_aabb(body_a, body_b):
+                    self._resolve_collision(body_a, body_b)
+
+    def _check_aabb(self, a, b):
+        return (a[1] &lt; b[1] + b[3] and 
+                a[1] + a[3] &gt; b[1] and 
+                a[2] &lt; b[2] + b[4] and 
+                a[2] + a[4] &gt; b[2])
+
+    def _resolve_collision(self, a, b):
+        if a[8] and b[8]: return
+        # Simple velocity swap for dynamic-dynamic
+        temp_vx, temp_vy = a[5], a[6]
+        a[5], a[6] = b[5], b[6]
+        b[5], b[6] = temp_vx, temp_vy
+
+    def export_bejson(self):
+        import json
+        return json.dumps(self.bejson, indent=2)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

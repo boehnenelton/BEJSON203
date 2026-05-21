@@ -3,482 +3,1053 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pre-Release 2.0 Documentation</title>
+    <title>BEJSON Library Ecosystem v2.0.1</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
-    <style>
-:root {
-    --primary: #DE2626;
-    --bg-page: oklch(12% 0.01 250);
-    --bg-surface: oklch(16% 0.01 250);
-    --text-main: oklch(92% 0.01 250);
-    --text-muted: oklch(65% 0.01 250);
-    --border: oklch(22% 0.01 250);
-    --font-base: 'Inter', 'Roboto', system-ui, sans-serif;
-    --font-mono: 'Roboto Mono', 'Source Code Pro', monospace;
-    --transition: 0.15s ease;
-}
-
-/* Reset & Base */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { height: 100%; scroll-behavior: smooth; font-size: 16px; }
-body {
-    background-color: var(--bg-page);
-    color: var(--text-main);
-    font-family: var(--font-base);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-    padding-top: 60px;
-    padding-bottom: 80px;
-}
-
-/* Typography */
-h1 { 
-    font-size: clamp(1.75rem, 4vw, 2.5rem); 
-    font-weight: 800; 
-    letter-spacing: -0.02em; 
-    color: var(--text-main); 
-    line-height: 1.1; 
-    margin-bottom: 0.5rem;
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-h2 { 
-    font-size: 1.1rem; 
-    font-weight: 800; 
-    letter-spacing: -0.01em; 
-    color: var(--primary); 
-    text-transform: uppercase; 
-    margin-bottom: 1rem;
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-h3, h4 { 
-    font-weight: 700; 
-    color: var(--text-main);
-    word-break: break-word;
-    overflow-wrap: break-word;
-}
-
-a { color: var(--primary); text-decoration: none; transition: var(--transition); }
-a:hover { opacity: 0.8; }
-
-/* Navigation */
-.top-bar {
-    position: fixed; top: 0; left: 0; width: 100%; height: 60px;
-    background: rgba(18, 18, 20, 0.9); backdrop-filter: blur(12px);
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 0 24px; z-index: 1000; border-bottom: 2px solid var(--primary);
-}
-.top-bar__brand { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; }
-.top-bar__brand span { color: var(--primary); }
-
-.sidebar {
-    position: fixed; top: 60px; left: -280px; width: 280px;
-    height: calc(100vh - 60px); background-color: var(--bg-page);
-    transition: var(--transition); z-index: 900; overflow-y: auto;
-    padding: 20px 0; border-right: 1px solid var(--border);
-}
-.sidebar--open { left: 0; }
-.sidebar__category {
-    padding: 12px 24px; font-size: 0.65rem; font-weight: 800;
-    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;
-    cursor: pointer; display: flex; justify-content: space-between;
-}
-.sidebar__category:hover { color: var(--primary); }
-.sidebar__category-items { display: none; list-style: none; }
-.sidebar__category-items--open { display: block; }
-
-.sidebar__link {
-    display: block; padding: 10px 24px 10px 40px; color: var(--text-muted);
-    font-size: 0.8rem; font-weight: 500;
-    word-break: break-all;
-}
-.sidebar__link:hover, .sidebar__link--active { color: var(--text-main); background: var(--bg-surface); }
-.sidebar__link--active { border-left: 4px solid var(--primary); color: var(--primary); }
-
-/* Layout Components */
-.card, .b-card { background-color: var(--bg-surface); border-radius: 0; padding: 24px; margin-bottom: 24px; transition: var(--transition); }
-.table-container { overflow-x: auto; border-radius: 0; }
-.data-table, .b-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; background: var(--bg-surface); }
-.data-table th, .b-table th { background: var(--primary); padding: 12px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #FFFFFF; font-weight: 800; }
-.data-table td, .b-table td { padding: 12px 16px; border-top: 1px solid var(--border); word-break: break-word; }
-.data-table tr:hover { background: rgba(255,255,255,0.02); }
-
-pre { background: #000; color: #ADFF2F; padding: 20px; border-radius: 0; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; border-left: 4px solid var(--primary); }
-
-/* FOOTER - Authoritative Info */
-.status-footer, .footer {
-    position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
-    background: var(--bg-surface); display: flex; align-items: center;
-    justify-content: space-between; padding: 0 24px;
-    font-size: 0.7rem; color: var(--text_muted); font-family: var(--font-mono);
-    border-top: 1px solid var(--border); z-index: 1000;
-}
-.footer-link { color: var(--text-muted); text-decoration: underline; }
-.footer-link:hover { color: var(--primary); }
-
-/* Square Buttons */
-.form__button, .b-button { background: var(--primary); color: white; padding: 10px 20px; border-radius: 0; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; cursor: pointer; border: none; transition: var(--transition); }
-.form__button:hover, .b-button:hover { background: #B91C1C; }
-
-/* Responsive */
-@media (min-width: 1024px) {
-    .sidebar { left: 0; }
-    .main-content { margin-left: 280px; }
-    .top-bar__toggle { display: none; }
-}
-</style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/becss-core.css">
+    
+    <link rel="stylesheet" href="css/becss-components.css">
+    
+    <link rel="stylesheet" href="css/becss-headers.css">
+    
+    <link rel="stylesheet" href="css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="css/becss-footers.css">
+    
 </head>
 <body>
-    <header class="top-bar">
-        <div class="top-bar__brand">BEJSON <span>LIBRARIES</span></div>
-        <button class="top-bar__toggle" aria-label="Toggle Menu" style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&#9776;</button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
     </header>
 
-    <nav class="sidebar">
-        <ul style="list-style:none;">
-            <li>
-  <div class="sidebar__category">Home <span class="cat-arrow">▼</span></div>
-  <ul class="sidebar__category-items sidebar__category-items--open">
-    <li><a href="index.html" class="sidebar__link sidebar__link--active">> Dashboard Index</a></li>
-    <li><a href="crash_course.html" class="sidebar__link">> Crash Course v21</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">JS: Core <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/JS/Core/ref_JS_Core_lib_bejson_bejson_js.html" class="sidebar__link">> lib_bejson_bejson.js</a></li>
-    <li><a href="refs/JS/Core/ref_JS_Core_lib_bejson_core_js.html" class="sidebar__link">> lib_bejson_core.js</a></li>
-    <li><a href="refs/JS/Core/ref_JS_Core_lib_bejson_errors_js.html" class="sidebar__link">> lib_bejson_errors.js</a></li>
-    <li><a href="refs/JS/Core/ref_JS_Core_lib_bejson_parse_js.html" class="sidebar__link">> lib_bejson_parse.js</a></li>
-    <li><a href="refs/JS/Core/ref_JS_Core_lib_bejson_state_js.html" class="sidebar__link">> lib_bejson_state.js</a></li>
-    <li><a href="refs/JS/Core/ref_JS_Core_lib_bejson_validator_js.html" class="sidebar__link">> lib_bejson_validator.js</a></li>
-    <li><a href="refs/JS/Core/ref_JS_Core_lib_mfdb_core_js.html" class="sidebar__link">> lib_mfdb_core.js</a></li>
-    <li><a href="refs/JS/Core/ref_JS_Core_lib_mfdb_validator_js.html" class="sidebar__link">> lib_mfdb_validator.js</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">JS: Gaming <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_cli_switch_game_js.html" class="sidebar__link">> cli/switch_game.js</a></li>
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_lib_bejson_assets_js.html" class="sidebar__link">> lib_bejson_assets.js</a></li>
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_lib_bejson_engine_core_js.html" class="sidebar__link">> lib_bejson_engine_core.js</a></li>
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_lib_bejson_events_js.html" class="sidebar__link">> lib_bejson_events.js</a></li>
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_lib_bejson_grid_js.html" class="sidebar__link">> lib_bejson_grid.js</a></li>
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_lib_bejson_input_js.html" class="sidebar__link">> lib_bejson_input.js</a></li>
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_lib_bejson_physics_js.html" class="sidebar__link">> lib_bejson_physics.js</a></li>
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_lib_bejson_renderer_js.html" class="sidebar__link">> lib_bejson_renderer.js</a></li>
-    <li><a href="refs/JS/Gaming/ref_JS_Gaming_lib_bejson_ui_screens_js.html" class="sidebar__link">> lib_bejson_ui_screens.js</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">JS: External <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/JS/External/ref_JS_External_jszip_min_js.html" class="sidebar__link">> jszip.min.js</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">JS: Utility <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/JS/Utility/ref_JS_Utility_lib_bejson_utility_js.html" class="sidebar__link">> lib_bejson_utility.js</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: AI <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/PY/AI/ref_PY_AI___init___py.html" class="sidebar__link">> __init__.py</a></li>
-    <li><a href="refs/PY/AI/ref_PY_AI_cli_blogger_manager_py.html" class="sidebar__link">> cli/blogger_manager.py</a></li>
-    <li><a href="refs/PY/AI/ref_PY_AI_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
-    <li><a href="refs/PY/AI/ref_PY_AI_lib_bejson_gemini_py.html" class="sidebar__link">> lib_bejson_gemini.py</a></li>
-    <li><a href="refs/PY/AI/ref_PY_AI_lib_bejson_gemprofiles_py.html" class="sidebar__link">> lib_bejson_gemprofiles.py</a></li>
-    <li><a href="refs/PY/AI/ref_PY_AI_lib_bejson_genai_py.html" class="sidebar__link">> lib_bejson_genai.py</a></li>
-    <li><a href="refs/PY/AI/ref_PY_AI_lib_bejson_groq_py.html" class="sidebar__link">> lib_bejson_groq.py</a></li>
-    <li><a href="refs/PY/AI/ref_PY_AI_lib_bejson_openrouter_py.html" class="sidebar__link">> lib_bejson_openrouter.py</a></li>
-    <li><a href="refs/PY/AI/ref_PY_AI_lib_brain_helper_py.html" class="sidebar__link">> lib_brain_helper.py</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: CMS <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/PY/CMS/ref_PY_CMS___init___py.html" class="sidebar__link">> __init__.py</a></li>
-    <li><a href="refs/PY/CMS/ref_PY_CMS_lib_cms_config_py.html" class="sidebar__link">> lib_cms_config.py</a></li>
-    <li><a href="refs/PY/CMS/ref_PY_CMS_lib_cms_content_py.html" class="sidebar__link">> lib_cms_content.py</a></li>
-    <li><a href="refs/PY/CMS/ref_PY_CMS_lib_cms_mfdb_py.html" class="sidebar__link">> lib_cms_mfdb.py</a></li>
-    <li><a href="refs/PY/CMS/ref_PY_CMS_lib_cms_orchestrator_py.html" class="sidebar__link">> lib_cms_orchestrator.py</a></li>
-    <li><a href="refs/PY/CMS/ref_PY_CMS_lib_cms_taxonomy_py.html" class="sidebar__link">> lib_cms_taxonomy.py</a></li>
-    <li><a href="refs/PY/CMS/ref_PY_CMS_lib_mfdb_extensions_py.html" class="sidebar__link">> lib_mfdb_extensions.py</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: Core <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/PY/Core/ref_PY_Core___init___py.html" class="sidebar__link">> __init__.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_cli_bejson_server_py.html" class="sidebar__link">> cli/bejson_server.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_be_core_py.html" class="sidebar__link">> lib_be_core.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_core_py.html" class="sidebar__link">> lib_bejson_core.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_env_py.html" class="sidebar__link">> lib_bejson_env.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_errors_py.html" class="sidebar__link">> lib_bejson_errors.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_mfdb_core_py.html" class="sidebar__link">> lib_bejson_mfdb_core.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_mfdb_validator_py.html" class="sidebar__link">> lib_bejson_mfdb_validator.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_parse_py.html" class="sidebar__link">> lib_bejson_parse.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_provider_py.html" class="sidebar__link">> lib_bejson_provider.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_state_management_py.html" class="sidebar__link">> lib_bejson_state_management.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_static_backend_py.html" class="sidebar__link">> lib_bejson_static_backend.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_bejson_validator_py.html" class="sidebar__link">> lib_bejson_validator.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_mfdb_core_py.html" class="sidebar__link">> lib_mfdb_core.py</a></li>
-    <li><a href="refs/PY/Core/ref_PY_Core_lib_mfdb_validator_py.html" class="sidebar__link">> lib_mfdb_validator.py</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: HTML <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/PY/HTML/ref_PY_HTML___init___py.html" class="sidebar__link">> __init__.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_bejson_diagram_html_py.html" class="sidebar__link">> lib_bejson_diagram_html.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_bejson_html2_skeletons_py.html" class="sidebar__link">> lib_bejson_html2_skeletons.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_bejson_to_html_py.html" class="sidebar__link">> lib_bejson_to_html.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_bejson_validator_diagram_py.html" class="sidebar__link">> lib_bejson_validator_diagram.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_animations_py.html" class="sidebar__link">> lib_html2_animations.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_body_py.html" class="sidebar__link">> lib_html2_body.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_charts_py.html" class="sidebar__link">> lib_html2_charts.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_feed_templates_py.html" class="sidebar__link">> lib_html2_feed_templates.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_flask_py.html" class="sidebar__link">> lib_html2_flask.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_metrics_py.html" class="sidebar__link">> lib_html2_metrics.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_page_templates_py.html" class="sidebar__link">> lib_html2_page_templates.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_showcase_py.html" class="sidebar__link">> lib_html2_showcase.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_sidemenu_py.html" class="sidebar__link">> lib_html2_sidemenu.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_tables_py.html" class="sidebar__link">> lib_html2_tables.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html2_widgets_py.html" class="sidebar__link">> lib_html2_widgets.py</a></li>
-    <li><a href="refs/PY/HTML/ref_PY_HTML_lib_html_firebase_py.html" class="sidebar__link">> lib_html_firebase.py</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: System <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/PY/System/ref_PY_System___init___py.html" class="sidebar__link">> __init__.py</a></li>
-    <li><a href="refs/PY/System/ref_PY_System_cli_av_manager_py.html" class="sidebar__link">> cli/av_manager.py</a></li>
-    <li><a href="refs/PY/System/ref_PY_System_cli_book_builder_py.html" class="sidebar__link">> cli/book_builder.py</a></li>
-    <li><a href="refs/PY/System/ref_PY_System_cli_build_ebook_py.html" class="sidebar__link">> cli/build_ebook.py</a></li>
-    <li><a href="refs/PY/System/ref_PY_System_lib_be_project_service_py.html" class="sidebar__link">> lib_be_project_service.py</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: Gaming <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/PY/Gaming/ref_PY_Gaming_lib_bejson_assets_py.html" class="sidebar__link">> lib_bejson_assets.py</a></li>
-    <li><a href="refs/PY/Gaming/ref_PY_Gaming_lib_bejson_events_py.html" class="sidebar__link">> lib_bejson_events.py</a></li>
-    <li><a href="refs/PY/Gaming/ref_PY_Gaming_lib_bejson_physics_py.html" class="sidebar__link">> lib_bejson_physics.py</a></li>
-    <li><a href="refs/PY/Gaming/ref_PY_Gaming_lib_bejson_tile_grids_py.html" class="sidebar__link">> lib_bejson_tile_grids.py</a></li>
-    <li><a href="refs/PY/Gaming/ref_PY_Gaming_lib_bejson_ui_screens_py.html" class="sidebar__link">> lib_bejson_ui_screens.py</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: Cognition <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/PY/Cognition/ref_PY_Cognition_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: Utility <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/PY/Utility/ref_PY_Utility_lib_bejson_utility_py.html" class="sidebar__link">> lib_bejson_utility.py</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">PY: __pycache__ <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">SH: Core <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/SH/Core/ref_SH_Core_lib_bejson_core_sh.html" class="sidebar__link">> lib_bejson_core.sh</a></li>
-    <li><a href="refs/SH/Core/ref_SH_Core_lib_bejson_parse_sh.html" class="sidebar__link">> lib_bejson_parse.sh</a></li>
-    <li><a href="refs/SH/Core/ref_SH_Core_lib_bejson_validator_sh.html" class="sidebar__link">> lib_bejson_validator.sh</a></li>
-    <li><a href="refs/SH/Core/ref_SH_Core_lib_mfdb_core_sh.html" class="sidebar__link">> lib_mfdb_core.sh</a></li>
-    <li><a href="refs/SH/Core/ref_SH_Core_lib_mfdb_validator_sh.html" class="sidebar__link">> lib_mfdb_validator.sh</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">SH: System <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/SH/System/ref_SH_System_lib_be_core_sh.html" class="sidebar__link">> lib_be_core.sh</a></li>
-    <li><a href="refs/SH/System/ref_SH_System_lib_be_deps_sh.html" class="sidebar__link">> lib_be_deps.sh</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">TS: Gaming <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/TS/Gaming/ref_TS_Gaming_bejson_assets_ts.html" class="sidebar__link">> bejson_assets.ts</a></li>
-    <li><a href="refs/TS/Gaming/ref_TS_Gaming_bejson_engine_ts.html" class="sidebar__link">> bejson_engine.ts</a></li>
-    <li><a href="refs/TS/Gaming/ref_TS_Gaming_bejson_events_ts.html" class="sidebar__link">> bejson_events.ts</a></li>
-    <li><a href="refs/TS/Gaming/ref_TS_Gaming_bejson_grid_ts.html" class="sidebar__link">> bejson_grid.ts</a></li>
-    <li><a href="refs/TS/Gaming/ref_TS_Gaming_bejson_input_ts.html" class="sidebar__link">> bejson_input.ts</a></li>
-    <li><a href="refs/TS/Gaming/ref_TS_Gaming_bejson_physics_ts.html" class="sidebar__link">> bejson_physics.ts</a></li>
-    <li><a href="refs/TS/Gaming/ref_TS_Gaming_bejson_renderer_ts.html" class="sidebar__link">> bejson_renderer.ts</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">TS: Core <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/TS/Core/ref_TS_Core_bejson_core_ts.html" class="sidebar__link">> bejson_core.ts</a></li>
-    <li><a href="refs/TS/Core/ref_TS_Core_bejson_types_ts.html" class="sidebar__link">> bejson_types.ts</a></li>
-    <li><a href="refs/TS/Core/ref_TS_Core_bejson_validators_ts.html" class="sidebar__link">> bejson_validators.ts</a></li>
-    <li><a href="refs/TS/Core/ref_TS_Core_mfdb_core_ts.html" class="sidebar__link">> mfdb_core.ts</a></li>
-    <li><a href="refs/TS/Core/ref_TS_Core_mfdb_validators_ts.html" class="sidebar__link">> mfdb_validators.ts</a></li>
-  </ul>
-</li>
-<li>
-  <div class="sidebar__category">TS: Utility <span class="cat-arrow">▶</span></div>
-  <ul class="sidebar__category-items">
-    <li><a href="refs/TS/Utility/ref_TS_Utility_lib_bejson_utility_ts.html" class="sidebar__link">> lib_bejson_utility.ts</a></li>
-  </ul>
-</li>
+    
 
-        </ul>
-    </nav>
-    <div id="overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:850;"></div>
+    <div class="container">
+        <aside class="left-column">
+            <aside class="c-sidebar c-sidebar-project"><div class="c-sidebar__top"><div class="c-sidebar__section-title">PROJECTS</div></div></aside>
+        </aside>
 
-    <main class="main-content">
-        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 20px; font-family: var(--font-mono); text-transform: uppercase;"></div>
-        
-    <div style="text-align:center; margin-bottom:40px;">
-        <h1 style="font-size:3rem; margin-bottom:10px;">BEJSON ECOSYSTEM</h1>
-        <p style="color:var(--text-muted); font-size:1.2rem;">Pre-Release 2.0 Technical Literature</p>
-        <div style="display:flex; justify-content:center; gap:15px; margin-top:20px;">
-            <a href="https://github.com/boehnenelton/bejson-libraries" target="_blank" class="badge" style="padding:10px 20px; font-size:0.9rem; background:var(--primary); color:white; text-decoration:none; display:inline-block;">CLONE ON GITHUB</a>
-            <a href="https://bejson-libraries.pages.dev" target="_blank" class="badge" style="padding:10px 20px; font-size:0.9rem; background:#222; border:1px solid var(--primary); color:var(--primary); text-decoration:none; display:inline-block;">LIVE DOCUMENTATION</a>
-        </div>
-    </div>
-    <div style="display:flex; gap:24px; padding:24px; background:var(--bg-surface); margin-bottom:24px; border-left: 4px solid var(--primary);">
-        <div style="flex:1;">
-            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">Total Systems</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">4</div>
-        </div>
-        <div style="flex:1;">
-            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">Total Libraries</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">99</div>
-        </div>
-        <div style="flex:1;">
-            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">API Functions</div>
-            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">840</div>
-        </div></div>
-    <div class="card">
-        <h2 class="card__title">What is BEJSON?</h2>
-        <div style="font-size:0.95rem; color:var(--text-main);">
-    <p><strong>BEJSON</strong> is a strict, self-describing <strong>tabular data format</strong> built on JSON. It enforces positional integrity, where the order of fields in the header matches the order of values in every record.</p>
-    <ul>
-        <li><strong>Tabular Architecture:</strong> Efficiently stores millions of records without key redundancy.</li>
-        <li><strong>AI Native:</strong> Maximizes token efficiency by removing structural noise.</li>
-        <li><strong>Self-Healing:</strong> Detects and repairs positional drift automatically.</li>
-    </ul>
-    </div>
-    </div>
-    <div class="card">
-        <h2 class="card__title">README.md</h2>
-        <div style="font-size:0.95rem; color:var(--text-main);">
-    <div style="background: #000; border-left: 4px solid var(--primary); margin: 24px 0; position: relative;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
-            <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase;">
-                FILE // README.md
-            </div>
-            <button onclick="copyToClipboard('code_1779165756682')" style="background: var(--primary); color: white; border: none; padding: 4px 12px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase;">
-                Copy
-            </button>
-        </div>
-        <pre id="code_1779165756682" style="margin: 0; padding: 20px; color: #ADFF2F; font-family: var(--font-mono); font-size: 0.85rem; border: none; border-left: none;"><code># BEJSON Ecosystem Libraries (Pre-Release 2.0)
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Ebook Family Dashboard | Type: Body Component | Version: 1.0.0 -->
 
-Welcome to the **BEJSON Ecosystem Libraries**, a strategic cross-platform data orchestration layer designed for high-performance, AI-friendly, and self-healing data management. 
-
-This suite provides a unified data structure across **JavaScript**, **Python**, **Bash**, and **TypeScript** environments, adhering to the rigid **BEJSON (104, 104a, 104db)** and **MFDB (v1.31)** specifications.
-
-## 🚀 Key Features
-- **Tabular Nature:** All data is stored in a strict positional format, maximizing context efficiency for AI and allowing rapid parsing without key lookups.
-- **Environment Agnostic:** Fully decoupled logic supporting Node.js, Browser, Termux (Android/Linux), and standard Cloud environments.
-- **Self-Healing:** Built-in mechanisms for automated data recovery and structural repair of corrupted records.
-- **Unified Logic:** Synchronized error registries and validation rules across all supported programming languages.
-
-## 🛠️ System Components
-- **Core:** Low-level document manipulation and atomic persistence.
-- **AI/Cognition:** High-frequency memory loops and semantic/episodic storage for multi-agent systems.
-- **System:** Platform-agnostic utilities, service discovery, and lifecycle management.
-- **Gaming:** High-performance reactive state and grid-based asset management.
-- **HTML3:** Standardized visualization and UI components following BEM v3.0 architecture.
-
-## 📦 Distribution
-The pre-release archive is available as `bejson_libraries_pre_release_2.0.zip`.
-
----
-*Created by Elton Boehnen | 2026-05-18*
-</code></pre>
-    </div>
-    <script>
-        if (typeof copyToClipboard !== 'function') {
-            window.copyToClipboard = (id) => {
-                const el = document.getElementById(id);
-                const text = el.innerText;
-                navigator.clipboard.writeText(text).then(() => {
-                    const btn = event.target;
-                    const oldText = btn.innerText;
-                    btn.innerText = 'Copied!';
-                    setTimeout(() => btn.innerText = oldText, 2000);
-                });
-            };
-        }
-    </script>
-    </div>
-    </div><div style="text-align:center; font-size:0.7rem; color:var(--text-muted); margin-top:40px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:1px;">built from BEJSON HTML3 Libraries 2.0</div>
-    </main>
-
-    <footer class="status-footer">
-        <div>SYSTEM // <span>ONLINE</span></div>
-        <div></div>
-        <div style="text-align: right;">
-            <a href="https://github.com/boehnenelton" class="footer-link">GITHUB</a> | 
-            <a href="https://boehnenelton2024.pages.dev" class="footer-link">PORTFOLIO</a> | 
-            <span>ELTON BOEHNEN</span>
-        </div>
-    </footer>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {{
-            const toggle = document.querySelector('.top-bar__toggle');
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.getElementById('overlay');
+<div class="c-ebook-dashboard" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333; overflow: hidden;">
+        <div id="ebook_carousel" class="carousel-container">
             
-            if (toggle && sidebar) {{
-                toggle.addEventListener('click', () => {{
-                    const open = sidebar.classList.toggle('sidebar--open');
-                    overlay.style.display = open ? 'block' : 'none';
-                }});
-                overlay.addEventListener('click', () => {{
-                    sidebar.classList.remove('sidebar--open');
-                    overlay.style.display = 'none';
-                }});
-            }}
+            
+                
+                
+                    <div class="carousel-slide active" style="display: block;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">JS / Core</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 8 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Core Library Family</h3>
+                            <p>This section contains the JS implementation of the Core family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_bejson.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Core/source_JS_Core_lib_bejson_bejson_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_core.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">3 APIs Defined</div>
+                                        <a href="refs/JS/Core/source_JS_Core_lib_bejson_core_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_errors.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Core/source_JS_Core_lib_bejson_errors_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_parse.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/JS/Core/source_JS_Core_lib_bejson_parse_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_state.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Core/source_JS_Core_lib_bejson_state_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_validator.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">39 APIs Defined</div>
+                                        <a href="refs/JS/Core/source_JS_Core_lib_bejson_validator_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_mfdb_core.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">1 APIs Defined</div>
+                                        <a href="refs/JS/Core/source_JS_Core_lib_mfdb_core_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_mfdb_validator.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">21 APIs Defined</div>
+                                        <a href="refs/JS/Core/source_JS_Core_lib_mfdb_validator_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">JS / External</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 1 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>External Library Family</h3>
+                            <p>This section contains the JS implementation of the External family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">jszip.min.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">33 APIs Defined</div>
+                                        <a href="refs/JS/External/source_JS_External_jszip_min_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">JS / Gaming</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 9 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Gaming Library Family</h3>
+                            <p>This section contains the JS implementation of the Gaming family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_assets.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_lib_bejson_assets_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_engine_core.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_lib_bejson_engine_core_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_events.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_lib_bejson_events_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_grid.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_lib_bejson_grid_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_input.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_lib_bejson_input_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_physics.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_lib_bejson_physics_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_renderer.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_lib_bejson_renderer_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_ui_screens.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_lib_bejson_ui_screens_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">game.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/JS/Gaming/source_JS_Gaming_game_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">JS / Utility</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 1 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Utility Library Family</h3>
+                            <p>This section contains the JS implementation of the Utility family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_utility.js</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/JS/Utility/source_JS_Utility_lib_bejson_utility_js.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+            
+                
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / AI</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 9 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>AI Library Family</h3>
+                            <p>This section contains the PY implementation of the AI family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">__init__.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI___init___py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_cognition.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">18 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI_lib_bejson_cognition_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_gemini.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">16 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI_lib_bejson_gemini_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_gemprofiles.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">7 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI_lib_bejson_gemprofiles_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_genai.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">11 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI_lib_bejson_genai_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_groq.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">15 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI_lib_bejson_groq_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_openrouter.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">15 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI_lib_bejson_openrouter_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_brain_helper.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">14 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI_lib_brain_helper_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">blogger_manager.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">7 APIs Defined</div>
+                                        <a href="refs/PY/AI/source_PY_AI_blogger_manager_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / CMS</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 7 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>CMS Library Family</h3>
+                            <p>This section contains the PY implementation of the CMS family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">__init__.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/CMS/source_PY_CMS___init___py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_cms_config.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/PY/CMS/source_PY_CMS_lib_cms_config_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_cms_content.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">7 APIs Defined</div>
+                                        <a href="refs/PY/CMS/source_PY_CMS_lib_cms_content_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_cms_mfdb.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">37 APIs Defined</div>
+                                        <a href="refs/PY/CMS/source_PY_CMS_lib_cms_mfdb_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_cms_orchestrator.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">15 APIs Defined</div>
+                                        <a href="refs/PY/CMS/source_PY_CMS_lib_cms_orchestrator_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_cms_taxonomy.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/PY/CMS/source_PY_CMS_lib_cms_taxonomy_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_mfdb_extensions.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/PY/CMS/source_PY_CMS_lib_mfdb_extensions_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / Cognition</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 1 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Cognition Library Family</h3>
+                            <p>This section contains the PY implementation of the Cognition family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_cognition.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">12 APIs Defined</div>
+                                        <a href="refs/PY/Cognition/source_PY_Cognition_lib_bejson_cognition_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / Core</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 15 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Core Library Family</h3>
+                            <p>This section contains the PY implementation of the Core family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">__init__.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core___init___py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_be_core.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">8 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_be_core_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_core.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">45 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_core_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_env.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">2 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_env_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_errors.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_errors_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_mfdb_core.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_mfdb_core_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_mfdb_validator.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_mfdb_validator_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_parse.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">5 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_parse_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_provider.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">8 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_provider_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_state_management.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">9 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_state_management_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_static_backend.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_static_backend_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_validator.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">16 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_bejson_validator_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_mfdb_core.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">36 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_mfdb_core_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_mfdb_validator.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">14 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_lib_mfdb_validator_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_server.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">12 APIs Defined</div>
+                                        <a href="refs/PY/Core/source_PY_Core_bejson_server_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / Gaming</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 5 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Gaming Library Family</h3>
+                            <p>This section contains the PY implementation of the Gaming family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_assets.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">5 APIs Defined</div>
+                                        <a href="refs/PY/Gaming/source_PY_Gaming_lib_bejson_assets_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_events.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/PY/Gaming/source_PY_Gaming_lib_bejson_events_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_physics.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">7 APIs Defined</div>
+                                        <a href="refs/PY/Gaming/source_PY_Gaming_lib_bejson_physics_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_tile_grids.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/PY/Gaming/source_PY_Gaming_lib_bejson_tile_grids_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_ui_screens.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/Gaming/source_PY_Gaming_lib_bejson_ui_screens_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / HTML</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 17 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>HTML Library Family</h3>
+                            <p>This section contains the PY implementation of the HTML family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">__init__.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML___init___py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_diagram_html.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">1 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_bejson_diagram_html_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_html2_skeletons.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_bejson_html2_skeletons_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_to_html.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_bejson_to_html_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_validator_diagram.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_bejson_validator_diagram_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_animations.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">3 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_animations_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_body.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">10 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_body_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_charts.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">2 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_charts_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_feed_templates.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">2 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_feed_templates_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_flask.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">10 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_flask_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_metrics.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_metrics_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_page_templates.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_page_templates_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_showcase.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">3 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_showcase_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_sidemenu.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">3 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_sidemenu_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_tables.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">1 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_tables_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html2_widgets.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">10 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html2_widgets_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_html_firebase.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">2 APIs Defined</div>
+                                        <a href="refs/PY/HTML/source_PY_HTML_lib_html_firebase_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / System</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 5 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>System Library Family</h3>
+                            <p>This section contains the PY implementation of the System family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">__init__.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/PY/System/source_PY_System___init___py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_be_project_service.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">23 APIs Defined</div>
+                                        <a href="refs/PY/System/source_PY_System_lib_be_project_service_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">av_manager.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">8 APIs Defined</div>
+                                        <a href="refs/PY/System/source_PY_System_av_manager_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">book_builder.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/PY/System/source_PY_System_book_builder_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">build_ebook.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/PY/System/source_PY_System_build_ebook_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / Utility</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 1 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Utility Library Family</h3>
+                            <p>This section contains the PY implementation of the Utility family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_utility.py</div>
+                                        <div style="font-size: 0.75rem; color: #777;">3 APIs Defined</div>
+                                        <a href="refs/PY/Utility/source_PY_Utility_lib_bejson_utility_py.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">PY / __pycache__</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 0 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>__pycache__ Library Family</h3>
+                            <p>This section contains the PY implementation of the __pycache__ family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+            
+                
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">SH / Core</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 5 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Core Library Family</h3>
+                            <p>This section contains the SH implementation of the Core family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_core.sh</div>
+                                        <div style="font-size: 0.75rem; color: #777;">11 APIs Defined</div>
+                                        <a href="refs/SH/Core/source_SH_Core_lib_bejson_core_sh.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_parse.sh</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/SH/Core/source_SH_Core_lib_bejson_parse_sh.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_validator.sh</div>
+                                        <div style="font-size: 0.75rem; color: #777;">2 APIs Defined</div>
+                                        <a href="refs/SH/Core/source_SH_Core_lib_bejson_validator_sh.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_mfdb_core.sh</div>
+                                        <div style="font-size: 0.75rem; color: #777;">21 APIs Defined</div>
+                                        <a href="refs/SH/Core/source_SH_Core_lib_mfdb_core_sh.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_mfdb_validator.sh</div>
+                                        <div style="font-size: 0.75rem; color: #777;">7 APIs Defined</div>
+                                        <a href="refs/SH/Core/source_SH_Core_lib_mfdb_validator_sh.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">SH / System</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 2 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>System Library Family</h3>
+                            <p>This section contains the SH implementation of the System family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_be_core.sh</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/SH/System/source_SH_System_lib_be_core_sh.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_be_deps.sh</div>
+                                        <div style="font-size: 0.75rem; color: #777;">2 APIs Defined</div>
+                                        <a href="refs/SH/System/source_SH_System_lib_be_deps_sh.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+            
+                
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">TS / Core</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 5 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Core Library Family</h3>
+                            <p>This section contains the TS implementation of the Core family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_core.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">34 APIs Defined</div>
+                                        <a href="refs/TS/Core/source_TS_Core_bejson_core_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_types.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/TS/Core/source_TS_Core_bejson_types_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_validators.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">17 APIs Defined</div>
+                                        <a href="refs/TS/Core/source_TS_Core_bejson_validators_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">mfdb_core.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">6 APIs Defined</div>
+                                        <a href="refs/TS/Core/source_TS_Core_mfdb_core_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">mfdb_validators.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">9 APIs Defined</div>
+                                        <a href="refs/TS/Core/source_TS_Core_mfdb_validators_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">TS / Gaming</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 7 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Gaming Library Family</h3>
+                            <p>This section contains the TS implementation of the Gaming family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_assets.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/TS/Gaming/source_TS_Gaming_bejson_assets_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_engine.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/TS/Gaming/source_TS_Gaming_bejson_engine_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_events.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/TS/Gaming/source_TS_Gaming_bejson_events_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_grid.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/TS/Gaming/source_TS_Gaming_bejson_grid_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_input.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/TS/Gaming/source_TS_Gaming_bejson_input_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_physics.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/TS/Gaming/source_TS_Gaming_bejson_physics_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">bejson_renderer.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">0 APIs Defined</div>
+                                        <a href="refs/TS/Gaming/source_TS_Gaming_bejson_renderer_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+                    <div class="carousel-slide " style="display: none;">
+                        <div class="slide-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                            <div style="display: flex; gap: 15px; align-items: center;">
+                                <span style="font-weight: bold; color: var(--primary);">TS / Utility</span>
+                                <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📚 1 Files</span>
+                            </div>
+                            <span style="color: #666; font-family: monospace; font-size: 0.8rem;">LIB FAMILY v2.0.1</span>
+                        </div>
+                        <div class="slide-content" style="padding: 24px; color: #fff;">
+                            <h3>Utility Library Family</h3>
+                            <p>This section contains the TS implementation of the Utility family modules.</p>
+                            
+                            <div class="file-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; margin-top: 20px;">
+                                
+                                    <div style="background: #111; padding: 10px; border: 1px solid #222; border-radius: 4px;">
+                                        <div style="font-weight: bold; font-size: 0.9rem; color: #eee; margin-bottom: 5px;">lib_bejson_utility.ts</div>
+                                        <div style="font-size: 0.75rem; color: #777;">4 APIs Defined</div>
+                                        <a href="refs/TS/Utility/source_TS_Utility_lib_bejson_utility_ts.html" style="display: inline-block; margin-top: 8px; font-size: 0.8rem; color: var(--primary); text-decoration: none; font-weight: bold;">VIEW SOURCE &rarr;</a>
+                                    </div>
+                                
+                            </div>
+                        </div>
+                    </div>
+                
+            
+        </div>
 
-            document.querySelectorAll('.sidebar__category').forEach(cat => {{
-                cat.addEventListener('click', () => {{
-                    const items = cat.nextElementSibling;
-                    if (items && items.classList.contains('sidebar__category-items')) {{
-                        const isOpen = items.classList.toggle('sidebar__category-items--open');
-                        const arrow = cat.querySelector('.cat-arrow');
-                        if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
-                    }}
-                }});
-            }});
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <button onclick="moveHTML3Carousel('ebook_carousel', -1)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">&larr; PREVIOUS FAMILY</button>
+            <span id="ebook_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">1 / 18</span>
+            <button onclick="moveHTML3Carousel('ebook_carousel', 1)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">NEXT FAMILY &rarr;</button>
+        </div>
+    </div>
+</div>
 
-            window.switchSubTab = (tabId) => {{
-                document.querySelectorAll(".tab-content").forEach(c => c.style.display = "none");
-                document.querySelectorAll(".subtabs__btn").forEach(b => {{
-                   b.style.background = "transparent";
-                   b.style.color = "var(--text-muted)";
-                }});
-                const target = document.getElementById(tabId);
-                if (target) target.style.display = "block";
-            }};
-        }});
+<script>
+if (!window.moveHTML3Carousel) {
+    window.moveHTML3Carousel = function(containerId, direction) {
+        const container = document.getElementById(containerId);
+        const slides = container.querySelectorAll('.carousel-slide');
+        const indicator = document.getElementById(containerId + '_indicator');
+        const count = slides.length;
+        
+        let currentIndex = Array.from(slides).findIndex(s => s.classList.contains('active'));
+        if (currentIndex === -1) currentIndex = 0;
+        
+        slides[currentIndex].style.display = 'none';
+        slides[currentIndex].classList.remove('active');
+        
+        currentIndex = (currentIndex + direction + count) % count;
+        
+        slides[currentIndex].style.display = 'block';
+        slides[currentIndex].classList.add('active');
+        indicator.innerText = (currentIndex + 1) + ' / ' + count;
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Command Terminal | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-terminal">
+    <span class="c-footer-terminal__prompt">❯</span>
+    <input type="text" class="c-footer-terminal__input" placeholder="Enter system command...">
+    <div class="c-footer-terminal__actions">
+        <button class="c-footer-scroll__btn" style="border-radius:4px;">EXECUTE</button>
+        <button class="c-footer-scroll__btn" style="border-radius:4px; opacity:0.6;">CLEAR</button>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
     </script>
 </body>
 </html>

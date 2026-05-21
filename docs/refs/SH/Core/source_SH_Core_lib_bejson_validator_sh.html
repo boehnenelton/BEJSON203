@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_validator.sh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">SH / Core / lib_bejson_validator.sh</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_validator.sh</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+# Library:      lib_bejson_validator.sh
+# Family:       Core
+# Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;SH&#34;]
+# Status:       OFFICIAL
+# Author:       Elton Boehnen
+# Version:      2.0.1 OFFICIAL
+# MFDB Version: 1.31
+# Format_Creator: Elton Boehnen
+# Date:         2026-05-18
+# Description:  Structural integrity checker for positional values and mandatory keys.
+
+set -o pipefail
+set -o nounset
+
+# Error codes
+[[ -v E_VAL_NOT_JSON ]] || readonly E_VAL_NOT_JSON=1
+[[ -v E_VAL_MISSING_KEY ]] || readonly E_VAL_MISSING_KEY=2
+[[ -v E_VAL_BAD_FORMAT ]] || readonly E_VAL_BAD_FORMAT=3
+[[ -v E_VAL_BAD_VERSION ]] || readonly E_VAL_BAD_VERSION=4
+[[ -v E_VAL_BAD_CREATOR ]] || readonly E_VAL_BAD_CREATOR=5
+[[ -v E_VAL_SCHEMA_MISMATCH ]] || readonly E_VAL_SCHEMA_MISMATCH=6
+[[ -v E_VAL_INVALID_TYPE ]] || readonly E_VAL_INVALID_TYPE=7
+
+#-------------------------------------------------------------------------------
+# CORE VALIDATION
+#-------------------------------------------------------------------------------
+
+bejson_validator_check_dependencies() {
+    if ! command -v jq &gt;/dev/null 2&gt;&amp;1; then
+        echo &#34;ERROR: jq is required for BEJSON validation&#34; &gt;&amp;2
+        return 1
+    fi
+    local jq_ver=$(jq --version | sed &#39;s/jq-//&#39;)
+    # Simple check for jq &gt;= 1.6
+    # Robust version check: compare major.minor as integers
+    local jq_major jq_minor
+    jq_major=&#34;${jq_ver%%.*}&#34;
+    jq_minor=&#34;${jq_ver#*.}&#34;; jq_minor=&#34;${jq_minor%%.*}&#34;
+    if [[ &#34;$jq_major&#34; -lt 1 ]] || { [[ &#34;$jq_major&#34; -eq 1 ]] &amp;&amp; [[ &#34;$jq_minor&#34; -lt 6 ]]; }; then
+        echo &#34;ERROR: jq &gt;= 1.6 is required. Found: $jq_ver&#34; &gt;&amp;2
+        return 1
+    fi
+    return 0
+}
+
+bejson_validator_validate_file() {
+    local file_path=&#34;$1&#34;
+    if [[ ! -f &#34;$file_path&#34; ]]; then
+        echo &#34;ERROR: File not found: $file_path&#34; &gt;&amp;2
+        return 1
+    fi
+    
+    # 1. Basic JSON check
+    if ! jq . &#34;$file_path&#34; &gt;/dev/null 2&gt;&amp;1; then
+        return $E_VAL_NOT_JSON
+    fi
+
+    # 2. Mandatory Keys check
+    local keys=$(jq -r &#39;keys | join(&#34;,&#34;)&#39; &#34;$file_path&#34;)
+    for k in Format Format_Version Format_Creator Records_Type Fields Values; do
+        if [[ ! &#34;$keys&#34; =~ &#34;$k&#34; ]]; then
+            return $E_VAL_MISSING_KEY
+        fi
+    done
+
+    # 3. Format &amp; Creator check
+    local fmt=$(jq -r &#39;.Format&#39; &#34;$file_path&#34;)
+    local creator=$(jq -r &#39;.Format_Creator&#39; &#34;$file_path&#34;)
+    [[ &#34;$fmt&#34; != &#34;BEJSON&#34; ]] &amp;&amp; return $E_VAL_BAD_FORMAT
+    [[ &#34;$creator&#34; != &#34;Elton Boehnen&#34; ]] &amp;&amp; return $E_VAL_BAD_CREATOR
+
+    # 4. Records Length check
+    local field_count=$(jq &#39;.Fields | length&#39; &#34;$file_path&#34;)
+    local bad_records=$(jq --argjson fc &#34;$field_count&#34; &#39;.Values | map(select(length != $fc)) | length&#39; &#34;$file_path&#34;)
+    if [[ &#34;$bad_records&#34; -gt 0 ]]; then
+        return $E_VAL_SCHEMA_MISMATCH
+    fi
+
+    return 0
+}
+
+# Export functions
+export -f bejson_validator_check_dependencies
+export -f bejson_validator_validate_file
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

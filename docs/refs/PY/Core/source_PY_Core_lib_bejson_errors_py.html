@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_errors.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / Core / lib_bejson_errors.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_errors.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_errors.py
+Family:       Core
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+Description:  Unified error registry for BEJSON ecosystem.
+&#34;&#34;&#34;
+
+# BEJSON Core/Validator (1-29)
+E_INVALID_JSON = 1
+E_MISSING_MANDATORY_KEY = 2
+E_INVALID_FORMAT = 3
+E_INVALID_VERSION = 4
+E_INVALID_RECORDS_TYPE = 5
+E_INVALID_FIELDS = 6
+E_INVALID_VALUES = 7
+E_TYPE_MISMATCH = 8
+E_RECORD_LENGTH_MISMATCH = 9
+E_RESERVED_KEY_COLLISION = 10
+E_INVALID_RECORD_TYPE_PARENT = 11
+E_NULL_VIOLATION = 12
+E_FILE_NOT_FOUND = 13
+E_PERMISSION_DENIED = 14
+E_ATOMIC_WRITE_FAILED = 15
+
+E_CORE_INVALID_VERSION = 20
+E_CORE_INVALID_OPERATION = 21
+E_CORE_INDEX_OUT_OF_BOUNDS = 22
+E_CORE_FIELD_NOT_FOUND = 23
+E_CORE_TYPE_CONVERSION_FAILED = 24
+E_CORE_BACKUP_FAILED = 25
+E_CORE_WRITE_FAILED = 26
+E_CORE_QUERY_FAILED = 27
+E_CORE_ENCRYPTION_FAILED = 28
+E_CORE_DECRYPTION_FAILED = 29
+
+# MFDB Core/Validator (30-49)
+E_MFDB_NOT_MANIFEST = 30
+E_MFDB_NOT_ENTITY_FILE = 31
+E_MFDB_MANIFEST_RECORDS_TYPE = 32
+E_MFDB_ENTITY_NOT_FOUND = 33
+E_MFDB_ENTITY_NAME_MISMATCH = 34
+E_MFDB_DUPLICATE_ENTRY = 35
+E_MFDB_NO_PARENT_HIERARCHY = 36
+E_MFDB_MANIFEST_NOT_FOUND = 37
+E_MFDB_BIDIRECTIONAL_FAIL = 38
+E_MFDB_FK_UNRESOLVED = 39
+E_MFDB_MISSING_REQUIRED_FIELD = 40
+E_MFDB_NULL_REQUIRED = 41
+E_MFDB_INVALID_ARCHIVE = 42
+
+E_MFDB_CORE_MANIFEST_NOT_FOUND = 50
+E_MFDB_CORE_ENTITY_NOT_FOUND = 51
+E_MFDB_CORE_WRITE_FAILED = 52
+E_MFDB_CORE_CREATE_FAILED = 53
+E_MFDB_CORE_INVALID_OPERATION = 54
+E_MFDB_CORE_INDEX_OUT_OF_BOUNDS = 55
+E_MFDB_CORE_JOIN_FAILED = 56
+E_MFDB_CORE_ARCHIVE_ERROR = 70
+E_MFDB_CORE_MOUNT_CONFLICT = 71
+
+# Cognition (270-289)
+E_COGNITION_INVALID_MATRIX = 270
+E_COGNITION_AGENT_NOT_FOUND = 271
+E_COGNITION_INDEX_MISSING = 272
+E_COGNITION_PATCH_FAILED = 273
+E_COGNITION_SCHEMA_VIOLATION = 274
+E_COGNITION_LOCK_TIMEOUT = 275
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

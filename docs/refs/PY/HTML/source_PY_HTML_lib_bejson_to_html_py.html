@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_to_html.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / HTML / lib_bejson_to_html.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_to_html.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_to_html.py
+Family:       HTML3
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Core transformer for converting BEJSON data into platform-native HTML3 components.
+&#34;&#34;&#34;
+
+import json
+import html as html_mod
+from datetime import datetime
+
+# Import components from standard HTML2 family
+try:
+    from lib_html2_body import html_brutal_card, html_brutal_table, html_subtabs, html_tab_content
+except ImportError:
+    # Fallback/Dummy for environments where they aren&#39;t loaded yet
+    def html_brutal_card(title, content): return f&#34;&lt;div class=&#39;b-card&#39;&gt;&lt;h3&gt;{title}&lt;/h3&gt;{content}&lt;/div&gt;&#34;
+    def html_brutal_table(headers, rows, escape=True): return &#34;&lt;table&gt;&lt;/table&gt;&#34;
+    def html_subtabs(tabs): return &#34;&#34;
+    def html_tab_content(id, content, active=False): return content
+
+def bejson_to_html_viewer(bejson_doc):
+    &#34;&#34;&#34;
+    Converts a BEJSON document into a high-density HTML viewer.
+    :param bejson_doc: The parsed BEJSON dictionary.
+    :return: HTML string with tab-switching or multi-table layout.
+    &#34;&#34;&#34;
+    fmt = bejson_doc.get(&#34;Format_Version&#34;, &#34;104&#34;)
+    record_types = bejson_doc.get(&#34;Records_Type&#34;, [])
+    fields = bejson_doc.get(&#34;Fields&#34;, [])
+    values = bejson_doc.get(&#34;Values&#34;, [])
+    
+    # 1. Map fields to record types
+    # Index 0 of 104db is always Record_Type_Parent
+    rt_idx = -1
+    for i, f in enumerate(fields):
+        if f.get(&#34;name&#34;) == &#34;Record_Type_Parent&#34;:
+            rt_idx = i
+            break
+            
+    # 2. Build sections for each record type
+    tabs = []
+    tab_contents = []
+    
+    for i, rt in enumerate(record_types):
+        # Filter relevant fields for this RT
+        rt_headers = []
+        rt_field_indices = []
+        
+        for j, f in enumerate(fields):
+            fname = f.get(&#34;name&#34;)
+            fparent = f.get(&#34;Record_Type_Parent&#34;)
+            
+            # Skip Record_Type_Parent in the viewer table itself (per user request)
+            if fname == &#34;Record_Type_Parent&#34;: continue
+            
+            # Common fields or specific to this RT
+            if not fparent or fparent == rt:
+                rt_headers.append(fname)
+                rt_field_indices.append(j)
+        
+        # Filter records for this RT
+        rt_rows = []
+        for row in values:
+            if rt_idx &gt;= 0:
+                if row[rt_idx] == rt:
+                    rt_rows.append([row[idx] for idx in rt_field_indices])
+            else:
+                # 104/104a mode - all records belong to the first RT
+                if i == 0:
+                    rt_rows.append([row[idx] for idx in rt_field_indices])
+
+        # Generate Table HTML
+        if rt_rows:
+            table_html = html_brutal_table(rt_headers, rt_rows)
+        else:
+            table_html = &#34;&lt;p style=&#39;color:var(--text-muted); padding:20px;&#39;&gt;No records found for this type.&lt;/p&gt;&#34;
+            
+        tab_id = f&#34;tab_{rt.lower().replace(&#39; &#39;, &#39;_&#39;)}&#34;
+        tabs.append({&#34;label&#34;: rt, &#34;id&#34;: tab_id, &#34;active&#34;: (i == 0)})
+        tab_contents.append(html_tab_content(tab_id, table_html, active=(i == 0)))
+
+    # 3. Final Assembly
+    # If multiple record types, use tabs. If one, just the card.
+    if len(record_types) &gt; 1:
+        switcher = html_subtabs(tabs)
+        content_stack = &#34;&#34;.join(tab_contents)
+        return f&#34;{switcher}&lt;div class=&#39;b-card&#39; style=&#39;margin-top:-2px;&#39;&gt;{content_stack}&lt;/div&gt;&#34;
+    else:
+        # Single type - simple card
+        title = record_types[0] if record_types else &#34;RECORDS&#34;
+        return html_brutal_card(title, tab_contents[0] if tab_contents else &#34;&#34;)
+
+def bejson_schema_viewer(bejson_doc):
+    &#34;&#34;&#34;
+    Standard viewer specifically for the Schema definition (Fields).
+    &#34;&#34;&#34;
+    fields = bejson_doc.get(&#34;Fields&#34;, [])
+    headers = [&#34;Name&#34;, &#34;Type&#34;, &#34;Scope&#34;]
+    rows = []
+    for f in fields:
+        rows.append([
+            f.get(&#34;name&#34;, &#34;?&#34;),
+            f.get(&#34;type&#34;, &#34;string&#34;),
+            f.get(&#34;Record_Type_Parent&#34;, &#34;COMMON&#34;)
+        ])
+    
+    return html_brutal_card(&#34;SCHEMA DEFINITION&#34;, html_brutal_table(headers, rows))
+
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

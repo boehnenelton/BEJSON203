@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_mfdb_validator.js</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">JS / Core / lib_mfdb_validator.js</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_mfdb_validator.js</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+/**
+ * Library:      lib_mfdb_validator.js
+ * Family:       Core
+ * Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;JS&#34;]
+ * Status:       OFFICIAL
+ * Author:       Elton Boehnen
+ * Version:      2.0.1 OFFICIAL
+ * MFDB Version: 1.31
+ * Format_Creator: Elton Boehnen
+ * Date:         2026-05-18
+ * Description:  Bidirectional path and manifest-entity relationship validator.
+ */
+
+&#39;use strict&#39;;
+
+const {
+  BEJSONValidationError,
+  bejson_validator_validate_file,
+  bejson_validator_validate_string,
+} = (typeof require !== &#39;undefined&#39;)
+  ? require(&#39;./lib_bejson_validator.js&#39;)
+  : window.BEJSON_VALIDATOR;
+
+const BEJSON_ERRORS = (typeof require !== &#39;undefined&#39;) 
+  ? require(&#39;./lib_bejson_errors.js&#39;) 
+  : (window.BEJSON_ERRORS || {});
+
+const {
+  E_MFDB_NOT_MANIFEST,
+  E_MFDB_NOT_ENTITY_FILE,
+  E_MFDB_MANIFEST_RECORDS_TYPE,
+  E_MFDB_ENTITY_NOT_FOUND,
+  E_MFDB_ENTITY_NAME_MISMATCH,
+  E_MFDB_DUPLICATE_ENTRY,
+  E_MFDB_NO_PARENT_HIERARCHY,
+  E_MFDB_MANIFEST_NOT_FOUND,
+  E_MFDB_BIDIRECTIONAL_FAIL,
+  E_MFDB_FK_UNRESOLVED,
+  E_MFDB_MISSING_REQUIRED_FIELD,
+  E_MFDB_NULL_REQUIRED,
+  E_MFDB_INVALID_ARCHIVE
+} = BEJSON_ERRORS;
+
+class MFDBValidationError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.name = &#39;MFDBValidationError&#39;;
+    this.code = code;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Validation state
+// ---------------------------------------------------------------------------
+
+let _mErrors   = [];
+let _mWarnings = [];
+
+function _mReset()                  { _mErrors = []; _mWarnings = []; }
+function _mAddError(msg, loc)       { _mErrors.push(   &#39;ERROR&#39;   + (loc ? ` | Location: ${loc}` : &#39;&#39;) + ` | Message: ${msg}`); }
+function _mAddWarning(msg, loc)     { _mWarnings.push( &#39;WARNING&#39; + (loc ? ` | Location: ${loc}` : &#39;&#39;) + ` | Message: ${msg}`); }
+function _mHasErrors()              { return _mErrors.length   &gt; 0; }
+function _mHasWarnings()            { return _mWarnings.length &gt; 0; }
+
+
+// ---------------------------------------------------------------------------
+// Internal helpers (also exported for lib_mfdb_core.js)
+// ---------------------------------------------------------------------------
+
+
+function _loadJson(filePath) {
+  const fs = require(&#39;fs&#39;);
+  return JSON.parse(fs.readFileSync(filePath, &#39;utf8&#39;));
+}
+
+
+function _rowsAsDicts(doc) {
+  const names = doc.Fields.map(f =&gt; f.name);
+  return doc.Values.map(row =&gt; Object.fromEntries(names.map((n, i) =&gt; [n, row[i]])));
+}
+
+
+function _resolveEntityPath(manifestPath, filePathRel) {
+  const path = require(&#39;path&#39;);
+  return path.resolve(path.dirname(manifestPath), filePathRel);
+}
+
+
+function _fileExists(filePath) {
+  const fs = require(&#39;fs&#39;);
+  return fs.existsSync(filePath);
+}
+
+
+// ---------------------------------------------------------------------------
+// Archive Validation (v1.2 Feature)
+// ---------------------------------------------------------------------------
+
+function mfdb_validator_validate_archive(archivePath) {
+  _mReset();
+  const AdmZip = require(&#39;adm-zip&#39;);
+
+  if (!_fileExists(archivePath)) {
+    _mAddError(`Archive not found: ${archivePath}`, &#39;File System&#39;);
+    throw new MFDBValidationError(`Archive not found: ${archivePath}`, E_MFDB_MANIFEST_NOT_FOUND);
+  }
+
+  try {
+    const zip = new AdmZip(archivePath);
+    const zipEntries = zip.getEntries();
+    const hasManifest = zipEntries.some(e =&gt; e.entryName === &#39;104a.mfdb.bejson&#39;);
+    if (!hasManifest) {
+      _mAddError(&#34;Archive missing 104a.mfdb.bejson at root&#34;, &#34;Zip Structure&#34;);
+      throw new MFDBValidationError(&#34;Missing manifest inside archive&#34;, E_MFDB_INVALID_ARCHIVE);
+    }
+  } catch (exc) {
+    _mAddError(`Invalid zip file: ${exc.message}`, &#34;Zip Parser&#34;);
+    throw new MFDBValidationError(exc.message, E_MFDB_INVALID_ARCHIVE);
+  }
+
+  return true;
+}
+
+
+// ---------------------------------------------------------------------------
+// Manifest Validation  (Spec §8.1)
+// ---------------------------------------------------------------------------
+
+
+function mfdb_validator_validate_manifest(manifestPath) {
+  _mReset();
+
+  if (!_fileExists(manifestPath)) {
+    _mAddError(`Manifest file not found: ${manifestPath}`, &#39;File System&#39;);
+    throw new MFDBValidationError(`File not found: ${manifestPath}`, E_MFDB_MANIFEST_NOT_FOUND);
+  }
+
+  try {
+    bejson_validator_validate_file(manifestPath);
+  } catch (exc) {
+    _mAddError(`BEJSON 104a validation failed: ${exc.message}`, &#39;BEJSON Validation&#39;);
+    throw new MFDBValidationError(exc.message, E_MFDB_NOT_MANIFEST);
+  }
+
+  const doc = _loadJson(manifestPath);
+
+  if (doc.Format_Version !== &#39;104a&#39;) {
+    _mAddError(&#34;Manifest must be Format_Version &#39;104a&#39;&#34;, &#39;Format_Version&#39;);
+    throw new MFDBValidationError(&#39;Manifest must be 104a&#39;, E_MFDB_NOT_MANIFEST);
+  }
+
+  const rt = doc.Records_Type || [];
+  if (!(rt.length === 1 &amp;&amp; rt[0] === &#39;mfdb&#39;)) {
+    _mAddError(`Records_Type must be [&#34;mfdb&#34;]. Found: ${JSON.stringify(rt)}`, &#39;Records_Type&#39;);
+    throw new MFDBValidationError(&#39;Bad manifest Records_Type&#39;, E_MFDB_MANIFEST_RECORDS_TYPE);
+  }
+
+  const fieldNames = (doc.Fields || []).map(f =&gt; f.name);
+  for (const required of [&#39;entity_name&#39;, &#39;file_path&#39;]) {
+    if (!fieldNames.includes(required)) {
+      _mAddError(`Manifest Fields must include &#39;${required}&#39;`, &#39;Fields&#39;);
+      throw new MFDBValidationError(`Missing required field &#39;${required}&#39;`, E_MFDB_MISSING_REQUIRED_FIELD);
+    }
+  }
+
+  const entries    = _rowsAsDicts(doc);
+  const seenNames  = new Set();
+  const seenPaths  = new Set();
+
+  for (let i = 0; i &lt; entries.length; i++) {
+    const entry      = entries[i];
+    const entityName = entry.entity_name;
+    const filePath   = entry.file_path;
+
+    if (!entityName) {
+      _mAddError(`Record ${i}: entity_name is null or missing`, `Values[${i}]`);
+      throw new MFDBValidationError(&#39;Null entity_name&#39;, E_MFDB_NULL_REQUIRED);
+    }
+    if (!filePath) {
+      _mAddError(`Record ${i}: file_path is null or missing`, `Values[${i}]`);
+      throw new MFDBValidationError(&#39;Null file_path&#39;, E_MFDB_NULL_REQUIRED);
+    }
+    if (seenNames.has(entityName)) {
+      _mAddError(`Duplicate entity_name: &#39;${entityName}&#39;`, `Values[${i}]`);
+      throw new MFDBValidationError(`Duplicate entity_name: ${entityName}`, E_MFDB_DUPLICATE_ENTRY);
+    }
+    seenNames.add(entityName);
+
+    if (seenPaths.has(filePath)) {
+      _mAddError(`Duplicate file_path: &#39;${filePath}&#39;`, `Values[${i}]`);
+      throw new MFDBValidationError(`Duplicate file_path: ${filePath}`, E_MFDB_DUPLICATE_ENTRY);
+    }
+    seenPaths.add(filePath);
+
+    const resolved = _resolveEntityPath(manifestPath, filePath);
+    if (!_fileExists(resolved)) {
+      _mAddError(`Entity file &#39;${filePath}&#39; not found (resolved: ${resolved})`, `Values[${i}]/file_path`);
+      throw new MFDBValidationError(`Entity file not found: ${resolved}`, E_MFDB_ENTITY_NOT_FOUND);
+    }
+  }
+
+  return true;
+}
+
+
+// ---------------------------------------------------------------------------
+// Entity File Validation  (Spec §8.2)
+// ---------------------------------------------------------------------------
+
+
+function mfdb_validator_validate_entity_file(entityPath, checkBidirectional = true) {
+  const path = require(&#39;path&#39;);
+  _mReset();
+
+  if (!_fileExists(entityPath)) {
+    _mAddError(`Entity file not found: ${entityPath}`, &#39;File System&#39;);
+    throw new MFDBValidationError(`File not found: ${entityPath}`, E_MFDB_ENTITY_NOT_FOUND);
+  }
+
+  try {
+    bejson_validator_validate_file(entityPath);
+  } catch (exc) {
+    _mAddError(`BEJSON 104 validation failed: ${exc.message}`, &#39;BEJSON Validation&#39;);
+    throw new MFDBValidationError(exc.message, E_MFDB_NOT_ENTITY_FILE);
+  }
+
+  const doc = _loadJson(entityPath);
+
+  if (doc.Format_Version !== &#39;104&#39;) {
+    _mAddError(&#34;Entity file must be Format_Version &#39;104&#39;&#34;, &#39;Format_Version&#39;);
+    throw new MFDBValidationError(&#39;Entity file must be 104&#39;, E_MFDB_NOT_ENTITY_FILE);
+  }
+
+  const parentHierarchy = doc.Parent_Hierarchy;
+  if (!parentHierarchy) {
+    _mAddError(&#39;Entity file must contain Parent_Hierarchy pointing to the manifest&#39;, &#39;Parent_Hierarchy&#39;);
+    throw new MFDBValidationError(&#39;Missing Parent_Hierarchy&#39;, E_MFDB_NO_PARENT_HIERARCHY);
+  }
+
+  const entityDir    = path.dirname(path.resolve(entityPath));
+  const manifestPath = path.resolve(entityDir, parentHierarchy);
+
+  if (!_fileExists(manifestPath)) {
+    _mAddError(
+      `Parent_Hierarchy &#39;${parentHierarchy}&#39; resolves to &#39;${manifestPath}&#39; which does not exist`,
+      &#39;Parent_Hierarchy&#39;,
+    );
+    throw new MFDBValidationError(`Manifest not found: ${manifestPath}`, E_MFDB_MANIFEST_NOT_FOUND);
+  }
+
+  if (!path.basename(manifestPath).endsWith(&#39;.mfdb.bejson&#39;)) {
+    _mAddWarning(
+      `Parent_Hierarchy target &#39;${manifestPath}&#39; does not end in &#39;.mfdb.bejson&#39;. Expected: 104a.mfdb.bejson`,
+      &#39;Parent_Hierarchy&#39;,
+    );
+  }
+
+  const rt = doc.Records_Type || [];
+  if (rt.length !== 1) {
+    _mAddError(`Entity file Records_Type must have exactly one entry. Found: ${JSON.stringify(rt)}`, &#39;Records_Type&#39;);
+    throw new MFDBValidationError(&#39;Entity Records_Type must be single-entry&#39;, E_MFDB_NOT_ENTITY_FILE);
+  }
+
+  const entityName = rt[0];
+
+  let manifestDoc, entries, manifestEntityNames;
+  try {
+    manifestDoc        = _loadJson(manifestPath);
+    entries            = _rowsAsDicts(manifestDoc);
+    manifestEntityNames = entries.map(e =&gt; e.entity_name);
+  } catch (exc) {
+    _mAddError(`Could not read manifest: ${exc.message}`, &#39;Manifest&#39;);
+    throw new MFDBValidationError(`Cannot read manifest: ${exc.message}`, E_MFDB_MANIFEST_NOT_FOUND);
+  }
+
+  if (!manifestEntityNames.includes(entityName)) {
+    _mAddError(
+      `Records_Type &#39;${entityName}&#39; does not appear as entity_name in the manifest`,
+      &#39;Records_Type vs Manifest&#39;,
+    );
+    throw new MFDBValidationError(
+      `Entity &#39;${entityName}&#39; not registered in manifest`, E_MFDB_ENTITY_NAME_MISMATCH,
+    );
+  }
+
+  if (checkBidirectional) {
+    const match = entries.find(e =&gt; e.entity_name === entityName);
+    if (match) {
+      const manifestDir    = path.dirname(path.resolve(manifestPath));
+      const fromManifest   = path.resolve(manifestDir, match.file_path || &#39;&#39;);
+      const thisFile       = path.resolve(entityPath);
+      if (fromManifest !== thisFile) {
+        _mAddError(
+          `Bidirectional check failed for entity &#39;${entityName}&#39;: ` +
+          `manifest points to &#39;${fromManifest}&#39;, but this file is &#39;${thisFile}&#39;`,
+          &#39;Bidirectional Path Check&#39;,
+        );
+        throw new MFDBValidationError(&#39;Bidirectional path check failed&#39;, E_MFDB_BIDIRECTIONAL_FAIL);
+      }
+    }
+  }
+
+  return true;
+}
+
+
+// ---------------------------------------------------------------------------
+// Database-Level Validation  (Spec §8.3)
+// ---------------------------------------------------------------------------
+
+
+function mfdb_validator_validate_database(manifestPath, strictFk = false) {
+  _mReset();
+
+  try {
+    mfdb_validator_validate_manifest(manifestPath);
+  } catch (exc) {
+    throw exc;
+  }
+
+  const manifestDoc = _loadJson(manifestPath);
+  const entries     = _rowsAsDicts(manifestDoc);
+
+  const pkMap = {};
+  for (const e of entries) {
+    if (e.primary_key) pkMap[e.entity_name] = e.primary_key;
+  }
+
+  for (const entry of entries) {
+    const entityName    = entry.entity_name;
+    const filePathRel   = entry.file_path;
+    const declaredCount = entry.record_count;
+
+    const resolved = _resolveEntityPath(manifestPath, filePathRel);
+
+    try {
+      mfdb_validator_validate_entity_file(resolved, true);
+    } catch (exc) {
+      _mAddError(`Entity &#39;${entityName}&#39; failed validation: ${exc.message}`, `Entity/${entityName}`);
+      throw exc;
+    }
+
+    if (declaredCount !== null &amp;&amp; declaredCount !== undefined) {
+      const edoc        = _loadJson(resolved);
+      const actualCount = (edoc.Values || []).length;
+      if (actualCount !== declaredCount) {
+        _mAddWarning(
+          `Entity &#39;${entityName}&#39;: manifest declares record_count=${declaredCount}, ` +
+          `actual=${actualCount}. Call mfdb_core_sync_all_counts() to correct.`,
+          `Entity/${entityName}/record_count`,
+        );
+      }
+    }
+
+    if (strictFk) {
+      const edoc    = _loadJson(resolved);
+      const fkFields = (edoc.Fields || []).filter(f =&gt; f.name.endsWith(&#39;_fk&#39;)).map(f =&gt; f.name);
+      for (const fkField of fkFields) {
+        const targetFound = Object.entries(pkMap).some(
+          ([en, pk]) =&gt; pk &amp;&amp; (fkField.includes(pk) || fkField.toLowerCase().includes(en.toLowerCase()))
+        );
+        if (!targetFound) {
+          _mAddWarning(
+            `Entity &#39;${entityName}&#39;: FK field &#39;${fkField}&#39; has no matching primary_key ` +
+            `declaration in the manifest. Consider adding a Relationships header (MFDB v1.1).`,
+            `Entity/${entityName}/${fkField}`,
+          );
+        }
+      }
+    }
+  }
+
+  return true;
+}
+
+
+// ---------------------------------------------------------------------------
+// Validation report
+// ---------------------------------------------------------------------------
+
+
+function mfdb_validator_get_report(manifestPath, strictFk = false) {
+  let valid = false;
+  try {
+    valid = mfdb_validator_validate_database(manifestPath, strictFk);
+  } catch (_) {}
+
+  const lines = [
+    &#39;=== MFDB Validation Report ===&#39;,
+    `Manifest : ${manifestPath}`,
+    `Status   : ${valid ? &#39;VALID&#39; : &#39;INVALID&#39;}`,
+    &#39;&#39;,
+    `Errors   : ${_mErrors.length}`,
+  ];
+  if (_mHasErrors()) {
+    lines.push(&#39;---&#39;);
+    lines.push(..._mErrors);
+  }
+  lines.push(&#39;&#39;, `Warnings : ${_mWarnings.length}`);
+  if (_mHasWarnings()) {
+    lines.push(&#39;---&#39;);
+    lines.push(..._mWarnings);
+  }
+  return lines.join(&#39;\n&#39;);
+}
+
+
+// ---------------------------------------------------------------------------
+// State accessors
+// ---------------------------------------------------------------------------
+
+function mfdb_validator_reset_state()      { _mReset(); }
+function mfdb_validator_has_errors()       { return _mHasErrors(); }
+function mfdb_validator_has_warnings()     { return _mHasWarnings(); }
+function mfdb_validator_get_errors()       { return [..._mErrors]; }
+function mfdb_validator_get_warnings()     { return [..._mWarnings]; }
+function mfdb_validator_error_count()      { return _mErrors.length; }
+function mfdb_validator_warning_count()    { return _mWarnings.length; }
+
+
+// ---------------------------------------------------------------------------
+// Exports (CommonJS + browser global)
+// ---------------------------------------------------------------------------
+
+const exports_ = {
+  // Error codes
+  E_MFDB_NOT_MANIFEST,
+  E_MFDB_NOT_ENTITY_FILE,
+  E_MFDB_MANIFEST_RECORDS_TYPE,
+  E_MFDB_ENTITY_NOT_FOUND,
+  E_MFDB_ENTITY_NAME_MISMATCH,
+  E_MFDB_DUPLICATE_ENTRY,
+  E_MFDB_NO_PARENT_HIERARCHY,
+  E_MFDB_MANIFEST_NOT_FOUND,
+  E_MFDB_BIDIRECTIONAL_FAIL,
+  E_MFDB_FK_UNRESOLVED,
+  E_MFDB_MISSING_REQUIRED_FIELD,
+  E_MFDB_NULL_REQUIRED,
+  E_MFDB_INVALID_ARCHIVE,
+  // Class
+  MFDBValidationError,
+  // Internal helpers (needed by lib_mfdb_core.js)
+  _loadJson,
+  _rowsAsDicts,
+  _resolveEntityPath,
+  _fileExists,
+  // Validation functions
+  mfdb_validator_validate_archive,
+  mfdb_validator_validate_manifest,
+  mfdb_validator_validate_entity_file,
+  mfdb_validator_validate_database,
+  mfdb_validator_get_report,
+  // State accessors
+  mfdb_validator_reset_state,
+  mfdb_validator_has_errors,
+  mfdb_validator_has_warnings,
+  mfdb_validator_get_errors,
+  mfdb_validator_get_warnings,
+  mfdb_validator_error_count,
+  mfdb_validator_warning_count,
+};
+
+if (typeof module !== &#39;undefined&#39; &amp;&amp; module.exports) {
+  module.exports = exports_;
+}
+if (typeof window !== &#39;undefined&#39;) {
+  window.MFDB_VALIDATOR = exports_;
+}
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

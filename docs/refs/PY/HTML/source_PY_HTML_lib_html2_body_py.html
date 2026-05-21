@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_html2_body.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / HTML / lib_html2_body.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_html2_body.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_html2_body.py
+Family:       HTML3
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Debugged and standardized library component.
+&#34;&#34;&#34;
+
+import html as html_mod
+
+def html_stats_bar(stats_list):
+    if not stats_list: return &#34;&#34;
+    items = &#34;&#34;
+    for s in stats_list:
+        label = html_mod.escape(str(s.get(&#34;label&#34;, &#34;&#34;)))
+        value = html_mod.escape(str(s.get(&#34;value&#34;, &#34;&#34;)))
+        items += f&#34;&#34;&#34;
+        &lt;div style=&#34;flex:1;&#34;&gt;
+            &lt;div style=&#34;font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;&#34;&gt;{label}&lt;/div&gt;
+            &lt;div style=&#34;font-size: 1.5rem; font-weight: 800; color: var(--primary);&#34;&gt;{value}&lt;/div&gt;
+        &lt;/div&gt;&#34;&#34;&#34;
+    return f&#39;&lt;div style=&#34;display:flex; gap:24px; padding:24px; background:var(--bg-surface); margin-bottom:24px; border-left: 4px solid var(--primary);&#34;&gt;{items}&lt;/div&gt;&#39;
+
+def html_card(title, body):
+    return f&#34;&#34;&#34;
+    &lt;div class=&#34;card&#34;&gt;
+        &lt;h2 class=&#34;card__title&#34;&gt;{html_mod.escape(title)}&lt;/h2&gt;
+        &lt;div style=&#34;font-size:0.95rem; color:var(--text-main);&#34;&gt;{body}&lt;/div&gt;
+    &lt;/div&gt;&#34;&#34;&#34;
+
+def html_brutal_card(title, content):
+    &#34;&#34;&#34;Modernized Brutalist Card.&#34;&#34;&#34;
+    return f&#34;&#34;&#34;
+    &lt;div class=&#34;card&#34;&gt;
+        &lt;div style=&#34;font-size: 0.7rem; font-weight: 800; color:var(--text-muted); font-family: var(--font-mono); margin-bottom: 12px; text-transform: uppercase;&#34;&gt;{html_mod.escape(title.upper())}&lt;/div&gt;
+        &lt;div&gt;{content}&lt;/div&gt;
+    &lt;/div&gt;&#34;&#34;&#34;
+
+def html_brutal_table(headers, rows, escape=True):
+    &#34;&#34;&#34;High-Contrast Table.&#34;&#34;&#34;
+    h_html = &#34;&#34;.join([f&#34;&lt;th&gt;{html_mod.escape(h)}&lt;/th&gt;&#34; for h in headers])
+    r_html = &#34;&#34;
+    for row in rows:
+        cells = []
+        for v in row:
+            val = str(v)
+            if escape: val = html_mod.escape(val)
+            cells.append(f&#34;&lt;td&gt;{val}&lt;/td&gt;&#34;)
+        r_html += &#34;&lt;tr&gt;&#34; + &#34;&#34;.join(cells) + &#34;&lt;/tr&gt;&#34;
+    return f&#39;&lt;div class=&#34;table-container&#34;&gt;&lt;table class=&#34;data-table&#34;&gt;&lt;thead&gt;&lt;tr&gt;{h_html}&lt;/tr&gt;&lt;/thead&gt;&lt;tbody&gt;{r_html}&lt;/tbody&gt;&lt;/table&gt;&lt;/div&gt;&#39;
+
+def html_subtabs(tabs):
+    if not tabs: return &#34;&#34;
+    items = &#34;&#34;
+    for t in tabs:
+        active_class = &#34; background:var(--primary); color:white;&#34; if t.get(&#34;active&#34;) else &#34; color:var(--text-muted);&#34;
+        label = html_mod.escape(str(t.get(&#34;label&#34;, &#34;&#34;)))
+        tab_id = html_mod.escape(str(t.get(&#34;id&#34;, &#34;&#34;)))
+        items += f&#39;&lt;button class=&#34;subtabs__btn&#34; style=&#34;border:none; padding:10px 20px; border-radius:0; font-weight:800; font-size:0.8rem; cursor:pointer; font-family:var(--font-base);{active_class}&#34; onclick=&#34;switchSubTab(\&#39;{tab_id}\&#39;); this.parentElement.querySelectorAll(\&#39;.subtabs__btn\&#39;).forEach(b =&gt; {{ b.style.background=\&#39;transparent\&#39;; b.style.color=\&#39;var(--text-muted)\&#39; }}); this.style.background=\&#39;var(--primary)\&#39;; this.style.color=\&#39;white\&#39;;&#34;&gt;{label}&lt;/button&gt;\n&#39;
+    return f&#39;&lt;div style=&#34;display:flex; gap:0; margin-bottom:12px; border: 1px solid var(--border); width: fit-content;&#34;&gt;{items}&lt;/div&gt;&#39;
+
+def html_tab_content(tab_id, content, active=False):
+    style = &#34;display: block;&#34; if active else &#34;display: none;&#34;
+    return f&#39;&lt;div id=&#34;{html_mod.escape(tab_id)}&#34; class=&#34;tab-content&#34; style=&#34;{style}&#34;&gt;{content}&lt;/div&gt;&#39;
+
+def html_description_list(props):
+    html_items = &#34;&#34;
+    for p in props:
+        term = html_mod.escape(p.get(&#34;term&#34;, &#34;&#34;))
+        desc = html_mod.escape(p.get(&#34;description&#34;, &#34;&#34;))
+        html_items += f&#34;&lt;div style=&#39;margin-bottom:12px; border-left: 2px solid var(--border); padding-left: 12px;&#39;&gt;&lt;dt style=&#39;font-size:0.65rem; font-family:var(--font-mono); color:var(--text-muted); text-transform:uppercase;&#39;&gt;{term}&lt;/dt&gt;&lt;dd style=&#39;font-weight:700; font-size:1rem;&#39;&gt;{desc}&lt;/dd&gt;&lt;/div&gt;&#34;
+    return f&#34;&lt;dl style=&#39;display:grid; grid-template-columns: 1fr 1fr; gap:16px;&#39;&gt;{html_items}&lt;/dl&gt;&#34;
+
+def html_badge(text, variant=&#34;&#34;):
+    color = &#34;var(--text-muted)&#34;
+    if variant == &#34;success&#34;: color = &#34;#ADFF2F&#34;
+    elif variant == &#34;fail&#34;: color = &#34;#FF4500&#34;
+    return f&#39;&lt;span style=&#34;font-family:var(--font-mono); font-size:0.65rem; font-weight:800; color:{color}; padding:2px 8px; background:rgba(255,255,255,0.05); border-radius:0;&#34;&gt;{html_mod.escape(text.upper())}&lt;/span&gt;&#39;
+
+def html_card_grid(content):
+    return f&#39;&lt;div style=&#34;display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap:24px;&#34;&gt;{content}&lt;/div&gt;&#39;
+
+def html_code_box(title, content, copy_id=None):
+    &#34;&#34;&#34;
+    Renders content in a terminal-style code box with a copy button.
+    &#34;&#34;&#34;
+    import time
+    if not copy_id:
+        copy_id = f&#34;code_{int(time.time() * 1000)}&#34;
+        
+    return f&#34;&#34;&#34;
+    &lt;div style=&#34;background: #000; border-left: 4px solid var(--primary); margin: 24px 0; position: relative;&#34;&gt;
+        &lt;div style=&#34;display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);&#34;&gt;
+            &lt;div style=&#34;font-family: var(--font-mono); font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase;&#34;&gt;
+                FILE // {html_mod.escape(title)}
+            &lt;/div&gt;
+            &lt;button onclick=&#34;copyToClipboard(&#39;{copy_id}&#39;)&#34; style=&#34;background: var(--primary); color: white; border: none; padding: 4px 12px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase;&#34;&gt;
+                Copy
+            &lt;/button&gt;
+        &lt;/div&gt;
+        &lt;pre id=&#34;{copy_id}&#34; style=&#34;margin: 0; padding: 20px; color: #ADFF2F; font-family: var(--font-mono); font-size: 0.85rem; border: none; border-left: none;&#34;&gt;&lt;code&gt;{html_mod.escape(content)}&lt;/code&gt;&lt;/pre&gt;
+    &lt;/div&gt;
+    &lt;script&gt;
+        if (typeof copyToClipboard !== &#39;function&#39;) {{
+            window.copyToClipboard = (id) =&gt; {{
+                const el = document.getElementById(id);
+                const text = el.innerText;
+                navigator.clipboard.writeText(text).then(() =&gt; {{
+                    const btn = event.target;
+                    const oldText = btn.innerText;
+                    btn.innerText = &#39;Copied!&#39;;
+                    setTimeout(() =&gt; btn.innerText = oldText, 2000);
+                }});
+            }};
+        }}
+    &lt;/script&gt;
+    &#34;&#34;&#34;
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_html2_metrics.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / HTML / lib_html2_metrics.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_html2_metrics.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_html2_metrics.py
+Family:       HTML3
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  System and application performance metrics tracker.
+&#34;&#34;&#34;
+
+import math
+
+def calculate_trend(current, previous):
+    &#34;&#34;&#34;Calculates the percentage trend between two numbers.&#34;&#34;&#34;
+    if previous == 0:
+        return 100.0 if current &gt; 0 else 0.0
+    return ((current - previous) / previous) * 100.0
+
+def html_metric_card(title, value, previous_value=None, prefix=&#34;&#34;, suffix=&#34;&#34;, inverse_colors=False, color=&#34;var(--primary-red, #DE2626)&#34;):
+    &#34;&#34;&#34;
+    Generates a statistical metric card with an optional trend indicator.
+    inverse_colors: if True, a positive trend is red and negative is green (e.g., for error rates).
+    &#34;&#34;&#34;
+    trend_html = &#34;&#34;
+    if previous_value is not None:
+        trend = calculate_trend(value, previous_value)
+        is_positive = trend &gt; 0
+        is_neutral = trend == 0
+        
+        if is_neutral:
+            trend_color = &#34;var(--text-muted, #555555)&#34;
+            arrow = &#34;⬌&#34;
+        else:
+            if inverse_colors:
+                trend_color = &#34;var(--primary-red, #DE2626)&#34; if is_positive else &#34;#2E7D32&#34; # Green
+            else:
+                trend_color = &#34;#2E7D32&#34; if is_positive else &#34;var(--primary-red, #DE2626)&#34;
+            arrow = &#34;▲&#34; if is_positive else &#34;▼&#34;
+            
+        trend_html = f&#34;&#34;&#34;
+        &lt;div style=&#34;font-family: var(--font-mono, monospace); font-size: 12px; color: {trend_color}; margin-top: 8px; font-weight: bold;&#34;&gt;
+            {arrow} {abs(trend):.1f}% &lt;span style=&#34;color: var(--text-muted, #555555); font-weight: normal; font-size: 11px;&#34;&gt;vs previous&lt;/span&gt;
+        &lt;/div&gt;
+        &#34;&#34;&#34;
+
+    html = f&#34;&#34;&#34;
+    &lt;div class=&#34;metric-card&#34; style=&#34;background: var(--bg-surface, #F8F8F8); border: 1px solid var(--border, #E1E1E1); padding: 20px; border-top: 3px solid {color}; transition: var(--transition-speed, 0.15s) ease;&#34;&gt;
+        &lt;div style=&#34;font-family: var(--font-mono, monospace); font-size: 11px; color: var(--text-muted, #555555); text-transform: uppercase; margin-bottom: 5px;&#34;&gt;{title}&lt;/div&gt;
+        &lt;div style=&#34;font-size: 28px; font-weight: 700; color: var(--text-main, #111111);&#34;&gt;{prefix}{value}{suffix}&lt;/div&gt;
+        {trend_html}
+    &lt;/div&gt;
+    &#34;&#34;&#34;
+    return html
+
+def html_data_distribution(title, data_dict, color=&#34;var(--primary-red, #DE2626)&#34;):
+    &#34;&#34;&#34;
+    Generates a horizontal stacked distribution bar (e.g., Firebase Quota usage).
+    data_dict: dict of { &#34;label&#34;: value }
+    &#34;&#34;&#34;
+    total = sum(data_dict.values())
+    if total == 0: total = 1
+    
+    bars_html = &#34;&#34;
+    legend_html = &#34;&#34;
+    
+    # Alternate opacities for the theme color to distinguish segments
+    opacities = [1.0, 0.7, 0.4, 0.2, 0.1]
+    
+    for i, (label, val) in enumerate(data_dict.items()):
+        percentage = (val / total) * 100
+        opacity = opacities[i % len(opacities)]
+        
+        bg_style = f&#34;background: {color}; opacity: {opacity};&#34;
+        
+        bars_html += f&#39;&lt;div style=&#34;height: 100%; width: {percentage}%; {bg_style} float: left;&#34; title=&#34;{label}: {val} ({percentage:.1f}%)&#34;&gt;&lt;/div&gt;&#39;
+        
+        legend_html += f&#34;&#34;&#34;
+        &lt;div style=&#34;display: flex; align-items: center; gap: 5px; font-family: var(--font-mono, monospace); font-size: 11px; color: var(--text-main, #111111);&#34;&gt;
+            &lt;div style=&#34;width: 10px; height: 10px; {bg_style}&#34;&gt;&lt;/div&gt;
+            &lt;span&gt;{label}: &lt;b&gt;{val}&lt;/b&gt; ({percentage:.1f}%)&lt;/span&gt;
+        &lt;/div&gt;
+        &#34;&#34;&#34;
+
+    html = f&#34;&#34;&#34;
+    &lt;div class=&#34;data-distribution&#34; style=&#34;margin-bottom: 20px; background: var(--bg-surface, #F8F8F8); border: 1px solid var(--border, #E1E1E1); padding: 15px;&#34;&gt;
+        &lt;div style=&#34;font-family: var(--font-mono, monospace); font-size: 12px; color: var(--text-muted, #555555); text-transform: uppercase; margin-bottom: 10px; font-weight: bold;&#34;&gt;{title}&lt;/div&gt;
+        &lt;div style=&#34;width: 100%; height: 12px; background: var(--border, #EAEAEA); overflow: hidden; margin-bottom: 15px;&#34;&gt;
+            {bars_html}
+        &lt;/div&gt;
+        &lt;div style=&#34;display: flex; flex-wrap: wrap; gap: 15px;&#34;&gt;
+            {legend_html}
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &#34;&#34;&#34;
+    return html
+
+def html_summary_statistics(title, data_list, prefix=&#34;&#34;, suffix=&#34;&#34;, color=&#34;var(--primary-red, #DE2626)&#34;):
+    &#34;&#34;&#34;
+    Calculates and displays mean, median, min, and max for a dataset.
+    &#34;&#34;&#34;
+    if not data_list:
+        return f&#34;&lt;div style=&#39;padding: 15px; border: 1px solid var(--border);&#39;&gt;No data for {title}&lt;/div&gt;&#34;
+        
+    sorted_data = sorted(data_list)
+    n = len(sorted_data)
+    
+    val_min = sorted_data[0]
+    val_max = sorted_data[-1]
+    mean = sum(sorted_data) / n
+    
+    if n % 2 == 0:
+        median = (sorted_data[n//2 - 1] + sorted_data[n//2]) / 2
+    else:
+        median = sorted_data[n//2]
+        
+    stats = [
+        (&#34;Count&#34;, f&#34;{n}&#34;),
+        (&#34;Mean&#34;, f&#34;{prefix}{mean:.2f}{suffix}&#34;),
+        (&#34;Median&#34;, f&#34;{prefix}{median:.2f}{suffix}&#34;),
+        (&#34;Min&#34;, f&#34;{prefix}{val_min}{suffix}&#34;),
+        (&#34;Max&#34;, f&#34;{prefix}{val_max}{suffix}&#34;)
+    ]
+    
+    stats_html = &#34;&#34;
+    for label, val in stats:
+        stats_html += f&#34;&#34;&#34;
+        &lt;div style=&#34;flex: 1; min-width: 80px; text-align: center; border-right: 1px solid var(--border, #E1E1E1); padding: 10px;&#34;&gt;
+            &lt;div style=&#34;font-family: var(--font-mono, monospace); font-size: 10px; color: var(--text-muted, #555555); text-transform: uppercase;&#34;&gt;{label}&lt;/div&gt;
+            &lt;div style=&#34;font-size: 16px; font-weight: bold; color: {color}; margin-top: 5px;&#34;&gt;{val}&lt;/div&gt;
+        &lt;/div&gt;
+        &#34;&#34;&#34;
+        
+    html = f&#34;&#34;&#34;
+    &lt;div class=&#34;summary-stats&#34; style=&#34;margin-bottom: 20px; background: var(--bg-surface, #F8F8F8); border: 1px solid var(--border, #E1E1E1); display: flex; flex-direction: column;&#34;&gt;
+        &lt;div style=&#34;padding: 10px 15px; border-bottom: 1px solid var(--border, #E1E1E1); font-family: var(--font-mono, monospace); font-size: 12px; font-weight: bold; color: var(--text-main, #111111); text-transform: uppercase;&#34;&gt;
+            {title}
+        &lt;/div&gt;
+        &lt;div style=&#34;display: flex; flex-wrap: wrap; background: var(--bg-dark, #FFFFFF);&#34;&gt;
+            {stats_html}
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &#34;&#34;&#34;
+    return html
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

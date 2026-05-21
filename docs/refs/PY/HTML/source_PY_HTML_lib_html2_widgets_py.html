@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_html2_widgets.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / HTML / lib_html2_widgets.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_html2_widgets.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_html2_widgets.py
+Family:       HTML3
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Reusable UI micro-components for dashboards.
+&#34;&#34;&#34;
+
+import html as html_mod
+import os
+import json
+import re
+from pathlib import Path
+
+# Widget Size Standards (Fixed Grid PX)
+W_SMALL = (220, 200)
+W_MEDIUM = (580, 300)
+W_LARGE = (1180, 400)
+
+def html_widget(content, title=&#34;WIDGET&#34;, size=&#34;small&#34;, container_id=None):
+    &#34;&#34;&#34;
+    Standardizes a self-contained, injectable widget with fixed dimensions.
+    Sizes: &#39;small&#39;, &#39;medium&#39;, &#39;large&#39;
+    &#34;&#34;&#34;
+    cid = container_id or f&#34;widget_{id(content)}&#34;
+    
+    if size == &#34;large&#34;: width, height = W_LARGE
+    elif size == &#34;medium&#34;: width, height = W_MEDIUM
+    else: width, height = W_SMALL # Default small/sidebar
+    
+    return f&#34;&#34;&#34;
+    &lt;div id=&#34;{cid}&#34; class=&#34;bejson-widget&#34; style=&#34;width: {width}px; height: {height}px; min-width: {width}px; min-height: {height}px;&#34;&gt;
+        &lt;div class=&#34;bejson-widget__header&#34;&gt;
+            &lt;span&gt;{html_mod.escape(title)}&lt;/span&gt;
+            &lt;span style=&#34;opacity: 0.5;&#34;&gt;[{size.upper()}]&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;div class=&#34;bejson-widget__body&#34;&gt;
+            {content}
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &#34;&#34;&#34;
+
+def html_gallery(dir_path, recursive=False, container_id=None):
+    &#34;&#34;&#34;Generate an image gallery widget using .gallery-grid BEM classes.&#34;&#34;&#34;
+    cid = container_id or f&#34;gallery_{id(dir_path)}&#34;
+    path = Path(dir_path)
+    if not path.exists(): return f&#34;&lt;div&gt;Error: {dir_path} not found&lt;/div&gt;&#34;
+    
+    extensions = (&#39;.png&#39;, &#39;.jpg&#39;, &#39;.jpeg&#39;, &#39;.gif&#39;, &#39;.webp&#39;, &#39;.svg&#39;)
+    pattern = &#34;**/*&#34; if recursive else &#34;*&#34;
+    items = &#34;&#34;
+    for img in sorted(path.glob(pattern)):
+        if img.suffix.lower() in extensions:
+            items += f&#34;&#34;&#34;
+            &lt;div class=&#34;gallery-item&#34;&gt;
+                &lt;a href=&#34;{img}&#34; target=&#34;_blank&#34;&gt;
+                    &lt;img src=&#34;{img}&#34; alt=&#34;{img.name}&#34; loading=&#34;lazy&#34;&gt;
+                &lt;/a&gt;
+                &lt;div class=&#34;gallery-item__label&#34;&gt;{img.name}&lt;/div&gt;
+            &lt;/div&gt;&#34;&#34;&#34;
+            
+    return f&#39;&lt;div id=&#34;{cid}&#34; class=&#34;gallery-grid&#34;&gt;{items}&lt;/div&gt;&#39;
+
+def html_video_grid(videos, container_id=None):
+    &#34;&#34;&#34;Generate a responsive grid of embedded videos using .video-grid BEM classes.&#34;&#34;&#34;
+    cid = container_id or f&#34;vgrid_{id(videos)}&#34;
+    items = &#34;&#34;
+    for vid in videos:
+        url = vid.get(&#39;url&#39;, &#39;&#39;)
+        title = vid.get(&#39;title&#39;, &#39;Video&#39;)
+        
+        embed_url = url
+        if &#34;youtube.com/watch&#34; in url:
+            vid_id = re.search(r&#39;v=([^&amp;]+)&#39;, url)
+            if vid_id: embed_url = f&#34;https://www.youtube.com/embed/{vid_id.group(1)}&#34;
+        elif &#34;youtu.be/&#34; in url:
+            vid_id = url.split(&#34;youtu.be/&#34;)[1]
+            embed_url = f&#34;https://www.youtube.com/embed/{vid_id}&#34;
+
+        items += f&#34;&#34;&#34;
+        &lt;div class=&#34;video-card&#34;&gt;
+            &lt;div class=&#34;video-card__header&#34;&gt;{html_mod.escape(title)}&lt;/div&gt;
+            &lt;div class=&#34;video-card__embed&#34;&gt;
+                &lt;iframe src=&#34;{embed_url}&#34; allowfullscreen loading=&#34;lazy&#34;&gt;&lt;/iframe&gt;
+            &lt;/div&gt;
+        &lt;/div&gt;&#34;&#34;&#34;
+
+    return f&#39;&lt;div id=&#34;{cid}&#34; class=&#34;video-grid&#34;&gt;{items}&lt;/div&gt;&#39;
+
+def html_info_box(title, content, link_url=None, link_label=&#34;View More&#34;, container_id=None, escape_content=False):
+    &#34;&#34;&#34;Generate a stylized info box using .info-box BEM classes.&#34;&#34;&#34;
+    cid = container_id or f&#34;infobox_{id(title)}&#34;
+    link_html = f&#34;&#34;&#34;&lt;a href=&#34;{link_url}&#34; class=&#34;info-box__link&#34;&gt;{link_label}&lt;/a&gt;&#34;&#34;&#34; if link_url else &#34;&#34;
+
+    display_content = html_mod.escape(content) if escape_content else content
+
+    return f&#34;&#34;&#34;
+    &lt;div id=&#34;{cid}&#34; class=&#34;info-box&#34;&gt;
+        &lt;h3 class=&#34;info-box__title&#34;&gt;
+            &lt;span class=&#34;info-box__dot&#34;&gt;&lt;/span&gt;
+            {html_mod.escape(title)}
+        &lt;/h3&gt;
+        &lt;div class=&#34;info-box__content&#34;&gt;{display_content}&lt;/div&gt;
+        {link_html}
+    &lt;/div&gt;
+    &#34;&#34;&#34;
+
+def html_standalone_widget(html_content, title=&#34;Widget&#34;, container_id=None):
+    &#34;&#34;&#34;Wraps standalone HTML into an isolated iframe. Sandbox restricted for security.&#34;&#34;&#34;
+    cid = container_id or f&#34;standalone_widget_{id(title)}&#34;
+    escaped_content = html_mod.escape(html_content, quote=True)
+
+    return f&#34;&#34;&#34;
+    &lt;div id=&#34;{cid}&#34; class=&#34;standalone-widget-container&#34; style=&#34;width: 100%; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background: #000;&#34;&gt;
+        &lt;div class=&#34;widget-header&#34; style=&#34;background: #111; padding: 10px 15px; border-bottom: 1px solid var(--border-color); font-family: var(--font-family-mono); font-size: 12px; color: var(--text-color); display: flex; justify-content: space-between; align-items: center;&#34;&gt;
+            &lt;span style=&#34;color: var(--primary-color); font-weight: bold;&#34;&gt;{html_mod.escape(title)}&lt;/span&gt;
+            &lt;span style=&#34;color: #666;&#34;&gt;Isolated Component&lt;/span&gt;
+        &lt;/div&gt;
+        &lt;iframe srcdoc=&#34;{escaped_content}&#34; style=&#34;width: 100%; height: 600px; border: none; display: block;&#34; sandbox=&#34;allow-scripts&#34;&gt;&lt;/iframe&gt;
+    &lt;/div&gt;
+    &#34;&#34;&#34;
+def html_lightbox():
+    &#34;&#34;&#34;Returns the CSS/JS for a global lightbox system.&#34;&#34;&#34;
+    return &#34;&#34;&#34;
+    &lt;div id=&#34;bejson-lightbox&#34; class=&#34;lightbox&#34; onclick=&#34;this.style.display=&#39;none&#39;&#34;&gt;
+        &lt;span class=&#34;lightbox__close&#34;&gt;&amp;times;&lt;/span&gt;
+        &lt;img class=&#34;lightbox__content&#34; id=&#34;lightbox-img&#34;&gt;
+        &lt;div id=&#34;lightbox-caption&#34; class=&#34;lightbox__caption&#34;&gt;&lt;/div&gt;
+    &lt;/div&gt;
+    &lt;style&gt;
+    .lightbox { display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); }
+    .lightbox__content { margin: auto; display: block; width: 80%; max-width: 1200px; max-height: 80%; margin-top: 5%; object-fit: contain; }
+    .lightbox__caption { margin: auto; display: block; width: 80%; text-align: center; color: #ccc; padding: 10px 0; font-family: var(--font-mono); }
+    .lightbox__close { position: absolute; top: 15px; right: 35px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; }
+    &lt;/style&gt;
+    &lt;script&gt;
+    function openLightbox(src, caption) {
+        document.getElementById(&#39;bejson-lightbox&#39;).style.display = &#39;block&#39;;
+        document.getElementById(&#39;lightbox-img&#39;).src = src;
+        document.getElementById(&#39;lightbox-caption&#39;).innerHTML = caption;
+    }
+    &lt;/script&gt;
+    &#34;&#34;&#34;
+
+def html_carousel(items, container_id=None):
+    &#34;&#34;&#34;Generate a horizontal carousel/rotator.&#34;&#34;&#34;
+    cid = container_id or f&#34;carousel_{id(items)}&#34;
+    slides = &#34;&#34;
+    for i, item in enumerate(items):
+        slides += f&#39;&lt;div class=&#34;carousel__slide&#34;&gt; {item} &lt;/div&gt;&#39;
+        
+    return f&#34;&#34;&#34;
+    &lt;div id=&#34;{cid}&#34; class=&#34;carousel&#34;&gt;
+        &lt;div class=&#34;carousel__track&#34;&gt;{slides}&lt;/div&gt;
+        &lt;div class=&#34;carousel__controls&#34;&gt;
+            &lt;button class=&#34;carousel__btn&#34; onclick=&#34;moveCarousel(&#39;{cid}&#39;, -1)&#34;&gt;&amp;lt; PREV&lt;/button&gt;
+            &lt;button class=&#34;carousel__btn&#34; onclick=&#34;moveCarousel(&#39;{cid}&#39;, 1)&#34;&gt;NEXT &amp;gt;&lt;/button&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;style&gt;
+    .carousel {{ position: relative; overflow: hidden; width: 100%; border: 1px solid var(--border); background: var(--bg-surface); }}
+    .carousel__track {{ display: flex; transition: transform 0.3s ease; }}
+    .carousel__slide {{ min-width: 100%; padding: 20px; box-sizing: border-box; }}
+    .carousel__controls {{ display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.05); }}
+    .carousel__btn {{ background: none; border: 1px solid var(--primary-red); color: var(--primary-red); font-family: var(--font-mono); padding: 5px 10px; cursor: pointer; }}
+    &lt;/style&gt;
+    &lt;script&gt;
+    if(!window.carouselPos) window.carouselPos = {{}};
+    function moveCarousel(id, dir) {{
+        const track = document.getElementById(id).querySelector(&#39;.carousel__track&#39;);
+        const count = track.children.length;
+        if(!window.carouselPos[id]) window.carouselPos[id] = 0;
+        window.carouselPos[id] = (window.carouselPos[id] + dir + count) % count;
+        track.style.transform = `translateX(-${{window.carouselPos[id] * 100}}%)`;
+    }}
+    &lt;/script&gt;
+    &#34;&#34;&#34;
+
+def html_code_block(code, title=&#34;Source Code&#34;, container_id=None):
+    &#34;&#34;&#34;Stylized code block with copy button.&#34;&#34;&#34;
+    cid = container_id or f&#34;code_{id(code)}&#34;
+    escaped = html_mod.escape(code)
+    return f&#34;&#34;&#34;
+    &lt;div id=&#34;{cid}&#34; class=&#34;code-block&#34;&gt;
+        &lt;div class=&#34;code-block__header&#34;&gt;
+            &lt;span&gt;{html_mod.escape(title)}&lt;/span&gt;
+            &lt;button class=&#34;code-block__copy&#34; onclick=&#34;copyCode(&#39;{cid}&#39;)&#34;&gt;COPY&lt;/button&gt;
+        &lt;/div&gt;
+        &lt;pre class=&#34;code-block__pre&#34;&gt;&lt;code&gt;{escaped}&lt;/code&gt;&lt;/pre&gt;
+    &lt;/div&gt;
+    &lt;style&gt;
+    .code-block {{ border: 1px solid var(--border); background: #0a0a0a; margin: 10px 0; }}
+    .code-block__header {{ background: #1a1a1a; padding: 5px 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); font-family: var(--font-mono); font-size: 11px; }}
+    .code-block__copy {{ background: none; border: 1px solid #444; color: #888; cursor: pointer; font-size: 10px; padding: 2px 6px; }}
+    .code-block__copy:hover {{ color: #fff; border-color: #fff; }}
+    .code-block__pre {{ padding: 15px; margin: 0; overflow-x: auto; color: #dcdcdc; font-family: var(--font-mono); font-size: 13px; }}
+    &lt;/style&gt;
+    &lt;script&gt;
+    function copyCode(id) {{
+        const code = document.getElementById(id).querySelector(&#39;code&#39;).innerText;
+        navigator.clipboard.writeText(code);
+        const btn = document.getElementById(id).querySelector(&#39;.code-block__copy&#39;);
+        btn.innerText = &#39;COPIED&#39;;
+        setTimeout(() =&gt; btn.innerText = &#39;COPY&#39;, 2000);
+    }}
+    &lt;/script&gt;
+    &#34;&#34;&#34;
+
+def html_dialog(dialog_id, title, content, actions_html=&#34;&#34;):
+    &#34;&#34;&#34;
+    Generate a standardized modal dialog component.
+    :param actions_html: HTML for buttons in the footer (e.g., &lt;button class=&#39;form__button&#39;&gt;OK&lt;/button&gt;)
+    &#34;&#34;&#34;
+    return f&#34;&#34;&#34;
+    &lt;div id=&#34;{dialog_id}&#34; class=&#34;dialog-mask&#34;&gt;
+        &lt;div class=&#34;dialog&#34;&gt;
+            &lt;div class=&#34;dialog__header&#34;&gt;
+                &lt;span class=&#34;dialog__title&#34;&gt;{html_mod.escape(title)}&lt;/span&gt;
+                &lt;button class=&#34;dialog__close&#34; onclick=&#34;closeDialog(&#39;{dialog_id}&#39;)&#34;&gt;&amp;times;&lt;/button&gt;
+            &lt;/div&gt;
+            &lt;div class=&#34;dialog__body&#34;&gt;{content}&lt;/div&gt;
+            &lt;div class=&#34;dialog__footer&#34;&gt;{actions_html}&lt;/div&gt;
+        &lt;/div&gt;
+    &lt;/div&gt;
+    &lt;style&gt;
+    .dialog-mask {{
+        display: none; position: fixed; z-index: 4000; left: 0; top: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.8); backdrop-filter: blur(4px);
+    }}
+    .dialog {{
+        position: relative; background-color: #fff; margin: 10% auto; padding: 0;
+        border: 2px solid var(--primary-red); width: 80%; max-width: 600px;
+        box-shadow: 10px 10px 0px rgba(0,0,0,0.2);
+    }}
+    .dialog__header {{
+        padding: 12px 20px; background: var(--bg-surface); border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: center;
+    }}
+    .dialog__title {{ font-family: var(--font-mono); font-weight: bold; font-size: 14px; text-transform: uppercase; color: var(--primary-red); }}
+    .dialog__close {{ background: none; border: none; font-size: 24px; cursor: pointer; color: #888; }}
+    .dialog__body {{ padding: 25px 20px; font-family: var(--font-base); line-height: 1.6; color: #333; }}
+    .dialog__footer {{
+        padding: 12px 20px; background: #f8f8f8; border-top: 1px solid var(--border);
+        display: flex; justify-content: flex-end; gap: 10px;
+    }}
+    &lt;/style&gt;
+    &lt;script&gt;
+    function openDialog(id) {{ document.getElementById(id).style.display = &#39;block&#39;; }}
+    function closeDialog(id) {{ document.getElementById(id).style.display = &#39;none&#39;; }}
+    &lt;/script&gt;
+    &#34;&#34;&#34;
+
+def html_load_widget(widget_name, components_dir=None, container_id=None):
+    &#34;&#34;&#34;Loads an external HTML component.&#34;&#34;&#34;
+    if not components_dir:
+        components_dir = os.environ.get(&#34;CC_COMPONENTS&#34;, &#34;{SC_ROOT}/Templates/Components&#34;)
+    
+    path = Path(components_dir) / f&#34;{widget_name}.html&#34;
+    if not path.exists():
+        return f&#34;&lt;div&gt;Error: Widget component &#39;{widget_name}&#39; not found in {components_dir}&lt;/div&gt;&#34;
+        
+    try:
+        content = path.read_text(encoding=&#39;utf-8&#39;)
+        return html_standalone_widget(content, title=widget_name, container_id=container_id)
+    except Exception as e:
+        return f&#34;&lt;div&gt;Error loading widget &#39;{widget_name}&#39;: {e}&lt;/div&gt;&#34;
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

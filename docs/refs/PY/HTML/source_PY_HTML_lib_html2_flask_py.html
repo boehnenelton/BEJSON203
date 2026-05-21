@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_html2_flask.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / HTML / lib_html2_flask.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_html2_flask.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_html2_flask.py
+Family:       HTML3
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Middleware for serving BEJSON content via Flask web servers.
+&#34;&#34;&#34;
+
+import os
+import json
+import uuid
+from flask import request, render_template_string
+
+# Core UI imports
+from lib_bejson_html2_skeletons import COLOR, CSS_CORE, HTML_SKELETON
+from lib_html2_page_templates import html_page
+from lib_html2_tables import html_table
+from lib_html2_body import html_stats_bar, html_card, html_card_grid, html_badge
+
+class FlaskDashboard:
+    &#34;&#34;&#34;
+    Streamlines Core-Command dashboard creation in Flask.
+    Usage:
+        dash = FlaskDashboard(app, &#34;My System&#34;, nav_links=...)
+        @app.route(&#34;/&#34;)
+        def home():
+            return dash.render(&#34;Home&#34;, &#34;Welcome!&#34;, active_url=&#34;/&#34;)
+    &#34;&#34;&#34;
+    def __init__(self, app=None, title=&#34;Control Center&#34;, nav_links=None, status_extra=&#34;&#34;):
+        self.app = app
+        self.title = title
+        self.nav_links = nav_links or []
+        self.status_extra = status_extra
+        
+        if app:
+            self.init_app(app)
+
+    def init_app(self, app):
+        &#34;&#34;&#34;Register filters and context processors.&#34;&#34;&#34;
+        @app.context_processor
+        def ui_context():
+            return {&#34;css_core&#34;: CSS_CORE.format(**COLOR), &#34;nav_links&#34;: self.nav_links}
+            
+        app.jinja_env.globals.update(
+            html_stats_bar=html_stats_bar,
+            html_card=html_card,
+            html_badge=html_badge,
+            html_table=html_table
+        )
+
+    def render(self, page_title, content, active_url=&#34;&#34;, status_extra=None):
+        &#34;&#34;&#34;Renders a full dashboard page.&#34;&#34;&#34;
+        return html_page(
+            title=f&#34;{page_title} - {self.title}&#34;,
+            content=content,
+            nav_links=self.nav_links,
+            status_extra=status_extra or self.status_extra,
+            active_url=active_url
+        )
+
+    @staticmethod
+    def list_to_bejson(data_list, entity_name=&#34;Entity&#34;):
+        &#34;&#34;&#34;Utility: Converts list[dict] (from MFDB) to BEJSON 104 dict.&#34;&#34;&#34;
+        if not data_list:
+            return {&#34;Format&#34;: &#34;BEJSON&#34;, &#34;Format_Version&#34;: &#34;104&#34;, &#34;Records_Type&#34;: [entity_name], &#34;Fields&#34;: [], &#34;Values&#34;: []}
+        field_names = list(data_list[0].keys())
+        fields = [{&#34;name&#34;: fn, &#34;type&#34;: &#34;string&#34;} for fn in field_names]
+        values = [[d.get(fn) for fn in field_names] for d in data_list]
+        return {&#34;Format&#34;: &#34;BEJSON&#34;, &#34;Format_Version&#34;: &#34;104&#34;, &#34;Records_Type&#34;: [entity_name], &#34;Fields&#34;: fields, &#34;Values&#34;: values}
+
+    def render_table(self, data_list, entity_name=&#34;Entity&#34;):
+        &#34;&#34;&#34;Convenience: Renders MFDB data list as a searchable html2 table.&#34;&#34;&#34;
+        if not data_list: return &#39;&lt;div class=&#34;card&#34;&gt;No records found.&lt;/div&gt;&#39;
+        doc = self.list_to_bejson(data_list, entity_name)
+        return html_table(doc)
+
+def flask_toggle_button(action_url, sid, current_value, label=None):
+    &#34;&#34;&#34;Generates a standard activation/deactivation form/button.&#34;&#34;&#34;
+    is_on = str(current_value).lower() == &#39;true&#39;
+    btn_text = &#39;DEACTIVATE&#39; if is_on else &#39;ACTIVATE&#39;
+    return f&#34;&#34;&#34;
+    &lt;form action=&#34;{action_url}&#34; method=&#34;POST&#34; style=&#34;display:inline;&#34;&gt;
+        &lt;input type=&#34;hidden&#34; name=&#34;sid&#34; value=&#34;{sid}&#34;&gt;
+        &lt;input type=&#34;hidden&#34; name=&#34;current&#34; value=&#34;{current_value}&#34;&gt;
+        &lt;button type=&#34;submit&#34; class=&#34;form__button&#34;&gt;{label or btn_text}&lt;/button&gt;
+    &lt;/form&gt;&#34;&#34;&#34;
+
+def flask_quick_form(action_url, fields, submit_label=&#34;SUBMIT&#34;):
+    &#34;&#34;&#34;
+    Generate a simple light-theme form.
+    :param fields: List of {&#34;name&#34;: &#34;...&#34;, &#34;placeholder&#34;: &#34;...&#34;}
+    &#34;&#34;&#34;
+    fields_html = &#34;&#34;
+    for f in fields:
+        fields_html += f&#39;&lt;input type=&#34;text&#34; name=&#34;{f[&#34;name&#34;]}&#34; placeholder=&#34;{f[&#34;placeholder&#34;]}&#34; required style=&#34;padding:8px; margin:5px; border:1px solid #ddd; border-radius:4px;&#34;&gt;\n&#39;
+    
+    return f&#34;&#34;&#34;
+    &lt;div class=&#34;card&#34;&gt;
+        &lt;form action=&#34;{action_url}&#34; method=&#34;POST&#34;&gt;
+            {fields_html}
+            &lt;button type=&#34;submit&#34; class=&#34;form__button&#34;&gt;{submit_label}&lt;/button&gt;
+        &lt;/form&gt;
+    &lt;/div&gt;&#34;&#34;&#34;
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

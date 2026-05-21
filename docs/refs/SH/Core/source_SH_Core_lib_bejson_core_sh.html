@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_core.sh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">SH / Core / lib_bejson_core.sh</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_core.sh</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+# Library:      lib_bejson_core.sh
+# Family:       Core
+# Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;SH&#34;]
+# Status:       OFFICIAL
+# Author:       Elton Boehnen
+# Version:      2.0.1 OFFICIAL
+# MFDB Version: 1.31
+# Format_Creator: Elton Boehnen
+# Date:         2026-05-18
+# Description:  Low-level primitive operations for BEJSON document manipulation.
+
+#===============================================================================
+
+#-------------------------------------------------------------------------------
+# SAFETY &amp; ERROR HANDLING
+#-------------------------------------------------------------------------------
+
+set -o pipefail
+set -o nounset
+
+# Source the validator library (assumes same directory)
+_CORE_DIR=&#34;$(cd &#34;$(dirname &#34;${BASH_SOURCE[0]}&#34;)&#34; &amp;&amp; pwd)&#34;
+if [[ -f &#34;$_CORE_DIR/lib_bejson_validator.sh&#34; ]]; then
+    # shellcheck source=./lib_bejson_validator.sh
+    source &#34;$_CORE_DIR/lib_bejson_validator.sh&#34;
+fi
+
+# Error codes
+[[ -v E_CORE_INVALID_VERSION ]] || readonly E_CORE_INVALID_VERSION=20
+[[ -v E_CORE_INVALID_OPERATION ]] || readonly E_CORE_INVALID_OPERATION=21
+[[ -v E_CORE_INDEX_OUT_OF_BOUNDS ]] || readonly E_CORE_INDEX_OUT_OF_BOUNDS=22
+[[ -v E_CORE_FIELD_NOT_FOUND ]] || readonly E_CORE_FIELD_NOT_FOUND=23
+[[ -v E_CORE_TYPE_CONVERSION_FAILED ]] || readonly E_CORE_TYPE_CONVERSION_FAILED=24
+[[ -v E_CORE_BACKUP_FAILED ]] || readonly E_CORE_BACKUP_FAILED=25
+[[ -v E_CORE_WRITE_FAILED ]] || readonly E_CORE_WRITE_FAILED=26
+[[ -v E_CORE_QUERY_FAILED ]] || readonly E_CORE_QUERY_FAILED=27
+
+#-------------------------------------------------------------------------------
+# ATOMIC FILE OPERATIONS
+#-------------------------------------------------------------------------------
+
+__bejson_core_atomic_backup() {
+    local file_path=&#34;$1&#34;
+    [[ ! -f &#34;$file_path&#34; ]] &amp;&amp; return 0
+    local backup_path=&#34;${file_path}.backup.$(date +%Y%m%d_%H%M%S).$$&#34;
+    cp -p &#34;$file_path&#34; &#34;$backup_path&#34; 2&gt;/dev/null || return $E_CORE_BACKUP_FAILED
+    echo &#34;$backup_path&#34;
+    return 0
+}
+
+__bejson_core_restore_backup() {
+    local file_path=&#34;$1&#34;
+    local backup_path=&#34;$2&#34;
+    [[ -f &#34;$backup_path&#34; ]] &amp;&amp; mv &#34;$backup_path&#34; &#34;$file_path&#34; 2&gt;/dev/null
+}
+
+bejson_core_atomic_write() {
+    local file_path=&#34;$1&#34;
+    local content=&#34;$2&#34;
+    local create_backup=&#34;${3:-true}&#34;
+    local backup_path=&#34;&#34;
+
+    if [[ &#34;$create_backup&#34; == &#34;true&#34; ]]; then
+        backup_path=$(__bejson_core_atomic_backup &#34;$file_path&#34;) || return $?
+    fi
+
+    local target_dir=$(dirname &#34;$file_path&#34;)
+    mkdir -p &#34;$target_dir&#34;
+    local temp_file=&#34;${target_dir}/.bejson_$$.tmp&#34;
+
+    printf &#39;%s&#39; &#34;$content&#34; &gt; &#34;$temp_file&#34; 2&gt;/dev/null || {
+        [[ -n &#34;$backup_path&#34; ]] &amp;&amp; __bejson_core_restore_backup &#34;$file_path&#34; &#34;$backup_path&#34;
+        return $E_CORE_WRITE_FAILED
+    }
+
+    sync &#34;$temp_file&#34; 2&gt;/dev/null || true
+    mv &#34;$temp_file&#34; &#34;$file_path&#34; 2&gt;/dev/null || {
+        cp -p &#34;$temp_file&#34; &#34;$file_path&#34; 2&gt;/dev/null &amp;&amp; rm -f &#34;$temp_file&#34; || {
+            [[ -n &#34;$backup_path&#34; ]] &amp;&amp; __bejson_core_restore_backup &#34;$file_path&#34; &#34;$backup_path&#34;
+            return $E_CORE_WRITE_FAILED
+        }
+    }
+    sync &#34;$(dirname &#34;$file_path&#34;)&#34; 2&gt;/dev/null || true
+    return 0
+}
+
+bejson_core_load_file() {
+    local file_path=&#34;$1&#34;
+    if [[ ! -f &#34;$file_path&#34; ]]; then
+        return $E_CORE_FIELD_NOT_FOUND
+    fi
+    cat &#34;$file_path&#34;
+}
+
+#-------------------------------------------------------------------------------
+# FIELD &amp; RECORD OPERATIONS
+#-------------------------------------------------------------------------------
+
+bejson_core_get_field_index() {
+    local doc=&#34;$1&#34;
+    local field_name=&#34;$2&#34;
+    echo &#34;$doc&#34; | jq --arg fn &#34;$field_name&#34; &#39;.Fields | map(.name) | index($fn) // -1&#39;
+}
+
+bejson_core_get_record_count() {
+    local doc=&#34;$1&#34;
+    echo &#34;$doc&#34; | jq &#39;.Values | length&#39;
+}
+
+bejson_core_add_record() {
+    local doc=&#34;$1&#34;
+    local values_json=&#34;$2&#34;
+    echo &#34;$doc&#34; | jq --argjson row &#34;$values_json&#34; &#39;.Values += [$row]&#39;
+}
+
+bejson_core_remove_record() {
+    local doc=&#34;$1&#34;
+    local index=&#34;$2&#34;
+    echo &#34;$doc&#34; | jq --argjson idx &#34;$index&#34; &#39;del(.Values[$idx])&#39;
+}
+
+bejson_core_update_field() {
+    local doc=&#34;$1&#34;
+    local rec_idx=&#34;$2&#34;
+    local field_name=&#34;$3&#34;
+    local new_val=&#34;$4&#34;
+    local f_idx=$(bejson_core_get_field_index &#34;$doc&#34; &#34;$field_name&#34;)
+    if [[ &#34;$f_idx&#34; == &#34;-1&#34; ]]; then return $E_CORE_FIELD_NOT_FOUND; fi
+    echo &#34;$doc&#34; | jq --argjson ri &#34;$rec_idx&#34; --argjson fi &#34;$f_idx&#34; --arg nv &#34;$new_val&#34; &#39;(.Values[$ri][$fi]) = $nv&#39;
+}
+
+#-------------------------------------------------------------------------------
+# QUERY &amp; SORT
+#-------------------------------------------------------------------------------
+
+bejson_core_filter_rows() {
+    local doc=&#34;$1&#34;
+    local field_name=&#34;$2&#34;
+    local value=&#34;$3&#34;
+    local f_idx=$(bejson_core_get_field_index &#34;$doc&#34; &#34;$field_name&#34;)
+    if [[ &#34;$f_idx&#34; == &#34;-1&#34; ]]; then return $E_CORE_FIELD_NOT_FOUND; fi
+    echo &#34;$doc&#34; | jq --argjson fi &#34;$f_idx&#34; --arg val &#34;$value&#34; &#39;.Values | map(select(.[$fi] == $val))&#39;
+}
+
+bejson_core_sort_by_field() {
+    local doc=&#34;$1&#34;
+    local field_name=&#34;$2&#34;
+    local ascending=&#34;${3:-true}&#34;
+    local f_idx=$(bejson_core_get_field_index &#34;$doc&#34; &#34;$field_name&#34;)
+    if [[ &#34;$f_idx&#34; == &#34;-1&#34; ]]; then return $E_CORE_FIELD_NOT_FOUND; fi
+    if [[ &#34;$ascending&#34; == &#34;true&#34; ]]; then
+        echo &#34;$doc&#34; | jq --argjson fi &#34;$f_idx&#34; &#39;.Values |= sort_by(.[$fi])&#39;
+    else
+        echo &#34;$doc&#34; | jq --argjson fi &#34;$f_idx&#34; &#39;.Values |= (sort_by(.[$fi]) | reverse)&#39;
+    fi
+}
+
+# Export functions
+export -f bejson_core_atomic_write
+export -f bejson_core_load_file
+export -f bejson_core_get_field_index
+export -f bejson_core_get_record_count
+export -f bejson_core_add_record
+export -f bejson_core_remove_record
+export -f bejson_core_update_field
+export -f bejson_core_filter_rows
+export -f bejson_core_sort_by_field
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_be_project_service.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / System / lib_be_project_service.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_be_project_service.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_be_project_service.py
+Family:       System
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Background service for project lifecycle and dependency management.
+&#34;&#34;&#34;
+
+import os
+import sys
+import json
+import time
+import shutil
+import subprocess
+from datetime import datetime
+import tempfile
+from pathlib import Path
+from typing import Dict, List, Optional
+_DEFAULT_BEC_ROOT = str(Path(__file__).resolve().parent.parent.parent)
+
+def get_bec_root():
+    root_env = os.environ.get(&#34;BEC_ROOT&#34;)
+    if root_env:
+        return root_env
+    root_file = os.path.join(_DEFAULT_BEC_ROOT, &#34;data/state/BEC_ROOT.txt&#34;)
+    if os.path.exists(root_file):
+        with open(root_file, &#39;r&#39;) as f:
+            return f.read().strip()
+    return _DEFAULT_BEC_ROOT
+
+BEC_ROOT = get_bec_root()
+LIB_DIR = os.path.join(BEC_ROOT, &#39;Lib/py&#39;)
+if LIB_DIR not in sys.path:
+    sys.path.insert(0, LIB_DIR)
+
+from lib_bejson_core import bejson_core_acquire_lock, bejson_core_release_lock
+
+_DEFAULT_CC_DB = os.path.join(BEC_ROOT, &#39;data/centralized&#39;)
+DB_FILE = os.path.join(os.environ.get(&#39;CC_DB&#39;, _DEFAULT_CC_DB), &#39;BE_Tracking.json&#39;)
+PROJECTS_ROOT = os.environ.get(&#39;CC_PROJECTS&#39;, os.path.join(BEC_ROOT, &#39;projects&#39;))
+
+import logging
+
+class ProjectService:
+    @staticmethod
+    def _create_project_record(proj_id: str, name: str, path: str, p_type: str, created: str) -&gt; List:
+        &#34;&#34;&#34;Helper to create a standardized v1.4.0 Project record (22 fields).&#34;&#34;&#34;
+        record = [None] * 22
+        record[0] = &#39;Project&#39;
+        record[1] = proj_id
+        record[2] = name
+        record[3] = path
+        record[4] = &#39;0.0.1&#39;
+        record[5] = created
+        record[6] = p_type
+        record[7] = True     # is_active
+        record[8] = True     # is_visible
+        record[9] = False    # is_missing
+        record[20] = False   # is_archived
+        record[21] = False   # is_deleted
+        return record
+
+    @staticmethod
+    def validate_record(record: List) -&gt; bool:
+        &#34;&#34;&#34;Ensures record strictly adheres to the 22-field v1.4.0 schema.&#34;&#34;&#34;
+        if not isinstance(record, list) or len(record) != 22:
+            logging.error(f&#34;[ProjectService] Schema Violation: Expected 22 fields, got {len(record) if isinstance(record, list) else &#39;N/A&#39;}&#34;)
+            return False
+        if record[0] != &#39;Project&#39;:
+            logging.error(f&#34;[ProjectService] Record Type Mismatch: {record[0]}&#34;)
+            return False
+        return True
+
+    @staticmethod
+    def _load_db():
+        if not os.path.exists(DB_FILE):
+            return None
+        with open(DB_FILE, &#39;r&#39;) as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                return None
+
+    @staticmethod
+    def _save_db(doc):
+        if not doc: return
+        with tempfile.NamedTemporaryFile(&#39;w&#39;, dir=os.path.dirname(DB_FILE), delete=False) as tf:
+            json.dump(doc, tf, indent=2)
+            tmp_name = tf.name
+        os.replace(tmp_name, DB_FILE)
+
+    @staticmethod
+    def get_projects(project_type: str = None, include_archived: bool = False) -&gt; List:
+        doc = ProjectService._load_db()
+        if not doc: return []
+        
+        projects = [v for v in doc[&#39;Values&#39;] if v[0] == &#39;Project&#39;]
+        if project_type:
+            projects = [v for v in projects if v[6] == project_type]
+        if not include_archived:
+            projects = [v for v in projects if len(v) &gt; 20 and v[20] == False]
+        return projects
+
+    @staticmethod
+    def add_project(name: str, p_type: str, path: str = None) -&gt; bool:
+        if not path:
+            path = os.path.join(PROJECTS_ROOT, name.replace(&#34; &#34;, &#34;_&#34;))
+        
+        bejson_core_acquire_lock(DB_FILE)
+        try:
+            doc = ProjectService._load_db()
+            if not doc: return False
+            
+            # Deduplicate by name or normalized path
+            norm_path = os.path.normpath(path)
+            exists = any(v[2] == name or os.path.normpath(v[3]) == norm_path 
+                         for v in doc[&#39;Values&#39;] if v[0] == &#39;Project&#39;)
+            if exists:
+                print(f&#34;Project &#39;{name}&#39; already tracked at {path}&#34;)
+                return False
+
+            if not os.path.exists(path):
+                os.makedirs(path, exist_ok=True)
+            
+            proj_id = str(int(time.time() * 1000))
+            created = datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)
+            
+            record = ProjectService._create_project_record(proj_id, name, path, p_type, created)
+            if ProjectService.validate_record(record):
+                doc[&#39;Values&#39;].append(record)
+                ProjectService._save_db(doc)
+                print(f&#34;Tracked new project: {name}&#34;)
+                return True
+            return False
+        finally:
+            bejson_core_release_lock(DB_FILE)
+
+    @staticmethod
+    def scan_and_sync():
+        print(f&#34;--- Project Service: Syncing {PROJECTS_ROOT} ---&#34;)
+        bejson_core_acquire_lock(DB_FILE)
+        try:
+            doc = ProjectService._load_db()
+            if not doc: return
+            
+            # 1. Discovery: Find new folders in Projects_ROOT
+            if os.path.exists(PROJECTS_ROOT):
+                for item in os.listdir(PROJECTS_ROOT):
+                    full_path = os.path.join(PROJECTS_ROOT, item)
+                    if not os.path.isdir(full_path): continue
+                    
+                    norm_path = os.path.normpath(full_path)
+                    exists = any(os.path.normpath(v[3]) == norm_path 
+                                 for v in doc[&#39;Values&#39;] if v[0] == &#39;Project&#39;)
+                    
+                    if not exists:
+                        # Infer type
+                        p_type = &#34;bash&#34;
+                        try:
+                            if any(f.endswith(&#39;.py&#39;) for f in os.listdir(full_path)):
+                                p_type = &#34;python&#34;
+                        except PermissionError: pass
+                        
+                        proj_id = str(int(time.time() * 1000))
+                        created = datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)
+                        record = ProjectService._create_project_record(proj_id, item, full_path, p_type, created)
+                        if ProjectService.validate_record(record):
+                            print(f&#34;Discovered: {item} ({p_type})&#34;)
+                            doc[&#39;Values&#39;].append(record)
+
+            # 2. Audit: Check for missing files and update flags
+            for v in doc[&#39;Values&#39;]:
+                if v[0] == &#39;Project&#39;:
+                    p_path = v[3]
+                    if not os.path.exists(p_path):
+                        if not v[9]:
+                            print(f&#34;Flagging missing project: {v[2]}&#34;)
+                            v[9] = True
+                    else:
+                        if v[9]:
+                            print(f&#34;Project restored: {v[2]}&#34;)
+                            v[9] = False
+
+            ProjectService._save_db(doc)
+            print(&#34;Sync complete.&#34;)
+        finally:
+            bejson_core_release_lock(DB_FILE)
+
+    @staticmethod
+    def archive_project(name: str) -&gt; bool:
+        bejson_core_acquire_lock(DB_FILE)
+        try:
+            doc = ProjectService._load_db()
+            if not doc: return False
+            for v in doc[&#39;Values&#39;]:
+                if v[0] == &#39;Project&#39; and v[2] == name:
+                    v[20] = True
+            ProjectService._save_db(doc)
+            return True
+        finally:
+            bejson_core_release_lock(DB_FILE)
+
+    @staticmethod
+    def expel_project(name: str, p_type: str) -&gt; bool:
+        doc = ProjectService._load_db()
+        if not doc: return False
+        
+        proj = next((v for v in doc[&#39;Values&#39;] if v[0] == &#39;Project&#39; and v[2] == name), None)
+        if not proj: return False
+        
+        p_path = proj[3]
+        expelled_root = os.path.join(BEC_ROOT, f&#34;management/expelled/expelled_{datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)}&#34;)
+        target_dir = os.path.join(expelled_root, p_type, name)
+        os.makedirs(os.path.dirname(target_dir), exist_ok=True)
+        
+        print(f&#34;Expelling {name} to {target_dir}...&#34;)
+        if os.path.exists(p_path):
+            try:
+                shutil.move(p_path, target_dir)
+            except Exception as e:
+                print(f&#34;Move failed: {e}&#34;)
+        
+        bejson_core_acquire_lock(DB_FILE)
+        try:
+            doc = ProjectService._load_db() 
+            doc[&#39;Values&#39;] = [v for v in doc[&#39;Values&#39;] if not (v[0] == &#39;Project&#39; and v[2] == name)]
+            ProjectService._save_db(doc)
+            return True
+        finally:
+            bejson_core_release_lock(DB_FILE)
+
+    @staticmethod
+    def toggle_reset_protection(name: str) -&gt; bool:
+        bejson_core_acquire_lock(DB_FILE)
+        try:
+            doc = ProjectService._load_db()
+            if not doc: return False
+            for v in doc[&#39;Values&#39;]:
+                if v[0] == &#39;Project&#39; and v[2] == name:
+                    if len(v) &lt;= 21: v.append(True)
+                    else: v[21] = not v[21]
+            ProjectService._save_db(doc)
+            return True
+        finally:
+            bejson_core_release_lock(DB_FILE)
+
+    @staticmethod
+    def get_reset_protection(name: str) -&gt; str:
+        doc = ProjectService._load_db()
+        if not doc: return &#34;OFF&#34;
+        for v in doc[&#39;Values&#39;]:
+            if v[0] == &#39;Project&#39; and v[2] == name:
+                return &#34;ON&#34; if (len(v) &gt; 21 and v[21]) else &#34;OFF&#34;
+        return &#34;OFF&#34;
+
+    @staticmethod
+    def get_project_path(name: str) -&gt; Optional[str]:
+        doc = ProjectService._load_db()
+        if not doc: return None
+        for v in doc[&#39;Values&#39;]:
+            if v[0] == &#39;Project&#39; and v[2] == name:
+                return v[3]
+        return None
+
+    @staticmethod
+    def get_project_type(name: str) -&gt; Optional[str]:
+        doc = ProjectService._load_db()
+        if not doc: return None
+        for v in doc[&#39;Values&#39;]:
+            if v[0] == &#39;Project&#39; and v[2] == name:
+                return v[6]
+        return None
+
+    @staticmethod
+    def delete_record(name: str) -&gt; bool:
+        bejson_core_acquire_lock(DB_FILE)
+        try:
+            doc = ProjectService._load_db()
+            if not doc: return False
+            doc[&#39;Values&#39;] = [v for v in doc[&#39;Values&#39;] if not (v[0] == &#39;Project&#39; and v[2] == name)]
+            ProjectService._save_db(doc)
+            return True
+        finally:
+            bejson_core_release_lock(DB_FILE)
+
+# Legacy Wrappers for backward compatibility during transition
+def track_project(name, p_type, path=None): return ProjectService.add_project(name, p_type, path)
+def list_projects(p_type=None, include_archived=False): return ProjectService.get_projects(p_type, include_archived)
+def get_project_path(name): return ProjectService.get_project_path(name)
+def track_project_archive(name): return ProjectService.archive_project(name)
+def track_project_expel(name, p_type): return ProjectService.expel_project(name, p_type)
+def track_project_toggle_reset_protection(name): return ProjectService.toggle_reset_protection(name)
+def track_project_get_reset_protection(name): return ProjectService.get_reset_protection(name)
+def track_project_delete_record(name): return ProjectService.delete_record(name)
+
+if __name__ == &#34;__main__&#34;:
+    if len(sys.argv) &gt; 1:
+        if sys.argv[1] == &#34;--sync&#34;:
+            ProjectService.scan_and_sync()
+        elif sys.argv[1] == &#34;--list&#34;:
+            projects = ProjectService.get_projects()
+            for p in projects:
+                print(f&#34;{p[2]} ({p[6]})&#34;)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_cognition.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / AI / lib_bejson_cognition.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_cognition.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_cognition.py
+Family:       AI
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Manager for semantic and episodic memory structures in BEJSON.
+&#34;&#34;&#34;
+
+import json
+import os
+import sys
+import time
+import uuid
+import logging
+import hashlib
+import random
+import shutil
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional, Tuple
+
+# ===========================================================================
+# SIBLING PATH RESOLUTION (Accessing the Locked Core)
+# ===========================================================================
+CURRENT_SIBLING = os.path.dirname(os.path.abspath(__file__))
+PARENT_LIB_DIR = os.path.dirname(CURRENT_SIBLING)
+CORE_SIBLING = os.path.join(PARENT_LIB_DIR, &#34;Core&#34;)
+
+if CORE_SIBLING not in sys.path:
+    sys.path.append(CORE_SIBLING)
+
+try:
+    from lib_bejson_core import (
+        bejson_core_atomic_write, 
+        bejson_core_load_file, 
+        bejson_core_acquire_lock, 
+        bejson_core_release_lock
+    )
+    from lib_mfdb_core import mfdb_core_resolve_path
+    from lib_bejson_validator import bejson_validator_validate_string
+except ImportError:
+    logging.warning(&#34;[COGNITION_LIB] Core siblings unreachable. Using internal fallbacks.&#34;)
+    def mfdb_core_resolve_path(p: str) -&gt; str: return os.path.expanduser(p)
+    def bejson_core_load_file(p: str):
+        p = mfdb_core_resolve_path(p)
+        if not os.path.exists(p): return None
+        with open(p, &#39;r&#39;) as f: return json.load(f)
+    def bejson_core_acquire_lock(p: str, timeout: int=5): return True
+    def bejson_core_release_lock(p: str): pass
+    def bejson_validator_validate_string(s: str): pass
+    def bejson_core_atomic_write(p: str, d: dict):
+        p = mfdb_core_resolve_path(p)
+        os.makedirs(os.path.dirname(p), exist_ok=True)
+        import tempfile
+        fd, tmp = tempfile.mkstemp(dir=os.path.dirname(p))
+        with os.fdopen(fd, &#39;w&#39;) as f:
+            json.dump(d, f, indent=2)
+            f.flush()
+            os.fsync(f.fileno())
+        os.replace(tmp, p)
+
+try:
+    from lib_bejson_errors import *
+except ImportError:
+    E_COGNITION_LOCK_TIMEOUT = 275
+
+# SPEC FIX: Changed &#39;float&#39; to &#39;number&#39; per BEJSON specification
+BEJSON_COGNITION_SCHEMA = [
+    {&#34;name&#34;: &#34;Record_Type_Parent&#34;, &#34;type&#34;: &#34;string&#34;},
+    {&#34;name&#34;: &#34;id&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;AgentState&#34;},
+    {&#34;name&#34;: &#34;timestamp&#34;, &#34;type&#34;: &#34;number&#34;, &#34;Record_Type_Parent&#34;: &#34;AgentState&#34;},
+    {&#34;name&#34;: &#34;last_checkpoint&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;AgentState&#34;},
+    {&#34;name&#34;: &#34;core_directives&#34;, &#34;type&#34;: &#34;object&#34;, &#34;Record_Type_Parent&#34;: &#34;AgentState&#34;},
+    {&#34;name&#34;: &#34;summary_blob&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;AgentState&#34;},
+    {&#34;name&#34;: &#34;agent_id_fk&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;ExecutionStack&#34;},
+    {&#34;name&#34;: &#34;task_queue&#34;, &#34;type&#34;: &#34;array&#34;, &#34;Record_Type_Parent&#34;: &#34;ExecutionStack&#34;},
+    {&#34;name&#34;: &#34;pending_context&#34;, &#34;type&#34;: &#34;object&#34;, &#34;Record_Type_Parent&#34;: &#34;ExecutionStack&#34;},
+    {&#34;name&#34;: &#34;user_input&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;EpisodicLog&#34;},
+    {&#34;name&#34;: &#34;agent_response&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;EpisodicLog&#34;},
+    {&#34;name&#34;: &#34;payloads_used&#34;, &#34;type&#34;: &#34;array&#34;, &#34;Record_Type_Parent&#34;: &#34;EpisodicLog&#34;},
+    {&#34;name&#34;: &#34;target_layer&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;MetaPatch&#34;},
+    {&#34;name&#34;: &#34;patch_instruction&#34;, &#34;type&#34;: &#34;object&#34;, &#34;Record_Type_Parent&#34;: &#34;MetaPatch&#34;},
+    {&#34;name&#34;: &#34;status&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;MetaPatch&#34;} 
+]
+
+# ===========================================================================
+# SAFE ATOMIC WRITER (Mutex Backoff)
+# ===========================================================================
+def bejson_cognition_safe_write(filepath: str, data: dict, max_retries: int = 10) -&gt; bool:
+    resolved_path = mfdb_core_resolve_path(filepath)
+    attempt = 0
+    base_sleep = 0.2
+    while attempt &lt; max_retries:
+        if bejson_core_acquire_lock(resolved_path, timeout=5):
+            try:
+                bejson_core_atomic_write(resolved_path, data)
+                return True
+            finally:
+                bejson_core_release_lock(resolved_path)
+        attempt += 1
+        sleep_time = base_sleep * (2 ** attempt) + (random.random() * 0.1)
+        logging.warning(f&#34;[COGNITION] Lock contention on {resolved_path}. Retrying in {sleep_time:.2f}s...&#34;)
+        time.sleep(sleep_time)
+    raise RuntimeError(f&#34;[{E_COGNITION_LOCK_TIMEOUT}] FATAL: Could not acquire lock for matrix sync after {max_retries} attempts.&#34;)
+
+# ===========================================================================
+# DATABASE ENGINE FUNCTIONS
+# ===========================================================================
+def bejson_cognition_init_matrix(db_path: str) -&gt; dict:
+    resolved_path = mfdb_core_resolve_path(db_path)
+    doc = bejson_core_load_file(resolved_path)
+    if doc and doc.get(&#34;Format_Version&#34;) == &#34;104db&#34;: return doc
+    
+    # SPEC FIX: Removed custom headers (MFDB_Version, Created_At) which are prohibited in 104db
+    return {
+        &#34;Format&#34;: &#34;BEJSON&#34;, 
+        &#34;Format_Version&#34;: &#34;104db&#34;, 
+        &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+        &#34;Records_Type&#34;: [&#34;AgentState&#34;, &#34;ExecutionStack&#34;, &#34;EpisodicLog&#34;, &#34;MetaPatch&#34;],
+        &#34;Fields&#34;: BEJSON_COGNITION_SCHEMA, 
+        &#34;Values&#34;: []
+    }
+
+def bejson_cognition_init_index(index_path: str) -&gt; dict:
+    doc = bejson_core_load_file(mfdb_core_resolve_path(index_path))
+    if doc: return doc
+    return {&#34;Format&#34;: &#34;BEJSON&#34;, &#34;Format_Version&#34;: &#34;104&#34;, &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;, &#34;triggers&#34;: {}}
+
+def bejson_cognition_query(doc: dict, record_type: str, filters: dict = None) -&gt; List[dict]:
+    results = []
+    if &#34;Fields&#34; not in doc or &#34;Values&#34; not in doc: return results
+    field_indices = {f[&#34;name&#34;]: i for i, f in enumerate(doc[&#34;Fields&#34;])}
+    for row in doc.get(&#34;Values&#34;, []):
+        if row[0] == record_type:
+            record = {}
+            for f in doc[&#34;Fields&#34;]:
+                if f.get(&#34;Record_Type_Parent&#34;) in [record_type, None]:
+                    val = row[field_indices[f[&#34;name&#34;]]]
+                    if val is not None: record[f[&#34;name&#34;]] = val
+            match = True
+            if filters:
+                for k, v in filters.items():
+                    if record.get(k) != v: match = False; break
+            if match: results.append(record)
+    return results
+
+def bejson_cognition_upsert(doc: dict, record_type: str, record_id: str, **kwargs) -&gt; dict:
+    field_indices = {f[&#34;name&#34;]: i for i, f in enumerate(doc[&#34;Fields&#34;])}
+    target_idx = next((i for i, r in enumerate(doc[&#34;Values&#34;]) if r[0] == record_type and r[1] == record_id), -1)
+    
+    row_data = [None] * len(doc[&#34;Fields&#34;])
+    row_data[0] = record_type; row_data[1] = record_id; row_data[2] = time.time()
+    
+    if target_idx != -1: row_data = list(doc[&#34;Values&#34;][target_idx]); row_data[2] = time.time()
+    for key, val in kwargs.items():
+        if key in field_indices: row_data[field_indices[key]] = val
+    
+    if target_idx != -1: doc[&#34;Values&#34;][target_idx] = row_data
+    else: doc[&#34;Values&#34;].append(row_data)
+    return doc
+
+# ===========================================================================
+# STATE MANAGEMENT &amp; AMNESIA PATTERN
+# ===========================================================================
+def bejson_cognition_wake(db_doc: dict, agent_id: str, genesis_directives: dict = None) -&gt; dict:
+    state = bejson_cognition_query(db_doc, &#34;AgentState&#34;, {&#34;id&#34;: agent_id})
+    stack = bejson_cognition_query(db_doc, &#34;ExecutionStack&#34;, {&#34;agent_id_fk&#34;: agent_id})
+    if not state:
+        return {&#34;id&#34;: agent_id, &#34;core_directives&#34;: genesis_directives or {&#34;persona&#34;: &#34;Default&#34;}, &#34;summary_blob&#34;: &#34;Init.&#34;, &#34;task_queue&#34;: [], &#34;pending_context&#34;: {}, &#34;active_buffer&#34;: []}
+    return {&#34;id&#34;: agent_id, &#34;core_directives&#34;: state[0].get(&#34;core_directives&#34;, {}), &#34;summary_blob&#34;: state[0].get(&#34;summary_blob&#34;, &#34;&#34;), &#34;task_queue&#34;: stack[0].get(&#34;task_queue&#34;, []) if stack else [], &#34;pending_context&#34;: stack[0].get(&#34;pending_context&#34;, {}) if stack else {}, &#34;active_buffer&#34;: []}
+
+def bejson_cognition_sleep(db_path: str, db_doc: dict, agent_state: dict) -&gt; None:
+    agent_id = agent_state[&#34;id&#34;]
+    if agent_state.get(&#34;active_buffer&#34;):
+        agent_state[&#34;summary_blob&#34;] = f&#34;Summary updated {time.ctime()}: Processed {len(agent_state[&#39;active_buffer&#39;])} ops.&#34;
+    db_doc = bejson_cognition_upsert(db_doc, &#34;AgentState&#34;, agent_id, core_directives=agent_state.get(&#34;core_directives&#34;), summary_blob=agent_state.get(&#34;summary_blob&#34;), last_checkpoint=datetime.now(timezone.utc).isoformat())
+    db_doc = bejson_cognition_upsert(db_doc, &#34;ExecutionStack&#34;, f&#34;STK-{agent_id}&#34;, agent_id_fk=agent_id, task_queue=agent_state.get(&#34;task_queue&#34;), pending_context=agent_state.get(&#34;pending_context&#34;))
+    agent_state[&#34;active_buffer&#34;] = []
+    bejson_cognition_safe_write(db_path, db_doc)
+
+def bejson_cognition_log_turn(db_doc: dict, user_input: str, agent_response: str, payloads_used: list) -&gt; dict:
+    return bejson_cognition_upsert(db_doc, &#34;EpisodicLog&#34;, f&#34;LOG-{uuid.uuid4().hex[:8]}&#34;, user_input=user_input, agent_response=agent_response, payloads_used=payloads_used)
+
+# ===========================================================================
+# COMPACTION &amp; INDEXING
+# ===========================================================================
+def bejson_cognition_prune_logs(db_doc: dict, max_logs: int = 100) -&gt; dict:
+    &#34;&#34;&#34;Slices the EpisodicLog matrix to prevent infinite disk bloat.&#34;&#34;&#34;
+    log_rows = [(i, r) for i, r in enumerate(db_doc.get(&#34;Values&#34;, [])) if r[0] == &#34;EpisodicLog&#34;]
+    if len(log_rows) &lt;= max_logs: return db_doc
+    log_rows.sort(key=lambda x: x[1][2])
+    to_remove_count = len(log_rows) - max_logs
+    remove_indices = {x[0] for x in log_rows[:to_remove_count]}
+    db_doc[&#34;Values&#34;] = [row for i, row in enumerate(db_doc[&#34;Values&#34;]) if i not in remove_indices]
+    return db_doc
+
+def bejson_cognition_compact_logs(db_doc: dict, archive_path: str, max_logs: int = 100) -&gt; dict:
+    log_rows = [(i, r) for i, r in enumerate(db_doc.get(&#34;Values&#34;, [])) if r[0] == &#34;EpisodicLog&#34;]
+    if len(log_rows) &lt;= max_logs: return db_doc
+    log_rows.sort(key=lambda x: x[1][2])
+    to_archive = len(log_rows) - max_logs
+    archive_rows = [x[1] for x in log_rows[:to_archive]]
+    remove_indices = {x[0] for x in log_rows[:to_archive]}
+
+    resolved_archive = mfdb_core_resolve_path(archive_path)
+    try: archive_doc = bejson_core_load_file(resolved_archive)
+    except: archive_doc = None
+    if not archive_doc or archive_doc.get(&#34;Format_Version&#34;) != &#34;104db&#34;:
+        archive_doc = {&#34;Format&#34;: &#34;BEJSON&#34;, &#34;Format_Version&#34;: &#34;104db&#34;, &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;, &#34;Records_Type&#34;: [&#34;EpisodicLog&#34;], &#34;Fields&#34;: db_doc.get(&#34;Fields&#34;, []), &#34;Values&#34;: []}
+    archive_doc[&#34;Values&#34;].extend(archive_rows)
+    bejson_cognition_safe_write(resolved_archive, archive_doc)
+    
+    db_doc[&#34;Values&#34;] = [r for i, r in enumerate(db_doc[&#34;Values&#34;]) if i not in remove_indices]
+    return db_doc
+
+def bejson_cognition_scan_index(index_doc: dict, text: str, payloads_dir: str) -&gt; Tuple[List[str], List[str]]:
+    loaded_payloads, payload_names = [], []
+    for keyword, payload_file in index_doc.get(&#34;triggers&#34;, {}).items():
+        if keyword in text.lower():
+            payload_data = bejson_core_load_file(mfdb_core_resolve_path(os.path.join(payloads_dir, payload_file)))
+            if payload_data: loaded_payloads.append(json.dumps(payload_data)); payload_names.append(payload_file)
+    return loaded_payloads, payload_names
+
+# ===========================================================================
+# SELF-PATCHING (Meta-Cognitive Loop)
+# ===========================================================================
+def bejson_cognition_integrate_patches(db_path: str, db_doc: dict, index_path: str, index_doc: dict) -&gt; None:
+    pending_patches = bejson_cognition_query(db_doc, &#34;MetaPatch&#34;, {&#34;status&#34;: &#34;pending&#34;})
+    if not pending_patches:
+        db_doc = bejson_cognition_prune_logs(db_doc)
+        bejson_cognition_safe_write(db_path, db_doc)
+        return
+
+    resolved_index = mfdb_core_resolve_path(index_path)
+    if os.path.exists(resolved_index): shutil.copy2(resolved_index, f&#34;{resolved_index}.bak&#34;)
+    pre_patch_hash = hashlib.md5(json.dumps(index_doc, sort_keys=True).encode(&#39;utf-8&#39;)).hexdigest()
+
+    for patch in pending_patches:
+        instr = patch.get(&#34;patch_instruction&#34;, {})
+        if patch[&#34;target_layer&#34;] == &#34;context_index&#34; and instr.get(&#34;action&#34;) == &#34;APPEND&#34;:
+            if &#34;triggers&#34; not in index_doc: index_doc[&#34;triggers&#34;] = {}
+            index_doc[&#34;triggers&#34;][instr[&#34;target_key&#34;]] = instr[&#34;target_value&#34;]
+            db_doc = bejson_cognition_upsert(db_doc, &#34;MetaPatch&#34;, patch[&#34;id&#34;], status=&#34;applied&#34;)
+
+    try: bejson_validator_validate_string(json.dumps(index_doc))
+    except Exception as e: logging.error(f&#34;[FATAL] Schema corrupted during patch integration. {e}&#34;); return
+
+    db_doc = bejson_cognition_prune_logs(db_doc)
+    bejson_cognition_safe_write(index_path, index_doc)
+    bejson_cognition_safe_write(db_path, db_doc)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

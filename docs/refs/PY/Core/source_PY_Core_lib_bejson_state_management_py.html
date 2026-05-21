@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_state_management.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / Core / lib_bejson_state_management.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_state_management.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_state_management.py
+Family:       Core
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  State management and persistence layer for BEJSON documents.
+&#34;&#34;&#34;
+
+import json
+from datetime import datetime
+
+class BEJSONState:
+    &#34;&#34;&#34;
+    Mirror of lib_state_bejson_management.js
+    Python/Flask-compatible state management using BEJSON 104db.
+    &#34;&#34;&#34;
+    def __init__(self, schema_name=&#34;AppState&#34;, initial_state=None):
+        self.bejson = {
+            &#34;Format&#34;: &#34;BEJSON&#34;,
+            &#34;Format_Version&#34;: &#34;104db&#34;,
+            &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+            &#34;Records_Type&#34;: [&#34;StateNode&#34;, &#34;History&#34;],
+            &#34;Fields&#34;: [
+                { &#34;name&#34;: &#34;Record_Type_Parent&#34;, &#34;type&#34;: &#34;string&#34; },
+                { &#34;name&#34;: &#34;key&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;StateNode&#34; },
+                { &#34;name&#34;: &#34;value&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;StateNode&#34; },
+                { &#34;name&#34;: &#34;timestamp&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;History&#34; },
+                { &#34;name&#34;: &#34;snapshot&#34;, &#34;type&#34;: &#34;string&#34;, &#34;Record_Type_Parent&#34;: &#34;History&#34; }
+            ],
+            &#34;Values&#34;: []
+        }
+        self._state = initial_state or {}
+        self._history_index = -1
+        self._sync_to_bejson()
+        self._save_history()
+
+    @property
+    def state(self):
+        return self._state
+
+    def set(self, key, value):
+        self._state[key] = value
+        self._sync_to_bejson()
+        self._save_history()
+
+    def get(self, key, default=None):
+        return self._state.get(key, default)
+
+    def _sync_to_bejson(self):
+        # Clear current StateNodes
+        self.bejson[&#34;Values&#34;] = [r for r in self.bejson[&#34;Values&#34;] if r[0] != &#34;StateNode&#34;]
+        # Inject from current state
+        for key, value in self._state.items():
+            self.bejson[&#34;Values&#34;].append([&#34;StateNode&#34;, key, json.dumps(value), None, None])
+
+    def _save_history(self):
+        snapshot = json.dumps(self._state)
+        timestamp = datetime.now().isoformat()
+        self.bejson[&#34;Values&#34;].append([&#34;History&#34;, None, None, timestamp, snapshot])
+        history_rows = [r for r in self.bejson[&#34;Values&#34;] if r[0] == &#34;History&#34;]
+        self._history_index = len(history_rows) - 1
+
+    def undo(self):
+        history_rows = [r for r in self.bejson[&#34;Values&#34;] if r[0] == &#34;History&#34;]
+        if self._history_index &lt;= 0:
+            return False
+        self._history_index -= 1
+        self._state = json.loads(history_rows[self._history_index][4])
+        self._sync_to_bejson()
+        return True
+
+    def export_bejson(self):
+        return json.dumps(self.bejson, indent=2)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

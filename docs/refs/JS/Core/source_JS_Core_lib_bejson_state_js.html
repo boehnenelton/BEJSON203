@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_state.js</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">JS / Core / lib_bejson_state.js</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_state.js</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+/**
+ * Library:      lib_bejson_state.js
+ * Family:       Core
+ * Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;JS&#34;]
+ * Status:       OFFICIAL
+ * Author:       Elton Boehnen
+ * Version:      2.0.1 OFFICIAL
+ * MFDB Version: 1.31
+ * Format_Creator: Elton Boehnen
+ * Date:         2026-05-18
+ * Description:  State management and persistence layer for BEJSON documents.
+ */
+
+if (typeof window !== &#39;undefined&#39;) {
+    window.BEJSON = window.BEJSON || {};
+}
+
+class BEJSONState {
+    constructor(initialState = {}, options = {}) {
+        this.schema_name = options.name || &#34;BEJSONState&#34;;
+        // Construct BEJSON 104db document directly (no namespace dependency)
+        this.bejson = {
+            Format: &#34;BEJSON&#34;,
+            Format_Version: &#34;104db&#34;,
+            Format_Creator: &#34;Elton Boehnen&#34;,
+            Records_Type: [&#34;StateNode&#34;, &#34;History&#34;],
+            Fields: [
+            { name: &#34;Record_Type_Parent&#34;, type: &#34;string&#34; },
+            { name: &#34;key&#34;, type: &#34;string&#34;, Record_Type_Parent: &#34;StateNode&#34; },
+            { name: &#34;value&#34;, type: &#34;string&#34;, Record_Type_Parent: &#34;StateNode&#34; },
+            { name: &#34;timestamp&#34;, type: &#34;string&#34;, Record_Type_Parent: &#34;History&#34; },
+            { name: &#34;snapshot&#34;, type: &#34;string&#34;, Record_Type_Parent: &#34;History&#34; }
+        ],
+            Values: []
+        };
+
+        this._listeners = new Map();
+        this._historyIndex = -1;
+        this._activeEffect = null;
+        this._dependencyGraph = new Map(); // path -&gt; Set of effects
+        this._effectDeps = new Map();      // effect -&gt; Set of paths
+
+        // Reactive Proxy
+        this.state = this._createProxy(initialState, &#39;&#39;);
+        
+        // Initialize BEJSON values from initial state
+        this._syncToBEJSON();
+        this._saveHistory();
+    }
+
+    _createProxy(target, path) {
+        const self = this;
+        return new Proxy(target, {
+            get(obj, prop) {
+                const fullPath = path ? `${path}.${prop}` : prop;
+                if (self._activeEffect) {
+                    // Track dependency: path -&gt; effect
+                    if (!self._dependencyGraph.has(fullPath)) self._dependencyGraph.set(fullPath, new Set());
+                    self._dependencyGraph.get(fullPath).add(self._activeEffect);
+                    
+                    // Track inverse dependency: effect -&gt; path
+                    if (!self._effectDeps.has(self._activeEffect)) self._effectDeps.set(self._activeEffect, new Set());
+                    self._effectDeps.get(self._activeEffect).add(fullPath);
+                }
+                const value = obj[prop];
+                if (value &amp;&amp; typeof value === &#39;object&#39;) return self._createProxy(value, fullPath);
+                return value;
+            },
+            set(obj, prop, value) {
+                const fullPath = path ? `${path}.${prop}` : prop;
+                const oldValue = obj[prop];
+                if (oldValue !== value) {
+                    obj[prop] = value;
+                    self._syncToBEJSON();
+                    self._saveHistory();
+                    self._notify(fullPath, value, oldValue);
+                    self._triggerEffects(fullPath);
+                }
+                return true;
+            }
+        });
+    }
+
+    _cleanupEffect(effect) {
+        const paths = this._effectDeps.get(effect);
+        if (paths) {
+            paths.forEach(path =&gt; {
+                const effects = this._dependencyGraph.get(path);
+                if (effects) {
+                    effects.delete(effect);
+                    if (effects.size === 0) this._dependencyGraph.delete(path);
+                }
+            });
+            paths.clear();
+        }
+    }
+
+    _syncToBEJSON() {
+        const fields = this.bejson.Fields;
+        const fieldCount = fields.length;
+        const rtpIdx = fields.findIndex(f =&gt; f.name === &#34;Record_Type_Parent&#34;);
+        const keyIdx = fields.findIndex(f =&gt; f.name === &#34;key&#34;);
+        const valIdx = fields.findIndex(f =&gt; f.name === &#34;value&#34;);
+
+        // Clear StateNodes
+        this.bejson.Values = this.bejson.Values.filter(r =&gt; r[0] !== &#34;StateNode&#34;);
+        
+        // Flatten and add
+        for (const [key, value] of Object.entries(this.state)) {
+            const row = new Array(fieldCount).fill(null);
+            if (rtpIdx !== -1) row[rtpIdx] = &#34;StateNode&#34;;
+            if (keyIdx !== -1) row[keyIdx] = key;
+            if (valIdx !== -1) row[valIdx] = JSON.stringify(value);
+            this.bejson.Values.push(row);
+        }
+    }
+
+    _saveHistory() {
+        const fields = this.bejson.Fields;
+        const fieldCount = fields.length;
+        const rtpIdx = fields.findIndex(f =&gt; f.name === &#34;Record_Type_Parent&#34;);
+        const tsIdx = fields.findIndex(f =&gt; f.name === &#34;timestamp&#34;);
+        const snIdx = fields.findIndex(f =&gt; f.name === &#34;snapshot&#34;);
+
+        const snapshot = JSON.stringify(this.state);
+        const row = new Array(fieldCount).fill(null);
+        if (rtpIdx !== -1) row[rtpIdx] = &#34;History&#34;;
+        if (tsIdx !== -1) row[tsIdx] = new Date().toISOString();
+        if (snIdx !== -1) row[snIdx] = snapshot;
+        
+        this.bejson.Values.push(row);
+        const historyRows = this.bejson.Values.filter(r =&gt; r[0] === &#34;History&#34;);
+        this._historyIndex = historyRows.length - 1;
+    }
+
+    _notify(path, newValue, oldValue) {
+        if (this._listeners.has(path)) this._listeners.get(path).forEach(cb =&gt; cb(newValue, oldValue, path));
+        if (this._listeners.has(&#39;*&#39;)) this._listeners.get(&#39;*&#39;).forEach(cb =&gt; cb(newValue, oldValue, path));
+    }
+
+    _triggerEffects(path) {
+        const effectsToRun = new Set();
+        if (this._dependencyGraph.has(path)) {
+            this._dependencyGraph.get(path).forEach(e =&gt; effectsToRun.add(e));
+        }
+        
+        // Handle nested paths (e.g., user.name triggers user)
+        const parts = path.split(&#39;.&#39;);
+        let currentPath = &#39;&#39;;
+        for (let i = 0; i &lt; parts.length - 1; i++) {
+            currentPath += (currentPath ? &#39;.&#39; : &#39;&#39;) + parts[i];
+            if (this._dependencyGraph.has(currentPath)) {
+                this._dependencyGraph.get(currentPath).forEach(e =&gt; effectsToRun.add(e));
+            }
+        }
+        
+        effectsToRun.forEach(effect =&gt; effect());
+    }
+
+    subscribe(path, callback) {
+        if (!this._listeners.has(path)) this._listeners.set(path, new Set());
+        this._listeners.get(path).add(callback);
+        return () =&gt; this._listeners.get(path).delete(callback);
+    }
+
+    effect(fn) {
+        const runner = () =&gt; {
+            this._cleanupEffect(runner);
+            this._activeEffect = runner;
+            try {
+                fn(this.state);
+            } finally {
+                this._activeEffect = null;
+            }
+        };
+        runner();
+    }
+
+    undo() {
+        const historyRows = this.bejson.Values.filter(r =&gt; r[0] === &#34;History&#34;);
+        if (this._historyIndex &lt;= 0) return false;
+        this._historyIndex--;
+        this._restore(JSON.parse(historyRows[this._historyIndex][4]));
+        return true;
+    }
+
+    _restore(snapshot) {
+        Object.keys(this.state).forEach(k =&gt; delete this.state[k]);
+        Object.assign(this.state, snapshot);
+        this._notify(&#39;*&#39;, this.state, null);
+    }
+}
+
+// --- Exports ---
+const StateExports = {
+    BEJSONState,
+    State: BEJSONState
+};
+
+if (typeof module !== &#39;undefined&#39; &amp;&amp; module.exports) {
+    module.exports = StateExports;
+}
+if (typeof window !== &#39;undefined&#39;) {
+    window.BEJSON = window.BEJSON || {};
+    Object.assign(window.BEJSON, StateExports);
+}
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

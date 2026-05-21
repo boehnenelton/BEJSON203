@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_mfdb_validator.sh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">SH / Core / lib_mfdb_validator.sh</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_mfdb_validator.sh</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+# Library:      lib_mfdb_validator.sh
+# Family:       Core
+# Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;SH&#34;]
+# Status:       OFFICIAL
+# Author:       Elton Boehnen
+# Version:      2.0.1 OFFICIAL
+# MFDB Version: 1.31
+# Format_Creator: Elton Boehnen
+# Date:         2026-05-18
+# Description:  Bidirectional path and manifest-entity relationship validator.
+
+set -o pipefail
+set -o nounset
+
+# Source base validator if not already loaded
+_MFDB_VAL_DIR=&#34;$(cd &#34;$(dirname &#34;${BASH_SOURCE[0]}&#34;)&#34; &amp;&amp; pwd)&#34;
+if ! declare -f bejson_validator_validate_file &gt; /dev/null 2&gt;&amp;1; then
+    # shellcheck source=./lib_bejson_validator.sh
+    source &#34;${_MFDB_VAL_DIR}/lib_bejson_validator.sh&#34;
+fi
+
+#-------------------------------------------------------------------------------
+# Error codes (30–49)
+#-------------------------------------------------------------------------------
+
+[[ -v E_MFDB_NOT_MANIFEST ]] || readonly E_MFDB_NOT_MANIFEST=30
+[[ -v E_MFDB_NOT_ENTITY_FILE ]] || readonly E_MFDB_NOT_ENTITY_FILE=31
+[[ -v E_MFDB_MANIFEST_RECORDS_TYPE ]] || readonly E_MFDB_MANIFEST_RECORDS_TYPE=32
+[[ -v E_MFDB_ENTITY_NOT_FOUND ]] || readonly E_MFDB_ENTITY_NOT_FOUND=33
+[[ -v E_MFDB_ENTITY_NAME_MISMATCH ]] || readonly E_MFDB_ENTITY_NAME_MISMATCH=34
+[[ -v E_MFDB_DUPLICATE_ENTRY ]] || readonly E_MFDB_DUPLICATE_ENTRY=35
+[[ -v E_MFDB_NO_PARENT_HIERARCHY ]] || readonly E_MFDB_NO_PARENT_HIERARCHY=36
+[[ -v E_MFDB_MANIFEST_NOT_FOUND ]] || readonly E_MFDB_MANIFEST_NOT_FOUND=37
+[[ -v E_MFDB_BIDIRECTIONAL_FAIL ]] || readonly E_MFDB_BIDIRECTIONAL_FAIL=38
+[[ -v E_MFDB_FK_UNRESOLVED ]] || readonly E_MFDB_FK_UNRESOLVED=39
+[[ -v E_MFDB_MISSING_REQUIRED_FIELD ]] || readonly E_MFDB_MISSING_REQUIRED_FIELD=40
+[[ -v E_MFDB_NULL_REQUIRED ]] || readonly E_MFDB_NULL_REQUIRED=41
+[[ -v E_MFDB_INVALID_ARCHIVE ]] || readonly E_MFDB_INVALID_ARCHIVE=42
+
+#-------------------------------------------------------------------------------
+# Validation state
+#-------------------------------------------------------------------------------
+
+__MFDB_VALIDATION_ERRORS=()
+__MFDB_VALIDATION_WARNINGS=()
+
+mfdb_validator_reset_state() {
+    __MFDB_VALIDATION_ERRORS=()
+    __MFDB_VALIDATION_WARNINGS=()
+}
+
+__mfdb_add_error() {
+    local message=&#34;$1&#34;
+    local location=&#34;${2:-}&#34;
+    __MFDB_VALIDATION_ERRORS+=(&#34;ERROR | Location: $location | Message: $message&#34;)
+}
+
+mfdb_validator_has_errors()   { [[ ${#__MFDB_VALIDATION_ERRORS[@]}   -gt 0 ]]; }
+mfdb_validator_get_errors()    { printf &#39;%s\n&#39; &#34;${__MFDB_VALIDATION_ERRORS[@]+&#34;${__MFDB_VALIDATION_ERRORS[@]}&#34;}&#34;; }
+
+#-------------------------------------------------------------------------------
+# Archive Validation
+#-------------------------------------------------------------------------------
+
+# mfdb_validator_validate_archive &lt;archive_path&gt;
+mfdb_validator_validate_archive() {
+    local archive_path=&#34;$1&#34;
+    mfdb_validator_reset_state
+    if [[ ! -f &#34;$archive_path&#34; ]]; then
+        __mfdb_add_error &#34;Archive not found: $archive_path&#34; &#34;File System&#34;
+        return $E_MFDB_MANIFEST_NOT_FOUND
+    fi
+
+    if ! unzip -l &#34;$archive_path&#34; | grep -q &#34;104a.mfdb.bejson&#34;; then
+        __mfdb_add_error &#34;Missing 104a.mfdb.bejson manifest inside archive&#34; &#34;Zip Structure&#34;
+        return $E_MFDB_INVALID_ARCHIVE
+    fi
+    return 0
+}
+
+#-------------------------------------------------------------------------------
+# Main validation
+#-------------------------------------------------------------------------------
+
+mfdb_validator_validate_manifest() {
+    local manifest_path=&#34;$1&#34;
+    mfdb_validator_reset_state
+    [[ ! -f &#34;$manifest_path&#34; ]] &amp;&amp; return $E_MFDB_MANIFEST_NOT_FOUND
+    bejson_validator_validate_file &#34;$manifest_path&#34; || return $E_MFDB_NOT_MANIFEST
+    
+    local rt=$(jq -r &#39;.Records_Type | @json&#39; &#34;$manifest_path&#34; 2&gt;/dev/null)
+    [[ &#34;$rt&#34; != &#39;[&#34;mfdb&#34;]&#39; ]] &amp;&amp; return $E_MFDB_MANIFEST_RECORDS_TYPE
+    return 0
+}
+
+#-------------------------------------------------------------------------------
+# Dependency check
+#-------------------------------------------------------------------------------
+
+mfdb_validator_check_dependencies() {
+    if ! command -v unzip &gt;/dev/null 2&gt;&amp;1; then
+        echo &#34;ERROR: Required command &#39;unzip&#39; not found&#34; &gt;&amp;2
+        return 1
+    fi
+    # Strictly enforce jq &gt;= 1.6 via base validator
+    if ! bejson_validator_check_dependencies; then
+        return 1
+    fi
+    return 0
+}
+
+# Export functions
+export -f mfdb_validator_validate_archive
+export -f mfdb_validator_validate_manifest
+export -f mfdb_validator_reset_state
+export -f mfdb_validator_has_errors
+export -f mfdb_validator_get_errors
+export -f mfdb_validator_check_dependencies
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Source: lib_bejson_core.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="../../../css/becss-core.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-components.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-headers.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-sidebars.css">
+    
+    <link rel="stylesheet" href="../../../css/becss-footers.css">
+    
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+    
+    
+
+    <header>
+        <!-- Component: Header Telemetry HUD | Type: Header Fragment | Version: 1.0.0 -->
+<header class="c-header c-header-telemetry">
+    <div class="header-logo">HTML<span class="emphasis">3</span></div>
+    <div class="c-header-telemetry__hud">
+        <div class="c-header-telemetry__item">CPU: <span>12%</span></div>
+        <div class="c-header-telemetry__item">NET: <span>STABLE</span></div>
+        <div class="c-header-telemetry__item">JOBS: <span>4 ACTIVE</span></div>
+    </div>
+</header>
+    </header>
+
+    
+
+    <div class="container">
+        <aside class="left-column">
+            
+        </aside>
+
+        <main class="middle-column">
+            <!-- Component Name: Template Standard - Carousel Schema | Type: Body Component | Version: 1.0.1 -->
+
+<div class="c-carousel-schema" container-type="inline-size">
+    <div class="content-card" style="padding: 0; background: #000; border-color: #333;">
+        <div id="schema_carousel" class="carousel-container">
+            
+            <!-- Dynamic Source Slide -->
+            <div class="carousel-slide active" style="display: block;">
+                <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
+                    <div style="display: flex; gap: 15px; align-items: center;">
+                        <span style="font-weight: bold; color: #fff;">PY / Core / lib_bejson_core.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_core.py</span>
+                    </div>
+                    <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
+                </div>
+                <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
+&#34;&#34;&#34;
+Library:      lib_bejson_core.py
+Family:       Core
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Low-level primitive operations for BEJSON document manipulation.
+&#34;&#34;&#34;
+
+import time
+
+import copy
+import json
+import os
+import sys
+import shutil
+import tempfile
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable
+
+LIB_DIR = os.path.dirname(os.path.abspath(__file__))
+if LIB_DIR not in sys.path:
+    sys.path.append(LIB_DIR)
+
+from lib_bejson_validator import (
+    BEJSONValidationError,
+    bejson_validator_validate_file,
+    bejson_validator_validate_string,
+)
+
+try:
+    from lib_bejson_errors import *
+except ImportError:
+    # Fallback if registry is missing
+    E_CORE_INVALID_VERSION = 20
+    E_CORE_INVALID_OPERATION = 21
+    E_CORE_INDEX_OUT_OF_BOUNDS = 22
+    E_CORE_FIELD_NOT_FOUND = 23
+    E_CORE_TYPE_CONVERSION_FAILED = 24
+    E_CORE_BACKUP_FAILED = 25
+    E_CORE_WRITE_FAILED = 26
+    E_CORE_QUERY_FAILED = 27
+
+class BEJSONCoreError(Exception):
+    def __init__(self, message: str, code: int):
+        super().__init__(message)
+        self.code = code
+
+
+# ---------------------------------------------------------------------------
+# ATOMIC FILE OPERATIONS
+# ---------------------------------------------------------------------------
+
+def __bejson_core_atomic_backup(file_path: str, backup_suffix: str = &#34;.backup&#34;) -&gt; str:
+    &#34;&#34;&#34;
+    Create a timestamped backup of file_path.
+    Returns the backup path, or &#39;&#39; if no file existed.
+    Mirrors __bejson_core_atomic_backup.
+    &#34;&#34;&#34;
+    path = Path(file_path)
+    if not path.exists():
+        return &#34;&#34;
+    timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+    backup_path = path.with_name(f&#34;{path.name}{backup_suffix}.{timestamp}&#34;)
+    try:
+        shutil.copy2(path, backup_path)
+    except OSError as exc:
+        raise BEJSONCoreError(f&#34;Backup failed: {exc}&#34;, E_CORE_BACKUP_FAILED)
+    return str(backup_path)
+
+
+def __bejson_core_restore_backup(file_path: str, backup_path: str) -&gt; bool:
+    &#34;&#34;&#34;
+    Restore backup_path → file_path.
+    Mirrors __bejson_core_restore_backup.
+    &#34;&#34;&#34;
+    bp = Path(backup_path)
+    if bp.exists():
+        shutil.move(str(bp), file_path)
+        return True
+    return False
+
+
+def bejson_core_atomic_write(file_path: str, content: dict, create_backup: bool = True) -&gt; None:
+    &#34;&#34;&#34;
+    Validate content and write it atomically to file_path.
+    CRITICAL FIXES (v3.2:
+      - Same-partition temp files: temp file is created as a sibling to the
+        target file (same directory), guaranteeing atomic os.rename() on the
+        same filesystem.  Cross-device falls back to shutil.copy2.
+      - Explicit fsync: file descriptor is flushed via os.fsync() BEFORE
+        rename, closing the data-loss window from volatile page cache.
+      - Cross-filesystem safe: if os.rename fails (EXDEV), falls back to
+        shutil.copy2 + os.unlink (atomic enough with fsync).
+    Mirrors bejson_core_atomic_write.
+    &#34;&#34;&#34;
+    backup_path = &#34;&#34;
+    if create_backup:
+        backup_path = __bejson_core_atomic_backup(file_path)
+
+    json_text = json.dumps(content, indent=2)
+
+    # Write to a temp file first, validate, then rename
+    path = Path(file_path)
+    # Ensure output parent directory exists
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    # CRITICAL FIX: always create temp as a SIBLING to the target file
+    # so os.rename stays on the same partition (true atomic inode swap).
+    temp_dir = str(path.parent)
+    # Only fall back to system tmpdir if parent is not writable AND
+    # the user explicitly set TMPDIR (opt-in cross-partition fallback).
+    if not os.access(temp_dir, os.W_OK):
+        user_tmp = os.environ.get(&#34;TMPDIR&#34;, &#34;&#34;)
+        if user_tmp:
+            temp_dir = user_tmp
+            os.makedirs(temp_dir, exist_ok=True)
+        else:
+            raise BEJSONCoreError(
+                f&#34;Cannot write to target directory &#39;{temp_dir}&#39; and &#34;
+                &#34;TMPDIR not set. Set TMPDIR to a writable location on the &#34;
+                &#34;same partition as the target, or grant write permission.&#34;,
+                E_CORE_WRITE_FAILED,
+            )
+
+    tmp_fd = None
+    tmp_path = &#34;&#34;
+    try:
+        # Use O_WRONLY|O_CREAT|O_EXCL for safe temp file creation
+        fd, tmp_path = tempfile.mkstemp(
+            dir=temp_dir, suffix=&#34;.tmp&#34;, prefix=&#34;.bejson_&#34;
+        )
+        tmp_fd = fd
+        with os.fdopen(fd, &#34;w&#34;, encoding=&#34;utf-8&#34;) as tmp:
+            tmp.write(json_text)
+            # CRITICAL FIX: explicit fsync before close
+            tmp.flush()
+            os.fsync(tmp.fileno())
+    except OSError as exc:
+        if tmp_fd is not None:
+            try:
+                os.close(tmp_fd)
+            except OSError:
+                pass
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+        if backup_path:
+            __bejson_core_restore_backup(file_path, backup_path)
+        raise BEJSONCoreError(f&#34;Write failed: {exc}&#34;, E_CORE_WRITE_FAILED)
+
+    # Validate the temp file BEFORE committing
+    try:
+        bejson_validator_validate_file(tmp_path)
+    except BEJSONValidationError as exc:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        if backup_path:
+            __bejson_core_restore_backup(file_path, backup_path)
+        raise BEJSONCoreError(f&#34;Validation failed: {exc}&#34;, E_CORE_WRITE_FAILED)
+
+    # Atomic rename (same-partition guaranteed by sibling temp)
+    try:
+        os.rename(tmp_path, file_path)
+        # fsync the directory entry to ensure rename is durable
+        dir_fd = os.open(str(path.parent), os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+    except OSError as exc:
+        # Cross-filesystem: fall back to copy2 + unlink (still safe with fsync)
+        try:
+            shutil.copy2(tmp_path, file_path)
+            os.unlink(tmp_path)
+        except OSError:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            if backup_path:
+                __bejson_core_restore_backup(file_path, backup_path)
+            raise BEJSONCoreError(f&#34;Atomic move failed: {exc}&#34;, E_CORE_WRITE_FAILED)
+
+    # Clean up old backup (write succeeded)
+    if backup_path:
+        Path(backup_path).unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# DOCUMENT CREATION
+# ---------------------------------------------------------------------------
+
+def bejson_core_create_104(records_type: str, fields: list[dict], values: list[list]) -&gt; dict:
+    &#34;&#34;&#34;
+    Create a BEJSON 104 document.
+    Mirrors bejson_core_create_104.
+    &#34;&#34;&#34;
+    return {
+        &#34;Format&#34;: &#34;BEJSON&#34;,
+        &#34;Format_Version&#34;: &#34;104&#34;,
+        &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+        &#34;Records_Type&#34;: [records_type],
+        &#34;Fields&#34;: fields,
+        &#34;Values&#34;: values,
+    }
+
+
+def bejson_core_create_104a(
+    records_type: str,
+    fields: list[dict],
+    values: list[list],
+    **custom_headers,
+) -&gt; dict:
+    &#34;&#34;&#34;
+    Create a BEJSON 104a document with optional custom top-level headers.
+    Mirrors bejson_core_create_104a.
+    &#34;&#34;&#34;
+    doc = {
+        &#34;Format&#34;: &#34;BEJSON&#34;,
+        &#34;Format_Version&#34;: &#34;104a&#34;,
+        &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+        &#34;Records_Type&#34;: [records_type],
+        &#34;Fields&#34;: fields,
+        &#34;Values&#34;: values,
+    }
+    doc.update(custom_headers)
+    return doc
+
+
+def bejson_core_create_104db(
+    records_types: list[str], fields: list[dict], values: list[list]
+) -&gt; dict:
+    &#34;&#34;&#34;
+    Create a BEJSON 104db document (multi-type).
+    Mirrors bejson_core_create_104db.
+    &#34;&#34;&#34;
+    return {
+        &#34;Format&#34;: &#34;BEJSON&#34;,
+        &#34;Format_Version&#34;: &#34;104db&#34;,
+        &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+        &#34;Records_Type&#34;: records_types,
+        &#34;Fields&#34;: fields,
+        &#34;Values&#34;: values,
+    }
+
+
+# ---------------------------------------------------------------------------
+# DOCUMENT LOADING &amp; PARSING
+# ---------------------------------------------------------------------------
+
+def bejson_core_load_file(file_path: str) -&gt; dict:
+    &#34;&#34;&#34;
+    Load and validate a BEJSON file from disk.
+    Mirrors bejson_core_load_file.
+    &#34;&#34;&#34;
+    path = Path(file_path)
+    if not path.exists():
+        raise BEJSONCoreError(f&#34;File not found: {file_path}&#34;, E_CORE_FIELD_NOT_FOUND)
+    bejson_validator_validate_file(file_path)
+    return json.loads(path.read_text(encoding=&#34;utf-8&#34;))
+
+
+def bejson_core_load_string(json_string: str) -&gt; dict:
+    &#34;&#34;&#34;
+    Parse and validate a BEJSON JSON string.
+    Mirrors bejson_core_load_string.
+    &#34;&#34;&#34;
+    bejson_validator_validate_string(json_string)
+    return json.loads(json_string)
+
+
+def bejson_core_get_version(doc: dict) -&gt; str:
+    &#34;&#34;&#34;Return the Format_Version. Mirrors bejson_core_get_version.&#34;&#34;&#34;
+    return doc[&#34;Format_Version&#34;]
+
+
+def bejson_core_get_records_types(doc: dict) -&gt; list[str]:
+    &#34;&#34;&#34;Return the Records_Type list. Mirrors bejson_core_get_records_types.&#34;&#34;&#34;
+    return doc[&#34;Records_Type&#34;]
+
+
+def bejson_core_get_fields(doc: dict) -&gt; list[dict]:
+    &#34;&#34;&#34;Return the Fields list. Mirrors bejson_core_get_fields.&#34;&#34;&#34;
+    return doc[&#34;Fields&#34;]
+
+
+def bejson_core_get_field_index(doc: dict, field_name: str) -&gt; int:
+    &#34;&#34;&#34;
+    Return the zero-based index of a field by name.
+    Raises BEJSONCoreError if not found.
+    Mirrors bejson_core_get_field_index.
+    &#34;&#34;&#34;
+    for i, f in enumerate(doc[&#34;Fields&#34;]):
+        if f[&#34;name&#34;] == field_name:
+            return i
+    raise BEJSONCoreError(f&#34;Field not found: {field_name}&#34;, E_CORE_FIELD_NOT_FOUND)
+
+
+def bejson_core_get_field_def(doc: dict, field_name: str) -&gt; dict:
+    &#34;&#34;&#34;
+    Return the field definition dict for a named field.
+    Mirrors bejson_core_get_field_def.
+    &#34;&#34;&#34;
+    for f in doc[&#34;Fields&#34;]:
+        if f[&#34;name&#34;] == field_name:
+            return f
+    raise BEJSONCoreError(f&#34;Field not found: {field_name}&#34;, E_CORE_FIELD_NOT_FOUND)
+
+
+def bejson_core_get_field_count(doc: dict) -&gt; int:
+    &#34;&#34;&#34;Return number of fields. Mirrors bejson_core_get_field_count.&#34;&#34;&#34;
+    return len(doc[&#34;Fields&#34;])
+
+
+def bejson_core_get_record_count(doc: dict) -&gt; int:
+    &#34;&#34;&#34;Return number of records. Mirrors bejson_core_get_record_count.&#34;&#34;&#34;
+    return len(doc[&#34;Values&#34;])
+
+
+# ---------------------------------------------------------------------------
+# POSITION-BASED INDEXING &amp; QUERYING
+# ---------------------------------------------------------------------------
+
+def _check_record_bounds(doc: dict, record_index: int):
+    if record_index &lt; 0 or record_index &gt;= bejson_core_get_record_count(doc):
+        raise BEJSONCoreError(
+            f&#34;Record index {record_index} out of bounds&#34;, E_CORE_INDEX_OUT_OF_BOUNDS
+        )
+
+
+def _check_field_bounds(doc: dict, field_index: int):
+    if field_index &lt; 0 or field_index &gt;= bejson_core_get_field_count(doc):
+        raise BEJSONCoreError(
+            f&#34;Field index {field_index} out of bounds&#34;, E_CORE_INDEX_OUT_OF_BOUNDS
+        )
+
+
+def bejson_core_get_value_at(doc: dict, record_index: int, field_index: int) -&gt; Any:
+    &#34;&#34;&#34;
+    Return the value at [record_index][field_index].
+    Mirrors bejson_core_get_value_at.
+    &#34;&#34;&#34;
+    _check_record_bounds(doc, record_index)
+    _check_field_bounds(doc, field_index)
+    return doc[&#34;Values&#34;][record_index][field_index]
+
+
+def bejson_core_get_record(doc: dict, record_index: int) -&gt; list:
+    &#34;&#34;&#34;
+    Return a record (list of values) by index.
+    Mirrors bejson_core_get_record.
+    &#34;&#34;&#34;
+    _check_record_bounds(doc, record_index)
+    return doc[&#34;Values&#34;][record_index]
+
+
+def bejson_core_get_field_values(doc: dict, field_name: str) -&gt; list:
+    &#34;&#34;&#34;
+    Return a list of all values for a named field across all records.
+    Mirrors bejson_core_get_field_values.
+    &#34;&#34;&#34;
+    idx = bejson_core_get_field_index(doc, field_name)
+    return [record[idx] for record in doc[&#34;Values&#34;]]
+
+
+def bejson_core_query_records(doc: dict, field_name: str, search_value: Any) -&gt; list[list]:
+    &#34;&#34;&#34;
+    Return all records where field_name == search_value (exact match).
+    Mirrors bejson_core_query_records.
+    &#34;&#34;&#34;
+    idx = bejson_core_get_field_index(doc, field_name)
+    return [record for record in doc[&#34;Values&#34;] if record[idx] == search_value]
+
+
+def bejson_core_query_records_advanced(doc: dict, **conditions) -&gt; list[list]:
+    &#34;&#34;&#34;
+    Return records matching all keyword conditions (AND logic).
+    Example: bejson_core_query_records_advanced(doc, age=30, city=&#34;NYC&#34;)
+    Mirrors bejson_core_query_records_advanced.
+    &#34;&#34;&#34;
+    field_indices = {name: bejson_core_get_field_index(doc, name) for name in conditions}
+    return [
+        record
+        for record in doc[&#34;Values&#34;]
+        if all(record[field_indices[name]] == val for name, val in conditions.items())
+    ]
+
+
+# ---------------------------------------------------------------------------
+# 104DB SPECIFIC OPERATIONS
+# ---------------------------------------------------------------------------
+
+def bejson_core_get_records_by_type(doc: dict, record_type: str) -&gt; list[list]:
+    &#34;&#34;&#34;
+    Return records whose Record_Type_Parent matches record_type.
+    Mirrors bejson_core_get_records_by_type.
+    &#34;&#34;&#34;
+    if bejson_core_get_version(doc) != &#34;104db&#34;:
+        raise BEJSONCoreError(&#34;Operation requires 104db document&#34;, E_CORE_INVALID_OPERATION)
+    return [record for record in doc[&#34;Values&#34;] if record[0] == record_type]
+
+
+def bejson_core_has_record_type(doc: dict, record_type: str) -&gt; bool:
+    &#34;&#34;&#34;
+    Return True if record_type is declared in Records_Type.
+    Mirrors bejson_core_has_record_type.
+    &#34;&#34;&#34;
+    return record_type in doc[&#34;Records_Type&#34;]
+
+
+def bejson_core_get_field_applicability(doc: dict, field_name: str) -&gt; str:
+    &#34;&#34;&#34;
+    Return the Record_Type_Parent for a field.
+    In 104db, this must be a valid record type (no &#39;common&#39;).
+    &#34;&#34;&#34;
+    field_def = bejson_core_get_field_def(doc, field_name)
+    rtp = field_def.get(&#34;Record_Type_Parent&#34;)
+    
+    version = bejson_core_get_version(doc)
+    if version == &#34;104db&#34;:
+        if rtp is None:
+            # Check for legacy &#39;applies_to&#39; only to provide a helpful error
+            if &#34;applies_to&#34; in field_def:
+                 raise BEJSONCoreError(f&#34;Field &#39;{field_name}&#39; uses legacy &#39;applies_to&#39;. 104db requires &#39;Record_Type_Parent&#39;.&#34;, E_CORE_INVALID_OPERATION)
+            raise BEJSONCoreError(f&#34;Field &#39;{field_name}&#39; missing Record_Type_Parent in 104db&#34;, E_CORE_INVALID_OPERATION)
+    
+    return rtp or &#34;common&#34;
+
+
+# ---------------------------------------------------------------------------
+# DATA MODIFICATION
+# All mutation functions return a new document dict (immutable style).
+# ---------------------------------------------------------------------------
+
+def _coerce_value(value: Any, field_type: str) -&gt; Any:
+    &#34;&#34;&#34;Coerce and validate a raw Python value to the declared field type.&#34;&#34;&#34;
+    if value is None:
+        return None
+    if field_type == &#34;string&#34;:
+        return str(value)
+    if field_type in (&#34;integer&#34;, &#34;number&#34;):
+        try:
+            return int(value) if field_type == &#34;integer&#34; else float(value)
+        except (TypeError, ValueError):
+            raise BEJSONCoreError(
+                f&#34;Cannot convert &#39;{value}&#39; to {field_type}&#34;, E_CORE_TYPE_CONVERSION_FAILED
+            )
+    if field_type == &#34;boolean&#34;:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str) and value.lower() in (&#34;true&#34;, &#34;false&#34;):
+            return value.lower() == &#34;true&#34;
+        raise BEJSONCoreError(
+            f&#34;Cannot convert &#39;{value}&#39; to boolean&#34;, E_CORE_TYPE_CONVERSION_FAILED
+        )
+    return value
+
+
+def bejson_core_set_value_at(
+    doc: dict, record_index: int, field_index: int, new_value: Any
+) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with the value at [record_index][field_index] replaced.
+    Mirrors bejson_core_set_value_at.
+    &#34;&#34;&#34;
+    _check_record_bounds(doc, record_index)
+    _check_field_bounds(doc, field_index)
+
+    field_def = doc[&#34;Fields&#34;][field_index]
+    coerced = _coerce_value(new_value, field_def[&#34;type&#34;])
+
+    doc = copy.deepcopy(doc)
+    doc[&#34;Values&#34;][record_index][field_index] = coerced
+    return doc
+
+
+def bejson_core_add_record(doc: dict, values: list) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with a record appended.
+    Mirrors bejson_core_add_record.
+    &#34;&#34;&#34;
+    field_count = bejson_core_get_field_count(doc)
+    if len(values) != field_count:
+        raise BEJSONCoreError(
+            f&#34;Record must have {field_count} values, got {len(values)}&#34;,
+            E_CORE_INVALID_OPERATION,
+        )
+    coerced = [_coerce_value(v, doc[&#34;Fields&#34;][i][&#34;type&#34;]) for i, v in enumerate(values)]
+    doc = copy.deepcopy(doc)
+    doc[&#34;Values&#34;].append(coerced)
+    return doc
+
+
+def bejson_core_remove_record(doc: dict, record_index: int) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with the record at record_index removed.
+    Mirrors bejson_core_remove_record.
+    &#34;&#34;&#34;
+    _check_record_bounds(doc, record_index)
+    doc = copy.deepcopy(doc)
+    del doc[&#34;Values&#34;][record_index]
+    return doc
+
+
+def bejson_core_update_field(
+    doc: dict, record_index: int, field_name: str, new_value: Any
+) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with a named field updated in a specific record.
+    Mirrors bejson_core_update_field.
+    &#34;&#34;&#34;
+    field_index = bejson_core_get_field_index(doc, field_name)
+    return bejson_core_set_value_at(doc, record_index, field_index, new_value)
+
+
+# ---------------------------------------------------------------------------
+# TABLE OPERATIONS (COLUMN / ROW MANIPULATION)
+# ---------------------------------------------------------------------------
+
+def bejson_core_add_column(
+    doc: dict,
+    field_name: str,
+    field_type: str,
+    default_value: Any = None,
+    record_type_parent: str = &#34;&#34;,
+) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with a new column appended.
+    Mirrors bejson_core_add_column.
+    &#34;&#34;&#34;
+    try:
+        bejson_core_get_field_index(doc, field_name)
+        raise BEJSONCoreError(f&#34;Field &#39;{field_name}&#39; already exists&#34;, E_CORE_INVALID_OPERATION)
+    except BEJSONCoreError as exc:
+        if exc.code != E_CORE_FIELD_NOT_FOUND:
+            raise
+
+    new_field: dict = {&#34;name&#34;: field_name, &#34;type&#34;: field_type}
+    if record_type_parent:
+        new_field[&#34;Record_Type_Parent&#34;] = record_type_parent
+
+    doc = copy.deepcopy(doc)
+    doc[&#34;Fields&#34;].append(new_field)
+    for record in doc[&#34;Values&#34;]:
+        record.append(default_value)
+    return doc
+
+
+def bejson_core_remove_column(doc: dict, field_name: str) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with the named column removed.
+    Mirrors bejson_core_remove_column.
+    &#34;&#34;&#34;
+    idx = bejson_core_get_field_index(doc, field_name)
+    doc = copy.deepcopy(doc)
+    del doc[&#34;Fields&#34;][idx]
+    for record in doc[&#34;Values&#34;]:
+        del record[idx]
+    return doc
+
+
+def bejson_core_rename_column(doc: dict, old_name: str, new_name: str) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with a column renamed.
+    Mirrors bejson_core_rename_column.
+    &#34;&#34;&#34;
+    idx = bejson_core_get_field_index(doc, old_name)
+    try:
+        bejson_core_get_field_index(doc, new_name)
+        raise BEJSONCoreError(f&#34;Field &#39;{new_name}&#39; already exists&#34;, E_CORE_INVALID_OPERATION)
+    except BEJSONCoreError as exc:
+        if exc.code != E_CORE_FIELD_NOT_FOUND:
+            raise
+
+    doc = copy.deepcopy(doc)
+    doc[&#34;Fields&#34;][idx][&#34;name&#34;] = new_name
+    return doc
+
+
+def bejson_core_get_column(doc: dict, field_name: str) -&gt; list:
+    &#34;&#34;&#34;
+    Return all values for a column. Mirrors bejson_core_get_column.
+    Delegates to bejson_core_get_field_values.
+    &#34;&#34;&#34;
+    return bejson_core_get_field_values(doc, field_name)
+
+
+def bejson_core_set_column(doc: dict, field_name: str, values: list) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with an entire column replaced.
+    Mirrors bejson_core_set_column.
+    &#34;&#34;&#34;
+    idx = bejson_core_get_field_index(doc, field_name)
+    record_count = bejson_core_get_record_count(doc)
+    if len(values) != record_count:
+        raise BEJSONCoreError(
+            f&#34;Value count ({len(values)}) must match record count ({record_count})&#34;,
+            E_CORE_INVALID_OPERATION,
+        )
+    doc = copy.deepcopy(doc)
+    for i, val in enumerate(values):
+        doc[&#34;Values&#34;][i][idx] = val
+    return doc
+
+
+def bejson_core_filter_rows(doc: dict, predicate) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document containing only records for which predicate(record) is True.
+    predicate receives a raw list (the record values).
+    Mirrors bejson_core_filter_rows.
+    &#34;&#34;&#34;
+    doc = copy.deepcopy(doc)
+    doc[&#34;Values&#34;] = [record for record in doc[&#34;Values&#34;] if predicate(record)]
+    return doc
+
+
+def bejson_core_sort_by_field(doc: dict, field_name: str, ascending: bool = True) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a new document with Values sorted by a named field.
+    Mirrors bejson_core_sort_by_field.
+    &#34;&#34;&#34;
+    idx = bejson_core_get_field_index(doc, field_name)
+    doc = copy.deepcopy(doc)
+    doc[&#34;Values&#34;].sort(key=lambda r: (r[idx] is None, r[idx]), reverse=not ascending)
+    return doc
+
+
+# ---------------------------------------------------------------------------
+# UTILITY FUNCTIONS
+# ---------------------------------------------------------------------------
+
+def bejson_core_pretty_print(doc: dict) -&gt; str:
+    &#34;&#34;&#34;Return a pretty-printed JSON string. Mirrors bejson_core_pretty_print.&#34;&#34;&#34;
+    return json.dumps(doc, indent=2)
+
+
+def bejson_core_compact_print(doc: dict) -&gt; str:
+    &#34;&#34;&#34;Return a compact JSON string. Mirrors bejson_core_compact_print.&#34;&#34;&#34;
+    return json.dumps(doc, separators=(&#34;,&#34;, &#34;:&#34;))
+
+
+def bejson_core_is_valid(doc: dict) -&gt; bool:
+    &#34;&#34;&#34;
+    Return True if doc is a valid BEJSON document, False otherwise.
+    Mirrors bejson_core_is_valid.
+    &#34;&#34;&#34;
+    try:
+        bejson_validator_validate_string(json.dumps(doc))
+        return True
+    except (BEJSONValidationError, Exception):
+        return False
+
+
+def bejson_core_get_stats(doc: dict) -&gt; dict:
+    &#34;&#34;&#34;
+    Return a statistics dict for the document.
+    Mirrors bejson_core_get_stats.
+    &#34;&#34;&#34;
+    return {
+        &#34;version&#34;: bejson_core_get_version(doc),
+        &#34;field_count&#34;: bejson_core_get_field_count(doc),
+        &#34;record_count&#34;: bejson_core_get_record_count(doc),
+        &#34;records_types&#34;: bejson_core_get_records_types(doc),
+    }
+
+# ---------------------------------------------------------------------------
+# LOCKING
+# ---------------------------------------------------------------------------
+
+def bejson_core_acquire_lock(file_path: str, timeout: int = 10) -&gt; bool:
+    &#34;&#34;&#34;Acquire a lock file for the given file_path.&#34;&#34;&#34;
+    lock_path = file_path + &#34;.lock&#34;
+    start_time = time.time()
+    while time.time() - start_time &lt; timeout:
+        try:
+            # Use O_EXCL to ensure atomic creation
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            with os.fdopen(fd, &#34;w&#34;) as f:
+                f.write(str(os.getpid()))
+            return True
+        except FileExistsError:
+            time.sleep(0.1)
+    return False
+
+def bejson_core_release_lock(file_path: str) -&gt; None:
+    &#34;&#34;&#34;Release the lock file for the given file_path.&#34;&#34;&#34;
+    lock_path = file_path + &#34;.lock&#34;
+    if os.path.exists(lock_path):
+        os.unlink(lock_path)
+
+                </code></pre>
+            </div>
+
+        </div>
+
+        <div class="carousel-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #111; border-top: 1px solid #333;">
+            <a href="index.html" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace; text-decoration: none;">&larr; BACK TO DASHBOARD</a>
+            <span id="schema_carousel_indicator" style="color: var(--primary); font-weight: bold; letter-spacing: 2px;">FILE VIEW</span>
+            <button onclick="window.scrollTo(0,0)" style="background: transparent; color: #fff; border: 1px solid #fff; padding: 5px 15px; cursor: pointer; font-family: monospace;">TOP &uarr;</button>
+        </div>
+    </div>
+</div>
+
+<script>
+if (!window.copySchemaContent) {
+    window.moveHTML3Carousel = function() {}; // Stub for this view
+    window.copySchemaContent = function(btn) {
+        const code = btn.closest('.carousel-slide').querySelector('code').innerText;
+        navigator.clipboard.writeText(code.trim()).then(() => {
+            const original = btn.innerText;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+            setTimeout(() => {
+                btn.innerText = original;
+                btn.style.background = '#fff';
+                btn.style.color = '#000';
+            }, 1500);
+        });
+    };
+}
+</script>
+            
+            <footer class="page-footer">
+                <!-- Component: Footer Telemetry Ribbon | Type: Footer Fragment | Version: 1.0.0 -->
+<footer class="c-footer c-footer-telemetry">
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">UPTIME: <span>14d 02h 11m</span></div>
+        <div class="c-footer-telemetry__item">NODE: <span>MASTER</span></div>
+    </div>
+    <div class="c-footer-telemetry__item">AUTH: <span>BELTON_2026</span></div>
+    <div class="c-footer-telemetry__group">
+        <div class="c-footer-telemetry__item">LATENCY: <span>12ms</span></div>
+        <div class="c-footer-telemetry__item">CORE: <span>v6.2.0</span></div>
+    </div>
+</footer>
+            </footer>
+        </main>
+
+        <aside class="right-column">
+            
+        </aside>
+    </div>
+
+    
+
+    <script>
+        // Standard mobile toggle logic
+        const hamburgerToggle = document.getElementById('hamburgerToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebar = document.getElementById('closeSidebar');
+        
+        if (hamburgerToggle && mobileNav) {
+            function toggleSidebar() {
+                mobileNav.classList.toggle('open');
+                sidebarOverlay.classList.toggle('open');
+            }
+            hamburgerToggle.addEventListener('click', toggleSidebar);
+            if (closeSidebar) closeSidebar.addEventListener('click', toggleSidebar);
+            if (sidebarOverlay) sidebarOverlay.addEventListener('click', toggleSidebar);
+        }
+    </script>
+</body>
+</html>
