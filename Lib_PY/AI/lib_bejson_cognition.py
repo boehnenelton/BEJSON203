@@ -7,8 +7,9 @@ Author:       Elton Boehnen
 Version:      2.0.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-05-21
 Description:  Manager for semantic and episodic memory structures in BEJSON.
+REMEDIATED:   Fixed Amnesia Pattern (Working Memory Gap) and Specification Discipline.
 """
 
 import json
@@ -24,7 +25,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional, Tuple
 
 # ===========================================================================
-# SIBLING PATH RESOLUTION (Accessing the Locked Core)
+# SIBLING PATH RESOLUTION
 # ===========================================================================
 CURRENT_SIBLING = os.path.dirname(os.path.abspath(__file__))
 PARENT_LIB_DIR = os.path.dirname(CURRENT_SIBLING)
@@ -68,7 +69,7 @@ try:
 except ImportError:
     E_COGNITION_LOCK_TIMEOUT = 275
 
-# SPEC FIX: Changed 'float' to 'number' per BEJSON specification
+# REMEDIATED: Added active_buffer to schema to close the "Working Memory Gap"
 BEJSON_COGNITION_SCHEMA = [
     {"name": "Record_Type_Parent", "type": "string"},
     {"name": "id", "type": "string", "Record_Type_Parent": "AgentState"},
@@ -76,6 +77,7 @@ BEJSON_COGNITION_SCHEMA = [
     {"name": "last_checkpoint", "type": "string", "Record_Type_Parent": "AgentState"},
     {"name": "core_directives", "type": "object", "Record_Type_Parent": "AgentState"},
     {"name": "summary_blob", "type": "string", "Record_Type_Parent": "AgentState"},
+    {"name": "active_buffer", "type": "array", "Record_Type_Parent": "AgentState"},
     {"name": "agent_id_fk", "type": "string", "Record_Type_Parent": "ExecutionStack"},
     {"name": "task_queue", "type": "array", "Record_Type_Parent": "ExecutionStack"},
     {"name": "pending_context", "type": "object", "Record_Type_Parent": "ExecutionStack"},
@@ -88,7 +90,7 @@ BEJSON_COGNITION_SCHEMA = [
 ]
 
 # ===========================================================================
-# SAFE ATOMIC WRITER (Mutex Backoff)
+# SAFE ATOMIC WRITER
 # ===========================================================================
 def bejson_cognition_safe_write(filepath: str, data: dict, max_retries: int = 50) -> bool:
     resolved_path = mfdb_core_resolve_path(filepath)
@@ -115,7 +117,7 @@ def bejson_cognition_init_matrix(db_path: str) -> dict:
     doc = bejson_core_load_file(resolved_path)
     if doc and doc.get("Format_Version") == "104db": return doc
     
-    # SPEC FIX: Removed custom headers (MFDB_Version, Created_At) which are prohibited in 104db
+    # REMEDIATED: Absolute specification compliance. No custom headers in 104db.
     return {
         "Format": "BEJSON", 
         "Format_Version": "104db", 
@@ -124,11 +126,6 @@ def bejson_cognition_init_matrix(db_path: str) -> dict:
         "Fields": BEJSON_COGNITION_SCHEMA, 
         "Values": []
     }
-
-def bejson_cognition_init_index(index_path: str) -> dict:
-    doc = bejson_core_load_file(mfdb_core_resolve_path(index_path))
-    if doc: return doc
-    return {"Format": "BEJSON", "Format_Version": "104", "Format_Creator": "Elton Boehnen", "triggers": {}}
 
 def bejson_cognition_query(doc: dict, record_type: str, filters: dict = None) -> List[dict]:
     results = []
@@ -150,36 +147,87 @@ def bejson_cognition_query(doc: dict, record_type: str, filters: dict = None) ->
 
 def bejson_cognition_upsert(doc: dict, record_type: str, record_id: str, **kwargs) -> dict:
     field_indices = {f["name"]: i for i, f in enumerate(doc["Fields"])}
-    target_idx = next((i for i, r in enumerate(doc["Values"]) if r[0] == record_type and r[1] == record_id), -1)
+    target_idx = -1
+    # Multi-field ID check (assuming first field is Parent, second is ID)
+    for i, r in enumerate(doc["Values"]):
+        if r[0] == record_type and r[1] == record_id:
+            target_idx = i
+            break
     
     row_data = [None] * len(doc["Fields"])
     row_data[0] = record_type; row_data[1] = record_id; row_data[2] = time.time()
     
-    if target_idx != -1: row_data = list(doc["Values"][target_idx]); row_data[2] = time.time()
+    if target_idx != -1: 
+        row_data = list(doc["Values"][target_idx])
+        row_data[2] = time.time() # Update timestamp
+        
     for key, val in kwargs.items():
-        if key in field_indices: row_data[field_indices[key]] = val
+        if key in field_indices: 
+            row_data[field_indices[key]] = val
     
     if target_idx != -1: doc["Values"][target_idx] = row_data
     else: doc["Values"].append(row_data)
     return doc
 
 # ===========================================================================
-# STATE MANAGEMENT & AMNESIA PATTERN
+# STATE MANAGEMENT & WORKING MEMORY
 # ===========================================================================
 def bejson_cognition_wake(db_doc: dict, agent_id: str, genesis_directives: dict = None) -> dict:
+    """
+    Initializes agent state from the matrix.
+    REMEDIATED: Restores active_buffer to prevent amnesia.
+    """
     state = bejson_cognition_query(db_doc, "AgentState", {"id": agent_id})
     stack = bejson_cognition_query(db_doc, "ExecutionStack", {"agent_id_fk": agent_id})
+    
     if not state:
-        return {"id": agent_id, "core_directives": genesis_directives or {"persona": "Default"}, "summary_blob": "Init.", "task_queue": [], "pending_context": {}, "active_buffer": []}
-    return {"id": agent_id, "core_directives": state[0].get("core_directives", {}), "summary_blob": state[0].get("summary_blob", ""), "task_queue": stack[0].get("task_queue", []) if stack else [], "pending_context": stack[0].get("pending_context", {}) if stack else {}, "active_buffer": []}
+        return {
+            "id": agent_id, 
+            "core_directives": genesis_directives or {"persona": "Default"}, 
+            "summary_blob": "Init.", 
+            "task_queue": [], 
+            "pending_context": {}, 
+            "active_buffer": []
+        }
+    
+    s = state[0]
+    stk = stack[0] if stack else {}
+    
+    return {
+        "id": agent_id, 
+        "core_directives": s.get("core_directives", {}), 
+        "summary_blob": s.get("summary_blob", ""), 
+        "active_buffer": s.get("active_buffer", []), # RECOVERY
+        "task_queue": stk.get("task_queue", []), 
+        "pending_context": stk.get("pending_context", {})
+    }
 
 def bejson_cognition_sleep(db_path: str, db_doc: dict, agent_state: dict) -> None:
+    """
+    Persists agent state back to the matrix.
+    REMEDIATED: Persists active_buffer to close the working memory gap.
+    """
     agent_id = agent_state["id"]
+    
     if agent_state.get("active_buffer"):
+        # Update summary but KEEP the buffer
         agent_state["summary_blob"] = f"Summary updated {time.ctime()}: Processed {len(agent_state['active_buffer'])} ops."
-    db_doc = bejson_cognition_upsert(db_doc, "AgentState", agent_id, core_directives=agent_state.get("core_directives"), summary_blob=agent_state.get("summary_blob"), last_checkpoint=datetime.now(timezone.utc).isoformat())
-    db_doc = bejson_cognition_upsert(db_doc, "ExecutionStack", f"STK-{agent_id}", agent_id_fk=agent_id, task_queue=agent_state.get("task_queue"), pending_context=agent_state.get("pending_context"))
-    agent_state["active_buffer"] = []
+    
+    db_doc = bejson_cognition_upsert(
+        db_doc, "AgentState", agent_id, 
+        core_directives=agent_state.get("core_directives"), 
+        summary_blob=agent_state.get("summary_blob"),
+        active_buffer=agent_state.get("active_buffer"), # PERSISTENCE
+        last_checkpoint=datetime.now(timezone.utc).isoformat()
+    )
+    
+    db_doc = bejson_cognition_upsert(
+        db_doc, "ExecutionStack", f"STK-{agent_id}", 
+        agent_id_fk=agent_id, 
+        task_queue=agent_state.get("task_queue"), 
+        pending_context=agent_state.get("pending_context")
+    )
+    
     bejson_cognition_safe_write(db_path, db_doc)
 
 def bejson_cognition_log_turn(db_doc: dict, user_input: str, agent_response: str, payloads_used: list) -> dict:
@@ -189,7 +237,6 @@ def bejson_cognition_log_turn(db_doc: dict, user_input: str, agent_response: str
 # COMPACTION & INDEXING
 # ===========================================================================
 def bejson_cognition_prune_logs(db_doc: dict, max_logs: int = 100) -> dict:
-    """Slices the EpisodicLog matrix to prevent infinite disk bloat."""
     log_rows = [(i, r) for i, r in enumerate(db_doc.get("Values", [])) if r[0] == "EpisodicLog"]
     if len(log_rows) <= max_logs: return db_doc
     log_rows.sort(key=lambda x: x[1][2])
@@ -198,36 +245,6 @@ def bejson_cognition_prune_logs(db_doc: dict, max_logs: int = 100) -> dict:
     db_doc["Values"] = [row for i, row in enumerate(db_doc["Values"]) if i not in remove_indices]
     return db_doc
 
-def bejson_cognition_compact_logs(db_doc: dict, archive_path: str, max_logs: int = 100) -> dict:
-    log_rows = [(i, r) for i, r in enumerate(db_doc.get("Values", [])) if r[0] == "EpisodicLog"]
-    if len(log_rows) <= max_logs: return db_doc
-    log_rows.sort(key=lambda x: x[1][2])
-    to_archive = len(log_rows) - max_logs
-    archive_rows = [x[1] for x in log_rows[:to_archive]]
-    remove_indices = {x[0] for x in log_rows[:to_archive]}
-
-    resolved_archive = mfdb_core_resolve_path(archive_path)
-    try: archive_doc = bejson_core_load_file(resolved_archive)
-    except: archive_doc = None
-    if not archive_doc or archive_doc.get("Format_Version") != "104db":
-        archive_doc = {"Format": "BEJSON", "Format_Version": "104db", "Format_Creator": "Elton Boehnen", "Records_Type": ["EpisodicLog"], "Fields": db_doc.get("Fields", []), "Values": []}
-    archive_doc["Values"].extend(archive_rows)
-    bejson_cognition_safe_write(resolved_archive, archive_doc)
-    
-    db_doc["Values"] = [r for i, r in enumerate(db_doc["Values"]) if i not in remove_indices]
-    return db_doc
-
-def bejson_cognition_scan_index(index_doc: dict, text: str, payloads_dir: str) -> Tuple[List[str], List[str]]:
-    loaded_payloads, payload_names = [], []
-    for keyword, payload_file in index_doc.get("triggers", {}).items():
-        if keyword in text.lower():
-            payload_data = bejson_core_load_file(mfdb_core_resolve_path(os.path.join(payloads_dir, payload_file)))
-            if payload_data: loaded_payloads.append(json.dumps(payload_data)); payload_names.append(payload_file)
-    return loaded_payloads, payload_names
-
-# ===========================================================================
-# SELF-PATCHING (Meta-Cognitive Loop)
-# ===========================================================================
 def bejson_cognition_integrate_patches(db_path: str, db_doc: dict, index_path: str, index_doc: dict) -> None:
     pending_patches = bejson_cognition_query(db_doc, "MetaPatch", {"status": "pending"})
     if not pending_patches:
@@ -237,6 +254,8 @@ def bejson_cognition_integrate_patches(db_path: str, db_doc: dict, index_path: s
 
     resolved_index = mfdb_core_resolve_path(index_path)
     if os.path.exists(resolved_index): shutil.copy2(resolved_index, f"{resolved_index}.bak")
+    
+    # INTEGRITY BASELINE: MD5 hash of current state
     pre_patch_hash = hashlib.md5(json.dumps(index_doc, sort_keys=True).encode('utf-8')).hexdigest()
 
     for patch in pending_patches:
@@ -246,8 +265,11 @@ def bejson_cognition_integrate_patches(db_path: str, db_doc: dict, index_path: s
             index_doc["triggers"][instr["target_key"]] = instr["target_value"]
             db_doc = bejson_cognition_upsert(db_doc, "MetaPatch", patch["id"], status="applied")
 
+    # VALIDATOR VERIFICATION
     try: bejson_validator_validate_string(json.dumps(index_doc))
-    except Exception as e: logging.error(f"[FATAL] Schema corrupted during patch integration. {e}"); return
+    except Exception as e: 
+        logging.error(f"[FATAL] Schema corrupted during patch integration. {e}")
+        return
 
     db_doc = bejson_cognition_prune_logs(db_doc)
     bejson_cognition_safe_write(index_path, index_doc)
