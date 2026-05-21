@@ -833,27 +833,11 @@ except ImportError:
 
 STD_ADMIN_ROOT = resolve_path(&#34;{INTERNAL_STORAGE}/Admin&#34;)
 
-SCHEMA_KEY_REGISTRY = {
-    &#34;Format&#34;: &#34;BEJSON&#34;,
-    &#34;Format_Version&#34;: &#34;104a&#34;,
-    &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
-    &#34;Schema_Name&#34;: &#34;GeminiKeyRegistry&#34;,
-    &#34;Records_Type&#34;: [&#34;ApiKey&#34;],
-    &#34;Fields&#34;: [
-        {&#34;name&#34;: &#34;key_slot&#34;, &#34;type&#34;: &#34;integer&#34;},
         {&#34;name&#34;: &#34;key&#34;, &#34;type&#34;: &#34;string&#34;}
     ],
     &#34;Values&#34;: []
 }
 
-SCHEMA_MODEL_REGISTRY = {
-    &#34;Format&#34;: &#34;BEJSON&#34;,
-    &#34;Format_Version&#34;: &#34;104a&#34;,
-    &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
-    &#34;Schema_Name&#34;: &#34;GeminiModelRegistry&#34;,
-    &#34;Records_Type&#34;: [&#34;GeminiModel&#34;],
-    &#34;Fields&#34;: [
-        {&#34;name&#34;: &#34;model_name&#34;, &#34;type&#34;: &#34;string&#34;},
         {&#34;name&#34;: &#34;model_id&#34;, &#34;type&#34;: &#34;string&#34;},
         {&#34;name&#34;: &#34;currently_active&#34;, &#34;type&#34;: &#34;boolean&#34;},
         {&#34;name&#34;: &#34;thinking_enabled&#34;, &#34;type&#34;: &#34;boolean&#34;},
@@ -998,6 +982,7 @@ if CORE_DIR not in sys.path:
 
 try:
     from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
+    from lib_bejson_schema import bejson_schema_infer_from_data
 except ImportError:
     # Minimal fallback logic for core operations
     def bejson_core_load_file(p):
@@ -1027,7 +1012,7 @@ class GeminiKeyRegistry:
     def create_default(self):
         try:
             os.makedirs(self.file_path.parent, exist_ok=True)
-            bejson_core_atomic_write(str(self.file_path), SCHEMA_KEY_REGISTRY)
+            bejson_core_atomic_write(str(self.file_path), bejson_schema_infer_from_data(&#34;ApiKey&#34;, [{&#34;name&#34;: &#34;key_slot&#34;, &#34;type&#34;: &#34;integer&#34;}, {&#34;name&#34;: &#34;key&#34;, &#34;type&#34;: &#34;string&#34;}]))
         except Exception as e:
             logging.warning(f&#34;[GeminiLib] Could not create default keys: {e}&#34;)
 

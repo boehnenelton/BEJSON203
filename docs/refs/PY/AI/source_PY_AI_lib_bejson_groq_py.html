@@ -835,40 +835,7 @@ except ImportError:
         resolved = path_str.replace(&#34;{SC_ROOT}&#34;, sc_root)
         return os.path.expanduser(resolved)
 
-# --- EMBEDDED SCHEMAS ---
-SCHEMA_KEY_REGISTRY = {
-    &#34;Format&#34;: &#34;BEJSON&#34;,
-    &#34;Format_Version&#34;: &#34;104a&#34;,
-    &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
-    &#34;Schema_Name&#34;: &#34;GroqKeyRegistry&#34;,
-    &#34;Records_Type&#34;: [&#34;ApiKey&#34;],
-    &#34;Fields&#34;: [
-        {&#34;name&#34;: &#34;key_slot&#34;, &#34;type&#34;: &#34;integer&#34;},
-        {&#34;name&#34;: &#34;key&#34;, &#34;type&#34;: &#34;string&#34;}
-    ],
-    &#34;Values&#34;: []
-}
-
-SCHEMA_MODEL_REGISTRY = {
-    &#34;Format&#34;: &#34;BEJSON&#34;,
-    &#34;Format_Version&#34;: &#34;104a&#34;,
-    &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
-    &#34;Schema_Name&#34;: &#34;GroqModelRegistry&#34;,
-    &#34;Records_Type&#34;: [&#34;GroqModel&#34;],
-    &#34;Fields&#34;: [
-        {&#34;name&#34;: &#34;model_name&#34;, &#34;type&#34;: &#34;string&#34;},
-        {&#34;name&#34;: &#34;model_id&#34;, &#34;type&#34;: &#34;string&#34;},
-        {&#34;name&#34;: &#34;currently_active&#34;, &#34;type&#34;: &#34;boolean&#34;}
-    ],
-    &#34;Values&#34;: [
-        [&#34;Llama 3.3 70B Versatile&#34;, &#34;llama-3.3-70b-versatile&#34;, True],
-        [&#34;Llama 3.1 8B Instant&#34;, &#34;llama-3.1-8b-instant&#34;, False],
-        [&#34;Mixtral 8x7b Instruct&#34;, &#34;mixtral-8x7b-32768&#34;, False],
-        [&#34;Gemma 2 9b It&#34;, &#34;gemma2-9b-it&#34;, False]
-    ]
-}
-
-SCHEMA_AI_PROFILE = {
+# --- SCHEMAS INFERRED VIA LIB_BEJSON_SCHEMA ---
     &#34;Format&#34;: &#34;BEJSON&#34;,
     &#34;Format_Version&#34;: &#34;104&#34;,
     &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
@@ -893,25 +860,6 @@ SCHEMA_AI_PROFILE = {
         {&#34;name&#34;: &#34;EmotionalExpression_Intensity&#34;, &#34;type&#34;: &#34;number&#34;},
         {&#34;name&#34;: &#34;GoogleSearch_Enabled&#34;, &#34;type&#34;: &#34;boolean&#34;},
         {&#34;name&#34;: &#34;CodeInterpreter_Enabled&#34;, &#34;type&#34;: &#34;boolean&#34;},
-        {&#34;name&#34;: &#34;EphemeralMemory&#34;, &#34;type&#34;: &#34;boolean&#34;},
-        {&#34;name&#34;: &#34;CodeParsing_Mode&#34;, &#34;type&#34;: &#34;string&#34;},
-        {&#34;name&#34;: &#34;CodeParsing_Languages&#34;, &#34;type&#34;: &#34;array&#34;},
-        {&#34;name&#34;: &#34;CodeParsing_StructureValidation&#34;, &#34;type&#34;: &#34;boolean&#34;},
-        {&#34;name&#34;: &#34;CodeParsing_VersionControl&#34;, &#34;type&#34;: &#34;boolean&#34;},
-        {&#34;name&#34;: &#34;Thinking_Supported&#34;, &#34;type&#34;: &#34;boolean&#34;}
-    ],
-    &#34;Values&#34;: [
-        [
-            &#34;AI_Profile&#34;,
-            &#34;Groq_Standard&#34;,
-            &#34;Assistant&#34;,
-            &#34;A helpful and professional AI assistant.&#34;,
-            &#34;You are a helpful assistant. Provide clear, accurate, and concise information.&#34;,
-            [], &#34;Emoji&#34;, &#34;&#34;, &#34;⚡&#34;, 32768, 0.7, [&#34;Professional&#34;, &#34;Helpful&#34;], &#34;Formal&#34;, &#34;Balanced&#34;, 
-            False, 0.0, False, True, True, &#34;complete&#34;, [&#34;python&#34;, &#34;javascript&#34;], True, True, False
-        ]
-    ]
-}
 
 # --- Environment &amp; Setup ---
 LIB_DIR = os.environ.get(&#34;BEJSON_LIB_DIR&#34;, str(Path(__file__).resolve().parent))
@@ -941,7 +889,7 @@ class GroqKeyRegistry:
 
     def create_default(self):
         os.makedirs(self.file_path.parent, exist_ok=True)
-        bejson_core_atomic_write(str(self.file_path), SCHEMA_KEY_REGISTRY)
+        bejson_core_atomic_write(str(self.file_path), {&#34;Format&#34;: &#34;BEJSON&#34;, &#34;Format_Version&#34;: &#34;104a&#34;, &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;, &#34;Records_Type&#34;: [&#34;ApiKey&#34;], &#34;Fields&#34;: [{&#34;name&#34;: &#34;key_slot&#34;, &#34;type&#34;: &#34;integer&#34;}, {&#34;name&#34;: &#34;key&#34;, &#34;type&#34;: &#34;string&#34;}], &#34;Values&#34;: []})
 
     def load(self):
         try:
@@ -964,7 +912,7 @@ class GroqModelRegistry:
 
     def create_default(self):
         os.makedirs(self.file_path.parent, exist_ok=True)
-        bejson_core_atomic_write(str(self.file_path), SCHEMA_MODEL_REGISTRY)
+        bejson_core_atomic_write(str(self.file_path), {&#34;Format&#34;: &#34;BEJSON&#34;, &#34;Format_Version&#34;: &#34;104a&#34;, &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;, &#34;Records_Type&#34;: [&#34;GroqModel&#34;], &#34;Fields&#34;: [{&#34;name&#34;: &#34;model_name&#34;, &#34;type&#34;: &#34;string&#34;}, {&#34;name&#34;: &#34;model_id&#34;, &#34;type&#34;: &#34;string&#34;}, {&#34;name&#34;: &#34;currently_active&#34;, &#34;type&#34;: &#34;boolean&#34;}], &#34;Values&#34;: [[&#34;Llama 3.3 70B Versatile&#34;, &#34;llama-3.3-70b-versatile&#34;, True], [&#34;Llama 3.1 8B Instant&#34;, &#34;llama-3.1-8b-instant&#34;, False]]})
 
     def load(self):
         try:

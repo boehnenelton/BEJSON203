@@ -37,27 +37,11 @@ except ImportError:
 
 STD_ADMIN_ROOT = resolve_path("{INTERNAL_STORAGE}/Admin")
 
-SCHEMA_KEY_REGISTRY = {
-    "Format": "BEJSON",
-    "Format_Version": "104a",
-    "Format_Creator": "Elton Boehnen",
-    "Schema_Name": "GeminiKeyRegistry",
-    "Records_Type": ["ApiKey"],
-    "Fields": [
-        {"name": "key_slot", "type": "integer"},
         {"name": "key", "type": "string"}
     ],
     "Values": []
 }
 
-SCHEMA_MODEL_REGISTRY = {
-    "Format": "BEJSON",
-    "Format_Version": "104a",
-    "Format_Creator": "Elton Boehnen",
-    "Schema_Name": "GeminiModelRegistry",
-    "Records_Type": ["GeminiModel"],
-    "Fields": [
-        {"name": "model_name", "type": "string"},
         {"name": "model_id", "type": "string"},
         {"name": "currently_active", "type": "boolean"},
         {"name": "thinking_enabled", "type": "boolean"},
@@ -202,6 +186,7 @@ if CORE_DIR not in sys.path:
 
 try:
     from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
+    from lib_bejson_schema import bejson_schema_infer_from_data
 except ImportError:
     # Minimal fallback logic for core operations
     def bejson_core_load_file(p):
@@ -231,7 +216,7 @@ class GeminiKeyRegistry:
     def create_default(self):
         try:
             os.makedirs(self.file_path.parent, exist_ok=True)
-            bejson_core_atomic_write(str(self.file_path), SCHEMA_KEY_REGISTRY)
+            bejson_core_atomic_write(str(self.file_path), bejson_schema_infer_from_data("ApiKey", [{"name": "key_slot", "type": "integer"}, {"name": "key", "type": "string"}]))
         except Exception as e:
             logging.warning(f"[GeminiLib] Could not create default keys: {e}")
 

@@ -49,9 +49,9 @@ except ImportError:
         p = mfdb_core_resolve_path(p)
         if not os.path.exists(p): return None
         with open(p, 'r') as f: return json.load(f)
-    def bejson_core_acquire_lock(p: str, timeout: int=5): return True
+    def bejson_core_acquire_lock(p: str, timeout: int=5): return False
     def bejson_core_release_lock(p: str): pass
-    def bejson_validator_validate_string(s: str): pass
+    def bejson_validator_validate_string(s: str): return False
     def bejson_core_atomic_write(p: str, d: dict):
         p = mfdb_core_resolve_path(p)
         os.makedirs(os.path.dirname(p), exist_ok=True)

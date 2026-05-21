@@ -829,14 +829,10 @@ export function parse(text: string): BEJSONDocument {
     throw new BEJSONCoreError(BEJSON_CORE_CODES.PARSE_ERROR, &#39;Input must be a string.&#39;);
   }
 
-  // 1. Extract &amp; Strip Wrappers (Optimal standard regex)
-  const match = text.match(/\{[\s\S]*\}/);
-  const clean = match ? match[0] : text;
-
   let raw: unknown;
   try {
-    // 2. Parse Object Tree using native engine
-    raw = JSON.parse(clean);
+    // 1. Parse Object Tree using native engine directly
+    raw = JSON.parse(text);
   } catch (e) {
     throw new BEJSONCoreError(
       BEJSON_CORE_CODES.PARSE_ERROR,
