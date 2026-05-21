@@ -90,7 +90,7 @@ BEJSON_COGNITION_SCHEMA = [
 # ===========================================================================
 # SAFE ATOMIC WRITER (Mutex Backoff)
 # ===========================================================================
-def bejson_cognition_safe_write(filepath: str, data: dict, max_retries: int = 10) -> bool:
+def bejson_cognition_safe_write(filepath: str, data: dict, max_retries: int = 50) -> bool:
     resolved_path = mfdb_core_resolve_path(filepath)
     attempt = 0
     base_sleep = 0.2

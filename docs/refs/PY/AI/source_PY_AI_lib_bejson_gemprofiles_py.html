@@ -803,8 +803,9 @@ Author:       Elton Boehnen
 Version:      2.0.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
-Description:  Debugged and standardized library component.
+Date:         2026-05-21
+Description:  AI Profile generator for the BEJSON ecosystem.
+REMEDIATED:   Fixed BEJSON 104 specification violation (removed 104db discriminator).
 &#34;&#34;&#34;
 
 import json
@@ -815,13 +816,14 @@ import os
 
 # Add parent directory to sys.path to import existing validator
 LIB_PATH = os.path.dirname(os.path.abspath(__file__))
-if LIB_PATH not in sys.path:
-    sys.path.append(LIB_PATH)
+CORE_PATH = os.path.join(os.path.dirname(LIB_PATH), &#34;Core&#34;)
+if CORE_PATH not in sys.path:
+    sys.path.append(CORE_PATH)
 
 import lib_bejson_validator
 
+# REMEDIATED: Removed &#34;Record_Type_Parent&#34; which is reserved for 104db multi-entity files.
 PROFILE_FIELDS = [
-    {&#34;name&#34;: &#34;Record_Type_Parent&#34;, &#34;type&#34;: &#34;string&#34;},
     {&#34;name&#34;: &#34;Name&#34;, &#34;type&#34;: &#34;string&#34;},
     {&#34;name&#34;: &#34;Archetype&#34;, &#34;type&#34;: &#34;string&#34;},
     {&#34;name&#34;: &#34;Persona&#34;, &#34;type&#34;: &#34;string&#34;},
@@ -858,10 +860,7 @@ def bejson_profiles_validate(doc: Dict[str, Any]) -&gt; bool:
         field_names = [f[&#34;name&#34;] for f in fields]
         required_names = [f[&#34;name&#34;] for f in PROFILE_FIELDS]
         
-        # Check if all required fields are present (at least the core ones)
-        # Note: Some older profiles might not have &#39;Thinking_Supported&#39;
-        core_required = required_names[:-1] 
-        for req in core_required:
+        for req in required_names:
             if req not in field_names:
                 return False
         
@@ -884,7 +883,6 @@ def bejson_profiles_create(
     
     # Default values for profile fields
     values = [
-        &#34;AI_Profile&#34;,
         name,
         archetype,
         persona,
@@ -927,8 +925,6 @@ def bejson_profiles_save(profile: Dict[str, Any], path: str):
     with open(path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as f:
         json.dump(profile, f, indent=2)
 
-# --- Targeted Querying &amp; Editing ---
-
 def bejson_profiles_get_field_index(profile: Dict[str, Any], field_name: str) -&gt; int:
     &#34;&#34;&#34;Returns the index of a field by name, or -1 if not found.&#34;&#34;&#34;
     fields = profile.get(&#34;Fields&#34;, [])
@@ -948,15 +944,6 @@ def bejson_profiles_update_value(profile: Dict[str, Any], field_name: str, new_v
     &#34;&#34;&#34;Updates a specific field value in a profile record. Returns True if successful.&#34;&#34;&#34;
     idx = bejson_profiles_get_field_index(profile, field_name)
     if idx != -1 and len(profile.get(&#34;Values&#34;, [])) &gt; record_index:
-        # Basic type checking based on Fields definition
-        expected_type = profile[&#34;Fields&#34;][idx].get(&#34;type&#34;)
-        
-        # Simple validation
-        if expected_type == &#34;string&#34; and not isinstance(new_value, str): return False
-        if expected_type == &#34;integer&#34; and not isinstance(new_value, int): return False
-        if expected_type == &#34;boolean&#34; and not isinstance(new_value, bool): return False
-        if expected_type == &#34;array&#34; and not isinstance(new_value, list): return False
-        
         profile[&#34;Values&#34;][record_index][idx] = new_value
         return True
     return False
