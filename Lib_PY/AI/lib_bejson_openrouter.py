@@ -33,7 +33,7 @@ try:
 except ImportError:
     def resolve_system_path(path_str):
         # Even the fallback should avoid hardcoded absolute paths if possible
-        internal_storage = os.environ.get("INTERNAL_STORAGE", "/storage/emulated/0")
+        internal_storage = os.environ.get("INTERNAL_STORAGE", os.path.expanduser("~"))
         sc_root = os.environ.get("SC_ROOT", os.path.join(internal_storage, "Brain-Container/BEJSON_Core"))
         resolved = path_str.replace("{SC_ROOT}", sc_root)
         return os.path.expanduser(resolved)

@@ -328,7 +328,7 @@ def bejson_cognition_integrate_patches(db_path: str, db_doc: dict, index_path: s
                 # 1. Forge the physical tool
                 # Using portable path resolution
                 tools_dir = mfdb_core_resolve_path("{INTERNAL_STORAGE}/Admin/tools")
-                tool_path = os.path.join(tools_dir, filename)
+                tool_path = os.path.join(tools_dir, os.path.basename(filename))
                 
                 with open(tool_path, "w") as f:
                     f.write(code)

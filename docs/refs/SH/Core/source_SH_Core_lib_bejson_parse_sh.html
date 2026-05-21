@@ -802,21 +802,13 @@
 # Version:      2.0.1 OFFICIAL
 # MFDB Version: 1.31
 # Format_Creator: Elton Boehnen
-# Date:         2026-05-18
+# Date:         2026-05-21
 # Description:  Rapid indexing and retrieval engine for dense tabular data.
-
-# 104db schemas. Sources lib_bejson_core.sh and lib_bejson_validator.sh.
-# Author:      Elton Boehnen
-# Version:     &#34;2.0.1 OFFICIAL&#34;,
-# Compatibility: Bash 4.0+, Termux/Android
-# Dependencies:  lib_bejson_core.sh, lib_bejson_validator.sh, jq, zip
+# REMEDIATED:   Optimized jq extraction to avoid subshell performance bottlenecks.
 
 set -o pipefail
 set -o nounset
 
-# ------------------------------------------------------------------
-# Source BEJSON ecosystem — core + validator
-# ------------------------------------------------------------------
 BEJSON_PARSE_DIR=&#34;$(cd &#34;$(dirname &#34;${BASH_SOURCE[0]}&#34;)&#34; &amp;&amp; pwd)&#34;
 
 if [[ -f &#34;$BEJSON_PARSE_DIR/lib_bejson_core.sh&#34; ]]; then
@@ -827,57 +819,32 @@ if [[ -f &#34;$BEJSON_PARSE_DIR/lib_bejson_validator.sh&#34; ]]; then
     source &#34;$BEJSON_PARSE_DIR/lib_bejson_validator.sh&#34;
 fi
 
-# Default output directory
 BEJSON_PARSE_DEFAULT_OUT=&#34;${BEJSON_PARSE_DIR}/output&#34;
 
-# Globals populated by bejson_extract_data
 BEJSON_PROJECT_NAME=&#34;My_Project&#34;
 BEJSON_FILES_NAMES=()
 BEJSON_FILES_CONTENTS=()
 
-# ------------------------------------------------------------------
-# PARSER CORE
-# ------------------------------------------------------------------
-
 bejson_parse_json() {
     local text=&#34;$1&#34;
-
-    # 1. Enforce optimal parser (jq &gt;= 1.6)
     if declare -f bejson_validator_check_dependencies &gt;/dev/null 2&gt;&amp;1; then
         bejson_validator_check_dependencies || return 1
     elif ! command -v jq &gt;/dev/null 2&gt;&amp;1; then
-        echo &#34;ERROR: jq is required for bejson_parse_json&#34; &gt;&amp;2
+        echo &#34;ERROR: jq is required&#34; &gt;&amp;2
         return 1
     fi
 
-    # 2. Extract JSON using awk/sed to safely strip wrappers
-    # First priority: Markdown blocks
     local clean
-    clean=$(echo &#34;$text&#34; | awk &#39;
-        BEGIN { found=0 }
-        /```json/ { found=1; next }
-        /```/ &amp;&amp; found { exit }
-        found { print }
-    &#39;)
-
-    # Second priority: Balanced braces heuristic (tr/sed)
+    clean=$(echo &#34;$text&#34; | awk &#39;BEGIN { f=0 } /```json/ { f=1; next } /```/ &amp;&amp; f { exit } f { print }&#39;)
     if [[ -z &#34;$clean&#34; ]] || ! echo &#34;$clean&#34; | jq &#39;.&#39; &gt;/dev/null 2&gt;&amp;1; then
         clean=$(echo &#34;$text&#34; | tr &#39;\n&#39; &#39;\f&#39; | sed &#39;s/^[^{]*//; s/}[^}]*$/}/&#39; | tr &#39;\f&#39; &#39;\n&#39;)
     fi
 
-    # 3. Pipe to jq &#39;.&#39; for standard validation and extraction
     if echo &#34;$clean&#34; | jq &#39;.&#39; &gt; /dev/null 2&gt;&amp;1; then
         echo &#34;$clean&#34; | jq &#39;.&#39;
         return 0
     fi
-
-    # Final fallback for raw JSON
-    if echo &#34;$text&#34; | jq &#39;.&#39; &gt; /dev/null 2&gt;&amp;1; then
-        echo &#34;$text&#34; | jq &#39;.&#39;
-        return 0
-    fi
-
-    echo &#34;ERROR: bejson_parse_json — could not parse JSON from input&#34; &gt;&amp;2
+    echo &#34;ERROR: bejson_parse_json failed&#34; &gt;&amp;2
     return 1
 }
 
@@ -887,63 +854,58 @@ bejson_extract_data() {
     BEJSON_FILES_NAMES=()
     BEJSON_FILES_CONTENTS=()
 
-    _bejson_parse_get_project_name() {
-        local j=&#34;$1&#34;
-        local result=&#34;My_Project&#34;
-        local cands=(&#34;zipfilename&#34; &#34;projectname&#34; &#34;containername&#34;)
-        for cand in &#34;${cands[@]}&#34;; do
-            local idx
-            idx=$(echo &#34;$j&#34; | jq --arg c &#34;$cand&#34; &#39;
-                .Fields | to_entries[] |
-                select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) == $c) |
-                .key
-            &#39; 2&gt;/dev/null | head -1)
-            if [[ -n &#34;$idx&#34; ]]; then
-                local val
-                val=$(echo &#34;$j&#34; | jq -r --argjson i &#34;$idx&#34; &#39;
-                    .Values[] |
-                    if (. | length) &gt; $i then .[$i] else null end |
-                    select(. != null and . != &#34;&#34;) |
-                    tostring
-                &#39; 2&gt;/dev/null | head -1)
-                if [[ -n &#34;$val&#34; &amp;&amp; &#34;$val&#34; != &#34;null&#34; ]]; then
-                    result=&#34;$val&#34;
-                    break
-                fi
-            fi
-        done
-        echo &#34;$result&#34;
-    }
+    # 1. Optimal Project Name Extraction (Single jq call)
+    local proj_name
+    proj_name=$(echo &#34;$json&#34; | jq -r &#39;
+        .Fields as $fields |
+        [&#34;zipfilename&#34;, &#34;projectname&#34;, &#34;containername&#34;] as $cands |
+        ($fields | to_entries[] | select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) as $n | $cands | contains([$n])) | .key) as $idx |
+        .Values[] | if (. | length) &gt; $idx then .[$idx] else null end | select(. != null and . != &#34;&#34;) | tostring
+    &#39; 2&gt;/dev/null | head -1)
+    
+    if [[ -n &#34;$proj_name&#34; &amp;&amp; &#34;$proj_name&#34; != &#34;null&#34; ]]; then
+        BEJSON_PROJECT_NAME=$(echo &#34;$proj_name&#34; | sed &#39;s/[&lt;&gt;:&#34;\/\\|?*]/_/g&#39;)
+    fi
 
-    BEJSON_PROJECT_NAME=$( _bejson_parse_get_project_name &#34;$json&#34; )
-    BEJSON_PROJECT_NAME=$(echo &#34;$BEJSON_PROJECT_NAME&#34; | sed &#39;s/[&lt;&gt;:&#34;\/\\|?*]/_/g&#39;)
+    # 2. Optimal Batch File Extraction (Single jq call for all files)
+    # Extract pairs of filename and content using a delimiter
+    local pairs
+    pairs=$(echo &#34;$json&#34; | jq -r &#39;
+        .Fields as $fields |
+        # Generate 1..50 mapping
+        [
+            range(1; 51) as $n | 
+            (&#34;file&#34; + tostring + &#34;name&#34;) as $nk | 
+            (&#34;file&#34; + tostring + &#34;content&#34;) as $ck |
+            {
+                name_idx: ($fields | to_entries[] | select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) == $nk) | .key),
+                cont_idx: ($fields | to_entries[] | select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) == $ck) | .key)
+            } | select(.name_idx != null and .cont_idx != null)
+        ] as $indices |
+        
+        if ($indices | length) &gt; 0 then
+            .Values[] as $row |
+            $indices[] as $i |
+            $row[$i.name_idx] as $fn |
+            $row[$i.cont_idx] as $fc |
+            if ($fn != null and $fn != &#34;&#34; and $fc != null and $fc != &#34;&#34;) then
+                &#34;$fn&#34; + &#34;\t&#34; + ($fc | tostring | gsub(&#34;\n&#34;;&#34;\\n&#34;) | gsub(&#34;\t&#34;;&#34;\\t&#34;))
+            else
+                empty
+            end
+        else
+            empty
+        end
+    &#39;)
 
-    for i in $(seq 1 50); do
-        local name_key=&#34;file${i}name&#34;
-        local cont_key=&#34;file${i}content&#34;
-        local name_idx cont_idx
-        name_idx=$(echo &#34;$json&#34; | jq --arg k &#34;$name_key&#34; &#39;
-            .Fields | to_entries[] |
-            select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) == $k) |
-            .key
-        &#39; 2&gt;/dev/null | head -1)
-        cont_idx=$(echo &#34;$json&#34; | jq --arg k &#34;$cont_key&#34; &#39;
-            .Fields | to_entries[] |
-            select((.value.name | ascii_downcase | gsub(&#34;[^a-z0-9]&#34;;&#34;&#34;)) == $k) |
-            .key
-        &#39; 2&gt;/dev/null | head -1)
-        [[ -z &#34;$name_idx&#34; || -z &#34;$cont_idx&#34; ]] &amp;&amp; continue
-        local row_count=$(echo &#34;$json&#34; | jq &#39;.Values | length&#39;)
-        for r in $(seq 0 $(( row_count - 1 ))); do
-            local fname fcont
-            fname=$(echo &#34;$json&#34; | jq -r --argjson r &#34;$r&#34; --argjson ni &#34;$name_idx&#34; &#39;.Values[$r][$ni] // empty | select(. != null and . != &#34;&#34;)&#39; 2&gt;/dev/null)
-            fcont=$(echo &#34;$json&#34; | jq -r --argjson r &#34;$r&#34; --argjson ci &#34;$cont_idx&#34; &#39;.Values[$r][$ci] // empty | select(. != null and . != &#34;&#34;)&#39; 2&gt;/dev/null)
-            if [[ -n &#34;$fname&#34; &amp;&amp; -n &#34;$fcont&#34; ]]; then
-                BEJSON_FILES_NAMES+=(&#34;$fname&#34;)
-                BEJSON_FILES_CONTENTS+=(&#34;$fcont&#34;)
-            fi
-        done
-    done
+    while IFS=$&#39;\t&#39; read -r fname fcont; do
+        if [[ -n &#34;$fname&#34; ]]; then
+            BEJSON_FILES_NAMES+=(&#34;$fname&#34;)
+            # Unescape newlines and tabs
+            BEJSON_FILES_CONTENTS+=(&#34;$(printf &#39;%b&#39; &#34;$fcont&#34;)&#34;)
+        fi
+    done &lt;&lt;&lt; &#34;$pairs&#34;
+
     [[ ${#BEJSON_FILES_NAMES[@]} -eq 0 ]] &amp;&amp; return 1
     return 0
 }
@@ -952,15 +914,10 @@ bejson_save_files() {
     local proj=&#34;${1:-My_Project}&#34;
     local base_dir=&#34;${2:-$BEJSON_PARSE_DEFAULT_OUT}&#34;
     local overwrite=&#34;${3:-false}&#34;
-    mkdir -p &#34;$base_dir&#34; 2&gt;/dev/null
     local target
-    if [[ &#34;$overwrite&#34; == &#34;true&#34; ]]; then
-        target=&#34;${base_dir}/${proj}&#34;
-    else
-        target=&#34;${base_dir}/$(date +&#34;%Y%m%d_%H%M%S&#34;)_${proj}&#34;
-    fi
+    [[ &#34;$overwrite&#34; == &#34;true&#34; ]] &amp;&amp; target=&#34;${base_dir}/${proj}&#34; || target=&#34;${base_dir}/$(date +&#34;%Y%m%d_%H%M%S&#34;)_${proj}&#34;
     mkdir -p &#34;$target&#34; 2&gt;/dev/null
-    for i in $(seq 0 $(( ${#BEJSON_FILES_NAMES[@]} - 1 ))); do
+    for i in &#34;${!BEJSON_FILES_NAMES[@]}&#34;; do
         local fpath=&#34;${target}/${BEJSON_FILES_NAMES[$i]}&#34;
         mkdir -p &#34;$(dirname &#34;$fpath&#34;)&#34;
         printf &#39;%s&#39; &#34;${BEJSON_FILES_CONTENTS[$i]}&#34; &gt; &#34;$fpath&#34;
