@@ -55,3 +55,6 @@ export * from "./bejson_grid";
 export * from "./bejson_input";
 export * from "./bejson_physics";
 export * from "./bejson_renderer";
+
+// Schema management
+export * from "./bejson_schema";
