@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API: lib_mfdb_core.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+:root {
+    --primary: #DE2626;
+    --bg-page: oklch(12% 0.01 250);
+    --bg-surface: oklch(16% 0.01 250);
+    --text-main: oklch(92% 0.01 250);
+    --text-muted: oklch(65% 0.01 250);
+    --border: oklch(22% 0.01 250);
+    --font-base: 'Inter', 'Roboto', system-ui, sans-serif;
+    --font-mono: 'Roboto Mono', 'Source Code Pro', monospace;
+    --transition: 0.15s ease;
+}
+
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; scroll-behavior: smooth; font-size: 16px; }
+body {
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-family: var(--font-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding-top: 60px;
+    padding-bottom: 80px;
+}
+
+/* Typography */
+h1 { 
+    font-size: clamp(1.75rem, 4vw, 2.5rem); 
+    font-weight: 800; 
+    letter-spacing: -0.02em; 
+    color: var(--text-main); 
+    line-height: 1.1; 
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+h2 { 
+    font-size: 1.1rem; 
+    font-weight: 800; 
+    letter-spacing: -0.01em; 
+    color: var(--primary); 
+    text-transform: uppercase; 
+    margin-bottom: 1rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+h3, h4 { 
+    font-weight: 700; 
+    color: var(--text-main);
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+a { color: var(--primary); text-decoration: none; transition: var(--transition); }
+a:hover { opacity: 0.8; }
+
+/* Navigation */
+.top-bar {
+    position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+    background: rgba(18, 18, 20, 0.9); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; z-index: 1000; border-bottom: 2px solid var(--primary);
+}
+.top-bar__brand { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.top-bar__brand span { color: var(--primary); }
+
+.sidebar {
+    position: fixed; top: 60px; left: -280px; width: 280px;
+    height: calc(100vh - 60px); background-color: var(--bg-page);
+    transition: var(--transition); z-index: 900; overflow-y: auto;
+    padding: 20px 0; border-right: 1px solid var(--border);
+}
+.sidebar--open { left: 0; }
+.sidebar__category {
+    padding: 12px 24px; font-size: 0.65rem; font-weight: 800;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;
+    cursor: pointer; display: flex; justify-content: space-between;
+}
+.sidebar__category:hover { color: var(--primary); }
+.sidebar__category-items { display: none; list-style: none; }
+.sidebar__category-items--open { display: block; }
+
+.sidebar__link {
+    display: block; padding: 10px 24px 10px 40px; color: var(--text-muted);
+    font-size: 0.8rem; font-weight: 500;
+    word-break: break-all;
+}
+.sidebar__link:hover, .sidebar__link--active { color: var(--text-main); background: var(--bg-surface); }
+.sidebar__link--active { border-left: 4px solid var(--primary); color: var(--primary); }
+
+/* Layout Components */
+.card, .b-card { background-color: var(--bg-surface); border-radius: 0; padding: 24px; margin-bottom: 24px; transition: var(--transition); }
+.table-container { overflow-x: auto; border-radius: 0; }
+.data-table, .b-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; background: var(--bg-surface); }
+.data-table th, .b-table th { background: var(--primary); padding: 12px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #FFFFFF; font-weight: 800; }
+.data-table td, .b-table td { padding: 12px 16px; border-top: 1px solid var(--border); word-break: break-word; }
+.data-table tr:hover { background: rgba(255,255,255,0.02); }
+
+pre { background: #000; color: #ADFF2F; padding: 20px; border-radius: 0; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; border-left: 4px solid var(--primary); }
+
+/* FOOTER - Authoritative Info */
+.status-footer, .footer {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
+    background: var(--bg-surface); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 24px;
+    font-size: 0.7rem; color: var(--text_muted); font-family: var(--font-mono);
+    border-top: 1px solid var(--border); z-index: 1000;
+}
+.footer-link { color: var(--text-muted); text-decoration: underline; }
+.footer-link:hover { color: var(--primary); }
+
+/* Square Buttons */
+.form__button, .b-button { background: var(--primary); color: white; padding: 10px 20px; border-radius: 0; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; cursor: pointer; border: none; transition: var(--transition); }
+.form__button:hover, .b-button:hover { background: #B91C1C; }
+
+/* Responsive */
+@media (min-width: 1024px) {
+    .sidebar { left: 0; }
+    .main-content { margin-left: 280px; }
+    .top-bar__toggle { display: none; }
+}
+</style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="top-bar__brand">BEJSON <span>LIBRARIES</span></div>
+        <button class="top-bar__toggle" aria-label="Toggle Menu" style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&#9776;</button>
+    </header>
+
+    <nav class="sidebar">
+        <ul style="list-style:none;">
+            <li>
+  <div class="sidebar__category">Home <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../../index.html" class="sidebar__link">> Dashboard Index</a></li>
+    <li><a href="../../../crash_course.html" class="sidebar__link">> Crash Course v21</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_bejson_js.html" class="sidebar__link">> lib_bejson_bejson.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_core_js.html" class="sidebar__link">> lib_bejson_core.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_errors_js.html" class="sidebar__link">> lib_bejson_errors.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_parse_js.html" class="sidebar__link">> lib_bejson_parse.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_state_js.html" class="sidebar__link">> lib_bejson_state.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_validator_js.html" class="sidebar__link">> lib_bejson_validator.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_mfdb_core_js.html" class="sidebar__link">> lib_mfdb_core.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_mfdb_validator_js.html" class="sidebar__link">> lib_mfdb_validator.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_cli_switch_game_js.html" class="sidebar__link">> cli/switch_game.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_assets_js.html" class="sidebar__link">> lib_bejson_assets.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_engine_core_js.html" class="sidebar__link">> lib_bejson_engine_core.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_events_js.html" class="sidebar__link">> lib_bejson_events.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_grid_js.html" class="sidebar__link">> lib_bejson_grid.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_input_js.html" class="sidebar__link">> lib_bejson_input.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_physics_js.html" class="sidebar__link">> lib_bejson_physics.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_renderer_js.html" class="sidebar__link">> lib_bejson_renderer.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_ui_screens_js.html" class="sidebar__link">> lib_bejson_ui_screens.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: External <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/External/ref_JS_External_jszip_min_js.html" class="sidebar__link">> jszip.min.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Utility/ref_JS_Utility_lib_bejson_utility_js.html" class="sidebar__link">> lib_bejson_utility.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: AI <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../AI/ref_PY_AI___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../AI/ref_PY_AI_cli_blogger_manager_py.html" class="sidebar__link">> cli/blogger_manager.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_gemini_py.html" class="sidebar__link">> lib_bejson_gemini.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_gemprofiles_py.html" class="sidebar__link">> lib_bejson_gemprofiles.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_genai_py.html" class="sidebar__link">> lib_bejson_genai.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_groq_py.html" class="sidebar__link">> lib_bejson_groq.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_openrouter_py.html" class="sidebar__link">> lib_bejson_openrouter.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_brain_helper_py.html" class="sidebar__link">> lib_brain_helper.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: CMS <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../CMS/ref_PY_CMS___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_config_py.html" class="sidebar__link">> lib_cms_config.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_content_py.html" class="sidebar__link">> lib_cms_content.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_mfdb_py.html" class="sidebar__link">> lib_cms_mfdb.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_orchestrator_py.html" class="sidebar__link">> lib_cms_orchestrator.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_taxonomy_py.html" class="sidebar__link">> lib_cms_taxonomy.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_mfdb_extensions_py.html" class="sidebar__link">> lib_mfdb_extensions.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Core <span class="cat-arrow">▼</span></div>
+  <ul class="sidebar__category-items sidebar__category-items--open">
+    <li><a href="ref_PY_Core___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="ref_PY_Core_cli_bejson_server_py.html" class="sidebar__link">> cli/bejson_server.py</a></li>
+    <li><a href="ref_PY_Core_lib_be_core_py.html" class="sidebar__link">> lib_be_core.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_core_py.html" class="sidebar__link">> lib_bejson_core.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_env_py.html" class="sidebar__link">> lib_bejson_env.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_errors_py.html" class="sidebar__link">> lib_bejson_errors.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_mfdb_core_py.html" class="sidebar__link">> lib_bejson_mfdb_core.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_mfdb_validator_py.html" class="sidebar__link">> lib_bejson_mfdb_validator.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_parse_py.html" class="sidebar__link">> lib_bejson_parse.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_provider_py.html" class="sidebar__link">> lib_bejson_provider.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_state_management_py.html" class="sidebar__link">> lib_bejson_state_management.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_static_backend_py.html" class="sidebar__link">> lib_bejson_static_backend.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_validator_py.html" class="sidebar__link">> lib_bejson_validator.py</a></li>
+    <li><a href="ref_PY_Core_lib_mfdb_core_py.html" class="sidebar__link sidebar__link--active">> lib_mfdb_core.py</a></li>
+    <li><a href="ref_PY_Core_lib_mfdb_validator_py.html" class="sidebar__link">> lib_mfdb_validator.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: HTML <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../HTML/ref_PY_HTML___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_bejson_diagram_html_py.html" class="sidebar__link">> lib_bejson_diagram_html.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_bejson_html2_skeletons_py.html" class="sidebar__link">> lib_bejson_html2_skeletons.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_bejson_to_html_py.html" class="sidebar__link">> lib_bejson_to_html.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_bejson_validator_diagram_py.html" class="sidebar__link">> lib_bejson_validator_diagram.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_animations_py.html" class="sidebar__link">> lib_html2_animations.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_body_py.html" class="sidebar__link">> lib_html2_body.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_charts_py.html" class="sidebar__link">> lib_html2_charts.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_feed_templates_py.html" class="sidebar__link">> lib_html2_feed_templates.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_flask_py.html" class="sidebar__link">> lib_html2_flask.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_metrics_py.html" class="sidebar__link">> lib_html2_metrics.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_page_templates_py.html" class="sidebar__link">> lib_html2_page_templates.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_showcase_py.html" class="sidebar__link">> lib_html2_showcase.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_sidemenu_py.html" class="sidebar__link">> lib_html2_sidemenu.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_tables_py.html" class="sidebar__link">> lib_html2_tables.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_widgets_py.html" class="sidebar__link">> lib_html2_widgets.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html_firebase_py.html" class="sidebar__link">> lib_html_firebase.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: System <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../System/ref_PY_System___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../System/ref_PY_System_cli_av_manager_py.html" class="sidebar__link">> cli/av_manager.py</a></li>
+    <li><a href="../System/ref_PY_System_cli_book_builder_py.html" class="sidebar__link">> cli/book_builder.py</a></li>
+    <li><a href="../System/ref_PY_System_cli_build_ebook_py.html" class="sidebar__link">> cli/build_ebook.py</a></li>
+    <li><a href="../System/ref_PY_System_lib_be_project_service_py.html" class="sidebar__link">> lib_be_project_service.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_assets_py.html" class="sidebar__link">> lib_bejson_assets.py</a></li>
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_events_py.html" class="sidebar__link">> lib_bejson_events.py</a></li>
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_physics_py.html" class="sidebar__link">> lib_bejson_physics.py</a></li>
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_tile_grids_py.html" class="sidebar__link">> lib_bejson_tile_grids.py</a></li>
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_ui_screens_py.html" class="sidebar__link">> lib_bejson_ui_screens.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Cognition <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Cognition/ref_PY_Cognition_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Utility/ref_PY_Utility_lib_bejson_utility_py.html" class="sidebar__link">> lib_bejson_utility.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: __pycache__ <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">SH: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_core_sh.html" class="sidebar__link">> lib_bejson_core.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_parse_sh.html" class="sidebar__link">> lib_bejson_parse.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_validator_sh.html" class="sidebar__link">> lib_bejson_validator.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_mfdb_core_sh.html" class="sidebar__link">> lib_mfdb_core.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_mfdb_validator_sh.html" class="sidebar__link">> lib_mfdb_validator.sh</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">SH: System <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../SH/System/ref_SH_System_lib_be_core_sh.html" class="sidebar__link">> lib_be_core.sh</a></li>
+    <li><a href="../../SH/System/ref_SH_System_lib_be_deps_sh.html" class="sidebar__link">> lib_be_deps.sh</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_assets_ts.html" class="sidebar__link">> bejson_assets.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_engine_ts.html" class="sidebar__link">> bejson_engine.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_events_ts.html" class="sidebar__link">> bejson_events.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_grid_ts.html" class="sidebar__link">> bejson_grid.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_input_ts.html" class="sidebar__link">> bejson_input.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_physics_ts.html" class="sidebar__link">> bejson_physics.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_renderer_ts.html" class="sidebar__link">> bejson_renderer.ts</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../TS/Core/ref_TS_Core_bejson_core_ts.html" class="sidebar__link">> bejson_core.ts</a></li>
+    <li><a href="../../TS/Core/ref_TS_Core_bejson_types_ts.html" class="sidebar__link">> bejson_types.ts</a></li>
+    <li><a href="../../TS/Core/ref_TS_Core_bejson_validators_ts.html" class="sidebar__link">> bejson_validators.ts</a></li>
+    <li><a href="../../TS/Core/ref_TS_Core_mfdb_core_ts.html" class="sidebar__link">> mfdb_core.ts</a></li>
+    <li><a href="../../TS/Core/ref_TS_Core_mfdb_validators_ts.html" class="sidebar__link">> mfdb_validators.ts</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../TS/Utility/ref_TS_Utility_lib_bejson_utility_ts.html" class="sidebar__link">> lib_bejson_utility.ts</a></li>
+  </ul>
+</li>
+
+        </ul>
+    </nav>
+    <div id="overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:850;"></div>
+
+    <main class="main-content">
+        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 20px; font-family: var(--font-mono); text-transform: uppercase;"></div>
+        <h1>PY / Core / lib_mfdb_core.py</h1><div style="display:flex; gap:24px; padding:24px; background:var(--bg-surface); margin-bottom:24px; border-left: 4px solid var(--primary);">
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">System</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">PY</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">Family</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">Core</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">API Density</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">36</div>
+        </div></div><p><a href="https://github.com/boehnenelton/bejson-libraries" target="_blank" style="color:var(--primary); font-weight:800; text-decoration:none;">[ CLONE REPO ON GITHUB ]</a></p>
+    <div class="card">
+        <h2 class="card__title">Public API Surface</h2>
+        <div style="font-size:0.95rem; color:var(--text-main);"><ul><li><code>class MFDBArchive</code></li><li><code>class MFDBCoreError</code></li><li><code>def __init__</code></li><li><code>def _calculate_file_hash</code></li><li><code>def _get_entity_path</code></li><li><code>def _get_manifest_entries</code></li><li><code>def _get_manifest_entry</code></li><li><code>def _load_entity_doc</code></li><li><code>def _mfdb_core_repair_hierarchy</code></li><li><code>def _read_file_content</code></li><li><code>def _update_manifest_record_count</code></li><li><code>def _write_entity_doc</code></li><li><code>def _write_manifest_doc</code></li><li><code>def commit</code></li><li><code>def mfdb_core_add_entity_record</code></li><li><code>def mfdb_core_build_index</code></li><li><code>def mfdb_core_create_database</code></li><li><code>def mfdb_core_create_entity_file</code></li><li><code>def mfdb_core_deep_verify</code></li><li><code>def mfdb_core_discover</code></li><li><code>def mfdb_core_get_entity_doc</code></li><li><code>def mfdb_core_get_stats</code></li><li><code>def mfdb_core_join</code></li><li><code>def mfdb_core_load_entity</code></li><li><code>def mfdb_core_load_manifest</code></li><li><code>def mfdb_core_query_entity</code></li><li><code>def mfdb_core_remove_entity_record</code></li><li><code>def mfdb_core_resolve_path</code></li><li><code>def mfdb_core_self_heal</code></li><li><code>def mfdb_core_smart_repair</code></li><li><code>def mfdb_core_sync_all_counts</code></li><li><code>def mfdb_core_sync_manifest_count</code></li><li><code>def mfdb_core_update_entity_record</code></li><li><code>def mount</code></li><li><code>def resurrect_file</code></li><li><code>def unmount</code></li></ul></div>
+    </div>
+    <div class="card">
+        <h2 class="card__title">Full Source Implementation</h2>
+        <div style="font-size:0.95rem; color:var(--text-main);">
+    <div style="background: #000; border-left: 4px solid var(--primary); margin: 24px 0; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase;">
+                FILE // lib_mfdb_core.py
+            </div>
+            <button onclick="copyToClipboard('code_1779165756162')" style="background: var(--primary); color: white; border: none; padding: 4px 12px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase;">
+                Copy
+            </button>
+        </div>
+        <pre id="code_1779165756162" style="margin: 0; padding: 20px; color: #ADFF2F; font-family: var(--font-mono); font-size: 0.85rem; border: none; border-left: none;"><code>&quot;&quot;&quot;
+Library:      lib_mfdb_core.py
+Family:       Core
+Jurisdiction: [&quot;BEJSON_LIBRARIES&quot;, &quot;PY&quot;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Multi-file database orchestrator managing manifests and entity synchronization.
+&quot;&quot;&quot;
+
+# v1.21 adds Dynamic Recovery and Self-Healing.
+
+import json
+import os
+import shutil
+import tempfile
+import zipfile
+import hashlib
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+from lib_bejson_core import (
+    BEJSONCoreError,
+    bejson_core_atomic_write,
+    bejson_core_add_record,
+    bejson_core_remove_record,
+    bejson_core_update_field,
+    bejson_core_load_file,
+    bejson_core_get_record_count,
+    bejson_core_filter_rows,
+    bejson_core_sort_by_field,
+    bejson_core_get_field_index,
+)
+from lib_mfdb_validator import (
+    MFDBValidationError,
+    mfdb_validator_validate_manifest,
+    _load_json,
+    _rows_as_dicts,
+    _resolve_entity_path,
+    E_MFDB_BIDIRECTIONAL_FAIL,
+    E_MFDB_ENTITY_NOT_FOUND,
+    E_MFDB_MANIFEST_NOT_FOUND,
+)
+
+try:
+    from lib_bejson_errors import *
+except ImportError:
+    # Fallback if registry is missing
+    E_MFDB_CORE_MANIFEST_NOT_FOUND  = 50
+    E_MFDB_CORE_ENTITY_NOT_FOUND    = 51
+    E_MFDB_CORE_WRITE_FAILED        = 52
+    E_MFDB_CORE_CREATE_FAILED       = 53
+    E_MFDB_CORE_INVALID_OPERATION   = 54
+    E_MFDB_CORE_INDEX_OUT_OF_BOUNDS = 55
+    E_MFDB_CORE_JOIN_FAILED         = 56
+    E_MFDB_CORE_ARCHIVE_ERROR       = 70
+    E_MFDB_CORE_MOUNT_CONFLICT      = 71
+
+
+class MFDBCoreError(Exception):
+    &quot;&quot;&quot;Raised when an MFDB core operation fails.&quot;&quot;&quot;
+    def __init__(self, message: str, code: int):
+        super().__init__(message)
+        self.code = code
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+def _get_manifest_entries(manifest_path: str) -&gt; list[dict]:
+    doc = _load_json(manifest_path)
+    return _rows_as_dicts(doc)
+
+
+def _get_manifest_entry(manifest_path: str, entity_name: str) -&gt; dict:
+    entries = _get_manifest_entries(manifest_path)
+    entry   = next((e for e in entries if e.get(&quot;entity_name&quot;) == entity_name), None)
+    if entry is None:
+        raise MFDBCoreError(
+            f&quot;Entity &#x27;{entity_name}&#x27; not found in manifest: {manifest_path}&quot;,
+            E_MFDB_CORE_ENTITY_NOT_FOUND,
+        )
+    return entry
+
+
+
+def _read_file_content(path: str) -&gt; str:
+    &quot;&quot;&quot;Reads file content, supporting .mfdb.zip archives.&quot;&quot;&quot;
+    p = Path(path)
+    if p.is_file() and not path.lower().endswith(&quot;.zip&quot;):
+        return p.read_text(encoding=&quot;utf-8&quot;)
+    
+    # Check for zip path parts
+    parts = p.parts
+    for i, part in enumerate(parts):
+        if part.lower().endswith(&quot;.zip&quot;):
+            zip_path = str(Path(*parts[:i+1]))
+            inner_path = &quot;/&quot;.join(parts[i+1:])
+            if os.path.exists(zip_path):
+                with zipfile.ZipFile(zip_path, &quot;r&quot;) as z:
+                    if inner_path in z.namelist():
+                        return z.read(inner_path).decode(&quot;utf-8&quot;)
+                    elif not inner_path and &quot;104a.mfdb.bejson&quot; in z.namelist():
+                         return z.read(&quot;104a.mfdb.bejson&quot;).decode(&quot;utf-8&quot;)
+    
+    return p.read_text(encoding=&quot;utf-8&quot;)
+
+def _get_entity_path(manifest_path: str, entity_name: str) -&gt; str:
+    entry = _get_manifest_entry(manifest_path, entity_name)
+    return _resolve_entity_path(manifest_path, entry[&quot;file_path&quot;])
+
+
+def _load_entity_doc(manifest_path: str, entity_name: str) -&gt; dict:
+    &quot;&quot;&quot;Load and validate the raw BEJSON 104 doc for an entity.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    content = _read_file_content(entity_path)
+    from lib_bejson_core import bejson_core_load_string
+    return bejson_core_load_string(content)
+
+
+def _write_entity_doc(doc: dict, entity_path: str) -&gt; None:
+    bejson_core_atomic_write(entity_path, doc)
+
+
+def _write_manifest_doc(doc: dict, manifest_path: str) -&gt; None:
+    bejson_core_atomic_write(manifest_path, doc)
+
+
+def _update_manifest_record_count(
+    manifest_path: str, entity_name: str, count: int
+) -&gt; None:
+    &quot;&quot;&quot;Write a corrected record_count into the manifest for one entity.&quot;&quot;&quot;
+    doc        = _load_json(manifest_path)
+    fn_list    = [f[&quot;name&quot;] for f in doc[&quot;Fields&quot;]]
+    if &quot;record_count&quot; not in fn_list or &quot;entity_name&quot; not in fn_list:
+        return
+    rc_idx = fn_list.index(&quot;record_count&quot;)
+    en_idx = fn_list.index(&quot;entity_name&quot;)
+    for row in doc[&quot;Values&quot;]:
+        if row[en_idx] == entity_name:
+            row[rc_idx] = count
+            break
+    _write_manifest_doc(doc, manifest_path)
+
+
+def _calculate_file_hash(file_path: str) -&gt; str:
+    &quot;&quot;&quot;Generate SHA-256 hash for archive integrity checks.&quot;&quot;&quot;
+    sha256 = hashlib.sha256()
+    with open(file_path, &quot;rb&quot;) as f:
+        for chunk in iter(lambda: f.read(4096), b&quot;&quot;):
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+
+# ---------------------------------------------------------------------------
+# MFDBArchive (v1.2 Feature)
+# ---------------------------------------------------------------------------
+
+class MFDBArchive:
+    &quot;&quot;&quot;
+    Handles .mfdb.zip packaging, virtual mounting, and atomic repacking.
+    Standardized in MFDB v1.2 for portable transport.
+    Enhanced for CoreEvolution with sticky mounting and validation safety.
+    &quot;&quot;&quot;
+
+    @staticmethod
+    def mount(archive_path: str, target_dir: str, force: bool = False, sticky: bool = True) -&gt; str:
+        &quot;&quot;&quot;
+        Extract an MFDB archive to a workspace and create a session lock.
+        If sticky=True, it reuses existing valid extracted files.
+        Returns the absolute path to the extracted manifest.
+        &quot;&quot;&quot;
+        arc_p = Path(archive_path)
+        if not arc_p.exists():
+            raise MFDBCoreError(f&quot;Archive not found: {archive_path}&quot;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        target_p = Path(target_dir)
+        lock_file = target_p / &quot;.mfdb_lock&quot;
+        manifest_path = target_p / &quot;104a.mfdb.bejson&quot;
+
+        # Sticky check: If valid files exist and hash matches, just return manifest
+        if sticky and lock_file.exists() and manifest_path.exists():
+            try:
+                with open(lock_file, &quot;r&quot;) as f:
+                    lock_data = json.load(f)
+                
+                # Check if archive hash matches the one we mounted
+                current_arc_hash = _calculate_file_hash(archive_path)
+                if lock_data.get(&quot;original_hash&quot;) == current_arc_hash:
+                    # Validate the database structure before trusting the sticky mount
+                    from lib_mfdb_validator import mfdb_validator_validate_database
+                    if mfdb_validator_validate_database(str(manifest_path)):
+                        return str(manifest_path.absolute())
+            except Exception:
+                pass # Fall through to full re-extract if sticky fails
+
+        if lock_file.exists() and not force:
+            with open(lock_file, &quot;r&quot;) as f:
+                lock_data = json.load(f)
+            if lock_data.get(&quot;pid&quot;) != os.getpid():
+                raise MFDBCoreError(
+                    f&quot;Workspace {target_dir} is already locked by PID {lock_data.get(&#x27;pid&#x27;)}&quot;,
+                    E_MFDB_CORE_MOUNT_CONFLICT
+                )
+
+        # Clear existing workspace if it was invalid or if we are forcing re-extract
+        if target_p.exists():
+            shutil.rmtree(target_dir)
+        target_p.mkdir(parents=True, exist_ok=True)
+
+        with zipfile.ZipFile(archive_path, &#x27;r&#x27;) as zip_ref:
+            zip_ref.extractall(target_dir)
+
+        if not manifest_path.exists():
+            shutil.rmtree(target_dir)
+            raise MFDBCoreError(&quot;Invalid MFDB Archive: 104a.mfdb.bejson missing.&quot;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        # Create session lock with metadata
+        lock_data = {
+            &quot;pid&quot;: os.getpid(),
+            &quot;mounted_at&quot;: datetime.now(timezone.utc).isoformat(),
+            &quot;original_hash&quot;: _calculate_file_hash(archive_path),
+            &quot;archive_path&quot;: str(arc_p.absolute())
+        }
+        with open(lock_file, &quot;w&quot;) as f:
+            json.dump(lock_data, f)
+
+        return str(manifest_path.absolute())
+
+    @staticmethod
+    def commit(mount_dir: str, archive_path: Optional[str] = None, validate: bool = True) -&gt; str:
+        &quot;&quot;&quot;
+        Repack the workspace into a .mfdb.zip file atomically.
+        Refuses to write if validation fails (if validate=True).
+        &quot;&quot;&quot;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &quot;.mfdb_lock&quot;
+        manifest_path = mount_p / &quot;104a.mfdb.bejson&quot;
+        
+        if not lock_file.exists():
+            raise MFDBCoreError(f&quot;No active mount session found in {mount_dir}&quot;, E_MFDB_CORE_INVALID_OPERATION)
+
+        if validate:
+            if not manifest_path.exists():
+                raise MFDBCoreError(&quot;Commit rejected: Manifest missing in workspace.&quot;, E_MFDB_CORE_WRITE_FAILED)
+            
+            # Run full database validation before repacking
+            from lib_mfdb_validator import mfdb_validator_validate_database
+            try:
+                mfdb_validator_validate_database(str(manifest_path))
+            except Exception as e:
+                raise MFDBCoreError(f&quot;Commit rejected: Validation failed. {str(e)}&quot;, E_MFDB_CORE_WRITE_FAILED)
+
+        with open(lock_file, &quot;r&quot;) as f:
+            lock_data = json.load(f)
+
+        dest_path = archive_path or lock_data.get(&quot;archive_path&quot;)
+        if not dest_path:
+            raise MFDBCoreError(&quot;Destination archive path unknown.&quot;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        # Create new archive in temp location
+        fd, temp_arc = tempfile.mkstemp(suffix=&quot;.mfdb.zip&quot;)
+        os.close(fd)
+
+        try:
+            with zipfile.ZipFile(temp_arc, &#x27;w&#x27;, zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(mount_dir):
+                    for file in files:
+                        if file == &quot;.mfdb_lock&quot;: continue
+                        file_path = Path(root) / file
+                        arc_name = file_path.relative_to(mount_dir)
+                        zipf.write(file_path, arc_name)
+            
+            # Atomic swap
+            shutil.move(temp_arc, dest_path)
+            
+            # Update lock with new hash to maintain sticky state
+            lock_data[&quot;original_hash&quot;] = _calculate_file_hash(dest_path)
+            with open(lock_file, &quot;w&quot;) as f:
+                json.dump(lock_data, f)
+                
+        except Exception as e:
+            if os.path.exists(temp_arc): os.remove(temp_arc)
+            raise MFDBCoreError(f&quot;Commit failed: {str(e)}&quot;, E_MFDB_CORE_WRITE_FAILED)
+
+        return dest_path
+
+
+    @staticmethod
+    def resurrect_file(mount_dir: str, relative_path: str) -&gt; bool:
+        &quot;&quot;&quot;
+        Surgically extract a single file from the .mfdb.zip archive into the workspace.
+        Used for recovery when an entity file is missing or corrupted.
+        &quot;&quot;&quot;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &quot;.mfdb_lock&quot;
+        if not lock_file.exists():
+            return False
+
+        with open(lock_file, &quot;r&quot;) as f:
+            lock_data = json.load(f)
+        
+        archive_path = lock_data.get(&quot;archive_path&quot;)
+        if not archive_path or not os.path.exists(archive_path):
+            return False
+
+        try:
+            with zipfile.ZipFile(archive_path, &#x27;r&#x27;) as zip_ref:
+                # Check if file exists in zip
+                if relative_path in zip_ref.namelist():
+                    zip_ref.extract(relative_path, mount_dir)
+                    return True
+        except Exception:
+            pass
+        return False
+
+    @staticmethod
+    def unmount(mount_dir: str, cleanup: bool = True):
+        &quot;&quot;&quot;Release the lock and optionally delete the workspace.&quot;&quot;&quot;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &quot;.mfdb_lock&quot;
+        if lock_file.exists():
+            os.remove(lock_file)
+        if cleanup and mount_p.exists():
+            shutil.rmtree(mount_dir)
+
+
+# ---------------------------------------------------------------------------
+# Discovery
+# ---------------------------------------------------------------------------
+
+def mfdb_core_discover(file_path: str) -&gt; str:
+    &quot;&quot;&quot;
+    Identify the MFDB role of any file.
+    Returns one of: &#x27;manifest&#x27;, &#x27;entity&#x27;, &#x27;archive&#x27;, &#x27;standalone&#x27;
+    &quot;&quot;&quot;
+    p = Path(file_path)
+    if not p.exists():
+        raise MFDBCoreError(f&quot;File not found: {file_path}&quot;, E_MFDB_CORE_MANIFEST_NOT_FOUND)
+
+    if p.suffix == &quot;.zip&quot; and &quot;.mfdb&quot; in p.name:
+        return &quot;archive&quot;
+
+    try:
+        doc = _load_json(file_path)
+    except Exception:
+        return &quot;standalone&quot;
+
+    version  = doc.get(&quot;Format_Version&quot;, &quot;&quot;)
+    filename = p.name
+    if version == &quot;104a&quot; and filename.endswith(&quot;.mfdb.bejson&quot;):
+        return &quot;manifest&quot;
+    if version == &quot;104&quot; and doc.get(&quot;Parent_Hierarchy&quot;):
+        return &quot;entity&quot;
+    return &quot;standalone&quot;
+
+
+# ---------------------------------------------------------------------------
+# Recovery &amp; Repair (v1.21 Feature)
+# ---------------------------------------------------------------------------
+
+def mfdb_core_deep_verify(manifest_path: str) -&gt; List[Dict[str, Any]]:
+    &quot;&quot;&quot;
+    Performs a deep audit of the entire MFDB database.
+    Checks for:
+      - Positional integrity (field vs value length)
+      - Type adherence (basic primitives)
+      - Manifest-entity consistency (record counts)
+      - Foreign key potential breakage (optional warnings)
+    Returns a list of finding dicts.
+    &quot;&quot;&quot;
+    findings = []
+    manifest_doc = bejson_core_load_file(manifest_path)
+    entries = _rows_as_dicts(manifest_doc)
+    
+    for entry in entries:
+        entity_name = entry.get(&quot;entity_name&quot;)
+        file_path_rel = entry.get(&quot;file_path&quot;)
+        expected_count = entry.get(&quot;record_count&quot;)
+        
+        entity_path = _resolve_entity_path(manifest_path, file_path_rel)
+        if not os.path.exists(entity_path):
+            findings.append({&quot;entity&quot;: entity_name, &quot;error&quot;: &quot;MISSING_FILE&quot;, &quot;path&quot;: file_path_rel})
+            continue
+            
+        try:
+            entity_doc = bejson_core_load_file(entity_path)
+            # 1. Check positional integrity
+            fields = entity_doc.get(&quot;Fields&quot;, [])
+            field_count = len(fields)
+            values = entity_doc.get(&quot;Values&quot;, [])
+            actual_count = len(values)
+            
+            if expected_count is not None and expected_count != actual_count:
+                findings.append({
+                    &quot;entity&quot;: entity_name, 
+                    &quot;warning&quot;: &quot;COUNT_MISMATCH&quot;, 
+                    &quot;expected&quot;: expected_count, 
+                    &quot;actual&quot;: actual_count
+                })
+            
+            for i, row in enumerate(values):
+                if len(row) != field_count:
+                    findings.append({
+                        &quot;entity&quot;: entity_name, 
+                        &quot;error&quot;: &quot;POSITIONAL_VIOLATION&quot;, 
+                        &quot;row&quot;: i, 
+                        &quot;expected&quot;: field_count, 
+                        &quot;actual&quot;: len(row)
+                    })
+                
+                # 2. Basic Type verification
+                for j, val in enumerate(row):
+                    if val is None: continue
+                    f_type = fields[j].get(&quot;type&quot;)
+                    if f_type == &quot;integer&quot; and not isinstance(val, int):
+                         findings.append({&quot;entity&quot;: entity_name, &quot;warning&quot;: &quot;TYPE_MISMATCH&quot;, &quot;row&quot;: i, &quot;field&quot;: fields[j][&quot;name&quot;], &quot;expected&quot;: &quot;integer&quot;, &quot;actual&quot;: type(val).__name__})
+                    elif f_type == &quot;number&quot; and not isinstance(val, (int, float)):
+                         findings.append({&quot;entity&quot;: entity_name, &quot;warning&quot;: &quot;TYPE_MISMATCH&quot;, &quot;row&quot;: i, &quot;field&quot;: fields[j][&quot;name&quot;], &quot;expected&quot;: &quot;number&quot;, &quot;actual&quot;: type(val).__name__})
+                    elif f_type == &quot;boolean&quot; and not isinstance(val, bool):
+                         findings.append({&quot;entity&quot;: entity_name, &quot;warning&quot;: &quot;TYPE_MISMATCH&quot;, &quot;row&quot;: i, &quot;field&quot;: fields[j][&quot;name&quot;], &quot;expected&quot;: &quot;boolean&quot;, &quot;actual&quot;: type(val).__name__})
+
+        except Exception as e:
+            findings.append({&quot;entity&quot;: entity_name, &quot;error&quot;: &quot;CORRUPT_JSON&quot;, &quot;message&quot;: str(e)})
+            
+    return findings
+
+
+def mfdb_core_self_heal(manifest_path: str) -&gt; Dict[str, Any]:
+    &quot;&quot;&quot;
+    Attempts to fix common issues identified by deep_verify.
+    Actions:
+      - Resyncs record_count in manifest.
+      - Padds short records with nulls (Positional Repair).
+      - Removes invalid records if necessary (Extreme measure).
+    Returns a report of actions taken.
+    &quot;&quot;&quot;
+    report = {&quot;actions&quot;: [], &quot;remaining_errors&quot;: []}
+    findings = mfdb_core_deep_verify(manifest_path)
+    
+    needs_manifest_sync = False
+    
+    for f in findings:
+        entity = f.get(&quot;entity&quot;)
+        if f.get(&quot;warning&quot;) == &quot;COUNT_MISMATCH&quot;:
+            _update_manifest_record_count(manifest_path, entity, f[&quot;actual&quot;])
+            report[&quot;actions&quot;].append(f&quot;Resynced record_count for {entity} to {f[&#x27;actual&#x27;]}&quot;)
+        
+        elif f.get(&quot;error&quot;) == &quot;POSITIONAL_VIOLATION&quot;:
+            # Attempt repair
+            entity_path = _get_entity_path(manifest_path, entity)
+            try:
+                doc = bejson_core_load_file(entity_path)
+                field_count = len(doc[&quot;Fields&quot;])
+                repaired = 0
+                for i, row in enumerate(doc[&quot;Values&quot;]):
+                    if len(row) &lt; field_count:
+                        doc[&quot;Values&quot;][i] = row + [None] * (field_count - len(row))
+                        repaired += 1
+                    elif len(row) &gt; field_count:
+                        doc[&quot;Values&quot;][i] = row[:field_count]
+                        repaired += 1
+                if repaired &gt; 0:
+                    bejson_core_atomic_write(entity_path, doc, create_backup=True)
+                    report[&quot;actions&quot;].append(f&quot;Repaired {repaired} positional violations in {entity}&quot;)
+            except Exception as e:
+                report[&quot;remaining_errors&quot;].append(f&quot;Failed to repair {entity}: {str(e)}&quot;)
+        
+        elif f.get(&quot;error&quot;) == &quot;MISSING_FILE&quot;:
+            # Attempt resurrection
+            mount_dir = os.path.dirname(os.path.abspath(manifest_path))
+            if MFDBArchive.resurrect_file(mount_dir, f[&quot;path&quot;]):
+                report[&quot;actions&quot;].append(f&quot;Resurrected missing entity file: {f[&#x27;path&#x27;]}&quot;)
+            else:
+                report[&quot;remaining_errors&quot;].append(f&quot;Could not resurrect {entity}&quot;)
+        
+        elif f.get(&quot;error&quot;):
+            report[&quot;remaining_errors&quot;].append(f&quot;{entity}: {f[&#x27;error&#x27;]} - {f.get(&#x27;message&#x27;, &#x27;&#x27;)}&quot;)
+
+    return report
+
+
+def _mfdb_core_repair_hierarchy(entity_path: str, new_hierarchy: str) -&gt; bool:
+    &quot;&quot;&quot;Surgically update the Parent_Hierarchy header in a BEJSON 104 file.&quot;&quot;&quot;
+    try:
+        doc = bejson_core_load_file(entity_path)
+        doc[&quot;Parent_Hierarchy&quot;] = new_hierarchy
+        bejson_core_atomic_write(entity_path, doc, create_backup=True)
+        return True
+    except Exception:
+        return False
+
+
+def mfdb_core_smart_repair(manifest_path: str, error: MFDBValidationError) -&gt; bool:
+    &quot;&quot;&quot;
+    Attempt to automatically repair the MFDB workspace based on a validation error.
+    Supported:
+      - E_MFDB_ENTITY_NOT_FOUND (33): Resurrects from archive.
+      - E_MFDB_BIDIRECTIONAL_FAIL (38) / E_MFDB_MANIFEST_NOT_FOUND (37): Patches Parent_Hierarchy.
+    &quot;&quot;&quot;
+    mount_dir = os.path.dirname(os.path.abspath(manifest_path))
+    ctx = error.context
+
+    if error.code == E_MFDB_ENTITY_NOT_FOUND or error.code == 33:
+        rel_path = ctx.get(&quot;file_path_rel&quot;)
+        if rel_path:
+            return MFDBArchive.resurrect_file(mount_dir, rel_path)
+
+    if error.code == E_MFDB_BIDIRECTIONAL_FAIL or error.code == E_MFDB_MANIFEST_NOT_FOUND:
+        entity_path = ctx.get(&quot;actual_path&quot;)
+        new_hierarchy = ctx.get(&quot;suggested_hierarchy&quot;)
+        # If suggested_hierarchy is missing but we are in a mount_dir, 
+        # assume standard v1.21 structure
+        if not new_hierarchy and entity_path:
+             new_hierarchy = &quot;../104a.mfdb.bejson&quot;
+
+        if entity_path and new_hierarchy:
+            return _mfdb_core_repair_hierarchy(entity_path, new_hierarchy)
+
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Read operations
+# ---------------------------------------------------------------------------
+
+
+def mfdb_core_load_manifest(manifest_path: str) -&gt; list[dict]:
+    &quot;&quot;&quot;
+    Validate and load the manifest.
+    Returns all manifest records as a list of field-name-keyed dicts.
+    &quot;&quot;&quot;
+    mfdb_validator_validate_manifest(manifest_path)
+    return _get_manifest_entries(manifest_path)
+
+
+def mfdb_core_load_entity(manifest_path: str, entity_name: str) -&gt; list[dict]:
+    &quot;&quot;&quot;
+    Load all records for a named entity.
+    Returns a list of field-name-keyed dicts (dense - no null-padding).
+    &quot;&quot;&quot;
+    doc = _load_entity_doc(manifest_path, entity_name)
+    return _rows_as_dicts(doc)
+
+
+def mfdb_core_get_entity_doc(manifest_path: str, entity_name: str) -&gt; dict:
+    &quot;&quot;&quot;Return the raw BEJSON 104 document dict for a named entity.&quot;&quot;&quot;
+    return _load_entity_doc(manifest_path, entity_name)
+
+
+def mfdb_core_get_stats(manifest_path: str) -&gt; dict:
+    &quot;&quot;&quot;Return a summary statistics dict for the entire MFDB.&quot;&quot;&quot;
+    doc     = _load_json(manifest_path)
+    entries = _rows_as_dicts(doc)
+
+    entity_stats = []
+    for entry in entries:
+        resolved = _resolve_entity_path(manifest_path, entry[&quot;file_path&quot;])
+        if os.path.exists(resolved):
+            edoc        = _load_json(resolved)
+            rec_count   = len(edoc.get(&quot;Values&quot;, []))
+            field_count = len(edoc.get(&quot;Fields&quot;, []))
+        else:
+            rec_count   = -1
+            field_count = -1
+
+        entity_stats.append({
+            &quot;entity_name&quot;:  entry[&quot;entity_name&quot;],
+            &quot;file_path&quot;:    entry[&quot;file_path&quot;],
+            &quot;record_count&quot;: rec_count,
+            &quot;field_count&quot;:  field_count,
+            &quot;primary_key&quot;:  entry.get(&quot;primary_key&quot;),
+        })
+
+    return {
+        &quot;db_name&quot;:        doc.get(&quot;DB_Name&quot;, &quot;&quot;),
+        &quot;schema_version&quot;: doc.get(&quot;Schema_Version&quot;, &quot;&quot;),
+        &quot;entity_count&quot;:   len(entries),
+        &quot;entities&quot;:       entity_stats,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Query operations
+# ---------------------------------------------------------------------------
+
+def mfdb_core_query_entity(
+    manifest_path: str,
+    entity_name: str,
+    predicate: Callable[[dict], bool],
+) -&gt; list[dict]:
+    &quot;&quot;&quot;Return all records from an entity for which predicate(record) is True.&quot;&quot;&quot;
+    records = mfdb_core_load_entity(manifest_path, entity_name)
+    return [r for r in records if predicate(r)]
+
+
+def mfdb_core_build_index(
+    manifest_path: str,
+    entity_name: str,
+    field_name: str,
+) -&gt; dict:
+    &quot;&quot;&quot;Build an in-memory hash index on a field for fast lookups.&quot;&quot;&quot;
+    records = mfdb_core_load_entity(manifest_path, entity_name)
+    return {r[field_name]: r for r in records if r.get(field_name) is not None}
+
+
+def mfdb_core_join(
+    manifest_path: str,
+    from_entity:   str,
+    to_entity:     str,
+    from_fk:       str,
+    to_pk:         str,
+) -&gt; list[dict]:
+    &quot;&quot;&quot;Cross-entity equi-join.&quot;&quot;&quot;
+    from_records = mfdb_core_load_entity(manifest_path, from_entity)
+    to_index     = mfdb_core_build_index(manifest_path, to_entity, to_pk)
+
+    results = []
+    for record in from_records:
+        fk_val = record.get(from_fk)
+        target = to_index.get(fk_val, {})
+        merged = dict(record)
+        for k, v in target.items():
+            merged[f&quot;{to_entity}__{k}&quot;] = v
+        results.append(merged)
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Write operations
+# ---------------------------------------------------------------------------
+
+def mfdb_core_add_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    values:        list,
+    sync_count:    bool = True,
+) -&gt; dict:
+    &quot;&quot;&quot;Append a record to an entity file.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_add_record(doc, values)
+    _write_entity_doc(doc, entity_path)
+    if sync_count:
+        _update_manifest_record_count(manifest_path, entity_name, len(doc[&quot;Values&quot;]))
+    return doc
+
+
+def mfdb_core_remove_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    record_index:  int,
+    sync_count:    bool = True,
+) -&gt; dict:
+    &quot;&quot;&quot;Remove a record at record_index from an entity file.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_remove_record(doc, record_index)
+    _write_entity_doc(doc, entity_path)
+    if sync_count:
+        _update_manifest_record_count(manifest_path, entity_name, len(doc[&quot;Values&quot;]))
+    return doc
+
+
+def mfdb_core_update_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    record_index:  int,
+    field_name:    str,
+    new_value:     Any,
+) -&gt; dict:
+    &quot;&quot;&quot;Update a single named field in a specific record of an entity file.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_update_field(doc, record_index, field_name, new_value)
+    _write_entity_doc(doc, entity_path)
+    return doc
+
+
+# ---------------------------------------------------------------------------
+# Manifest sync
+# ---------------------------------------------------------------------------
+
+def mfdb_core_sync_manifest_count(manifest_path: str, entity_name: str) -&gt; int:
+    &quot;&quot;&quot;Re-count actual rows in an entity file and update the manifest.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    edoc        = _load_json(entity_path)
+    count       = len(edoc.get(&quot;Values&quot;, []))
+    _update_manifest_record_count(manifest_path, entity_name, count)
+    return count
+
+
+def mfdb_core_sync_all_counts(manifest_path: str) -&gt; dict:
+    &quot;&quot;&quot;Sync record_count for every entity listed in the manifest.&quot;&quot;&quot;
+    entries = _get_manifest_entries(manifest_path)
+    results = {}
+    for entry in entries:
+        name = entry[&quot;entity_name&quot;]
+        results[name] = mfdb_core_sync_manifest_count(manifest_path, name)
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Database creation
+# ---------------------------------------------------------------------------
+
+def mfdb_core_create_entity_file(
+    manifest_path:  str,
+    entity_name:    str,
+    fields:         list[dict],
+    description:    str = &quot;&quot;,
+    primary_key:    str = &quot;&quot;,
+    schema_version: str = &quot;1.0&quot;,
+    file_path_rel:  str = &quot;&quot;,
+) -&gt; str:
+    &quot;&quot;&quot;Create a new entity file and register it in an existing manifest.&quot;&quot;&quot;
+    manifest_dir = os.path.dirname(os.path.abspath(manifest_path))
+
+    if not file_path_rel:
+        file_path_rel = f&quot;data/{entity_name.lower()}.bejson&quot;
+
+    resolved = os.path.normpath(os.path.join(manifest_dir, file_path_rel))
+    os.makedirs(os.path.dirname(resolved), exist_ok=True)
+
+    entity_dir         = os.path.dirname(resolved)
+    rel_to_manifest    = os.path.relpath(manifest_path, entity_dir)
+
+    entity_doc = {
+        &quot;Format&quot;:           &quot;BEJSON&quot;,
+        &quot;Format_Version&quot;:   &quot;104&quot;,
+        &quot;Format_Creator&quot;:   &quot;Elton Boehnen&quot;,
+        &quot;Parent_Hierarchy&quot;: rel_to_manifest,
+        &quot;Records_Type&quot;:     [entity_name],
+        &quot;Fields&quot;:           fields,
+        &quot;Values&quot;:           [],
+    }
+    bejson_core_atomic_write(resolved, entity_doc)
+
+    manifest_doc = _load_json(manifest_path)
+    fn_list      = [f[&quot;name&quot;] for f in manifest_doc[&quot;Fields&quot;]]
+
+    new_row = []
+    for fn in fn_list:
+        if   fn == &quot;entity_name&quot;:    new_row.append(entity_name)
+        elif fn == &quot;file_path&quot;:      new_row.append(file_path_rel)
+        elif fn == &quot;description&quot;:    new_row.append(description or None)
+        elif fn == &quot;record_count&quot;:   new_row.append(0)
+        elif fn == &quot;schema_version&quot;: new_row.append(schema_version)
+        elif fn == &quot;primary_key&quot;:    new_row.append(primary_key or None)
+        else:                        new_row.append(None)
+
+    manifest_doc[&quot;Values&quot;].append(new_row)
+    _write_manifest_doc(manifest_doc, manifest_path)
+
+    return resolved
+
+
+def mfdb_core_create_database(
+    root_dir:       str,
+    db_name:        str,
+    entities:       list[dict],
+    db_description: str = &quot;&quot;,
+    schema_version: str = &quot;1.0.0&quot;,
+    author:         str = &quot;Elton Boehnen&quot;,
+    mfdb_version:   str = &quot;1.3.1&quot;,
+    network_role: str = &quot;Master&quot;,
+) -&gt; str:
+    &quot;&quot;&quot;Create a new MFDB from scratch.&quot;&quot;&quot;
+    root = Path(root_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    manifest_path = str(root / &quot;104a.mfdb.bejson&quot;)
+
+    manifest_fields = [
+        {&quot;name&quot;: &quot;entity_name&quot;,    &quot;type&quot;: &quot;string&quot;},
+        {&quot;name&quot;: &quot;file_path&quot;,      &quot;type&quot;: &quot;string&quot;},
+        {&quot;name&quot;: &quot;description&quot;,    &quot;type&quot;: &quot;string&quot;},
+        {&quot;name&quot;: &quot;record_count&quot;,   &quot;type&quot;: &quot;integer&quot;},
+        {&quot;name&quot;: &quot;schema_version&quot;, &quot;type&quot;: &quot;string&quot;},
+        {&quot;name&quot;: &quot;primary_key&quot;,    &quot;type&quot;: &quot;string&quot;},
+    ]
+
+    manifest_values     = []
+    entity_defs_to_file = []
+
+    for entity in entities:
+        name   = entity[&quot;name&quot;]
+        fp_rel = entity.get(&quot;file_path&quot;, f&quot;data/{name.lower()}.bejson&quot;)
+        desc   = entity.get(&quot;description&quot;, &quot;&quot;)
+        pk     = entity.get(&quot;primary_key&quot;, &quot;&quot;)
+        sv     = entity.get(&quot;schema_version&quot;, &quot;1.0&quot;)
+        fields = entity[&quot;fields&quot;]
+
+        manifest_values.append([name, fp_rel, desc or None, 0, sv, pk or None])
+        entity_defs_to_file.append((name, fp_rel, fields))
+
+    created_at = datetime.now(timezone.utc).strftime(&quot;%Y-%m-%dT%H:%M:%SZ&quot;)
+
+    manifest_doc = {
+        &quot;Format&quot;:          &quot;BEJSON&quot;,
+        &quot;Format_Version&quot;:  &quot;104a&quot;,
+        &quot;Format_Creator&quot;:  &quot;Elton Boehnen&quot;,
+        &quot;MFDB_Version&quot;:    mfdb_version,
+        &quot;Network_Role&quot;: network_role,
+        &quot;DB_Name&quot;:         db_name,
+        &quot;DB_Description&quot;:  db_description,
+        &quot;Schema_Version&quot;:  schema_version,
+        &quot;Author&quot;:          author,
+        &quot;Created_At&quot;:      created_at,
+        &quot;Records_Type&quot;:    [&quot;mfdb&quot;],
+        &quot;Fields&quot;:          manifest_fields,
+        &quot;Values&quot;:          manifest_values,
+    }
+
+    bejson_core_atomic_write(manifest_path, manifest_doc)
+
+    for entity_name, fp_rel, fields in entity_defs_to_file:
+        resolved   = os.path.normpath(os.path.join(root_dir, fp_rel))
+        entity_dir = os.path.dirname(resolved)
+        os.makedirs(entity_dir, exist_ok=True)
+
+        rel_to_manifest = os.path.relpath(manifest_path, entity_dir)
+
+        entity_doc = {
+            &quot;Format&quot;:           &quot;BEJSON&quot;,
+            &quot;Format_Version&quot;:   &quot;104&quot;,
+            &quot;Format_Creator&quot;:   &quot;Elton Boehnen&quot;,
+            &quot;Parent_Hierarchy&quot;: rel_to_manifest,
+            &quot;Records_Type&quot;:     [entity_name],
+            &quot;Fields&quot;:           fields,
+            &quot;Values&quot;:           [],
+        }
+        bejson_core_atomic_write(resolved, entity_doc)
+
+    return manifest_path
+
+def mfdb_core_resolve_path(path_str: str) -&gt; str:
+    &quot;&quot;&quot;
+    Hardening: Resolve system placeholders in paths using lib_bejson_env.
+    Supports: {INTERNAL_STORAGE}, {SC_ROOT}, {PROJECTS_MGMT}, {ADMIN_LAYER}, 
+             internal_storage, ~, and environment variables in ${VAR} format.
+    &quot;&quot;&quot;
+    if not path_str:
+        return path_str
+    
+    try:
+        from lib_bejson_env import resolve_path
+        return resolve_path(path_str)
+    except ImportError:
+        # Minimal fallback without hardcoded absolute strings
+        # Defaults are handled inside resolve_path if imported, 
+        # otherwise we just expand ~ and vars
+        resolved = str(path_str)
+        # Expansion only
+        resolved = os.path.expanduser(resolved)
+        resolved = os.path.expandvars(resolved)
+        return os.path.normpath(resolved)
+</code></pre>
+    </div>
+    <script>
+        if (typeof copyToClipboard !== 'function') {
+            window.copyToClipboard = (id) => {
+                const el = document.getElementById(id);
+                const text = el.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = event.target;
+                    const oldText = btn.innerText;
+                    btn.innerText = 'Copied!';
+                    setTimeout(() => btn.innerText = oldText, 2000);
+                });
+            };
+        }
+    </script>
+    </div>
+    </div><div style="text-align:center; font-size:0.7rem; color:var(--text-muted); margin-top:40px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:1px;">built from BEJSON HTML3 Libraries 2.0</div>
+    </main>
+
+    <footer class="status-footer">
+        <div>SYSTEM // <span>ONLINE</span></div>
+        <div></div>
+        <div style="text-align: right;">
+            <a href="https://github.com/boehnenelton" class="footer-link">GITHUB</a> | 
+            <a href="https://boehnenelton2024.pages.dev" class="footer-link">PORTFOLIO</a> | 
+            <span>ELTON BOEHNEN</span>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {{
+            const toggle = document.querySelector('.top-bar__toggle');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            if (toggle && sidebar) {{
+                toggle.addEventListener('click', () => {{
+                    const open = sidebar.classList.toggle('sidebar--open');
+                    overlay.style.display = open ? 'block' : 'none';
+                }});
+                overlay.addEventListener('click', () => {{
+                    sidebar.classList.remove('sidebar--open');
+                    overlay.style.display = 'none';
+                }});
+            }}
+
+            document.querySelectorAll('.sidebar__category').forEach(cat => {{
+                cat.addEventListener('click', () => {{
+                    const items = cat.nextElementSibling;
+                    if (items && items.classList.contains('sidebar__category-items')) {{
+                        const isOpen = items.classList.toggle('sidebar__category-items--open');
+                        const arrow = cat.querySelector('.cat-arrow');
+                        if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+                    }}
+                }});
+            }});
+
+            window.switchSubTab = (tabId) => {{
+                document.querySelectorAll(".tab-content").forEach(c => c.style.display = "none");
+                document.querySelectorAll(".subtabs__btn").forEach(b => {{
+                   b.style.background = "transparent";
+                   b.style.color = "var(--text-muted)";
+                }});
+                const target = document.getElementById(tabId);
+                if (target) target.style.display = "block";
+            }};
+        }});
+    </script>
+</body>
+</html>

@@ -1,0 +1,1143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API: lib_bejson_core.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+:root {
+    --primary: #DE2626;
+    --bg-page: oklch(12% 0.01 250);
+    --bg-surface: oklch(16% 0.01 250);
+    --text-main: oklch(92% 0.01 250);
+    --text-muted: oklch(65% 0.01 250);
+    --border: oklch(22% 0.01 250);
+    --font-base: 'Inter', 'Roboto', system-ui, sans-serif;
+    --font-mono: 'Roboto Mono', 'Source Code Pro', monospace;
+    --transition: 0.15s ease;
+}
+
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; scroll-behavior: smooth; font-size: 16px; }
+body {
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-family: var(--font-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding-top: 60px;
+    padding-bottom: 80px;
+}
+
+/* Typography */
+h1 { 
+    font-size: clamp(1.75rem, 4vw, 2.5rem); 
+    font-weight: 800; 
+    letter-spacing: -0.02em; 
+    color: var(--text-main); 
+    line-height: 1.1; 
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+h2 { 
+    font-size: 1.1rem; 
+    font-weight: 800; 
+    letter-spacing: -0.01em; 
+    color: var(--primary); 
+    text-transform: uppercase; 
+    margin-bottom: 1rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+h3, h4 { 
+    font-weight: 700; 
+    color: var(--text-main);
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+a { color: var(--primary); text-decoration: none; transition: var(--transition); }
+a:hover { opacity: 0.8; }
+
+/* Navigation */
+.top-bar {
+    position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+    background: rgba(18, 18, 20, 0.9); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; z-index: 1000; border-bottom: 2px solid var(--primary);
+}
+.top-bar__brand { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.top-bar__brand span { color: var(--primary); }
+
+.sidebar {
+    position: fixed; top: 60px; left: -280px; width: 280px;
+    height: calc(100vh - 60px); background-color: var(--bg-page);
+    transition: var(--transition); z-index: 900; overflow-y: auto;
+    padding: 20px 0; border-right: 1px solid var(--border);
+}
+.sidebar--open { left: 0; }
+.sidebar__category {
+    padding: 12px 24px; font-size: 0.65rem; font-weight: 800;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;
+    cursor: pointer; display: flex; justify-content: space-between;
+}
+.sidebar__category:hover { color: var(--primary); }
+.sidebar__category-items { display: none; list-style: none; }
+.sidebar__category-items--open { display: block; }
+
+.sidebar__link {
+    display: block; padding: 10px 24px 10px 40px; color: var(--text-muted);
+    font-size: 0.8rem; font-weight: 500;
+    word-break: break-all;
+}
+.sidebar__link:hover, .sidebar__link--active { color: var(--text-main); background: var(--bg-surface); }
+.sidebar__link--active { border-left: 4px solid var(--primary); color: var(--primary); }
+
+/* Layout Components */
+.card, .b-card { background-color: var(--bg-surface); border-radius: 0; padding: 24px; margin-bottom: 24px; transition: var(--transition); }
+.table-container { overflow-x: auto; border-radius: 0; }
+.data-table, .b-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; background: var(--bg-surface); }
+.data-table th, .b-table th { background: var(--primary); padding: 12px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #FFFFFF; font-weight: 800; }
+.data-table td, .b-table td { padding: 12px 16px; border-top: 1px solid var(--border); word-break: break-word; }
+.data-table tr:hover { background: rgba(255,255,255,0.02); }
+
+pre { background: #000; color: #ADFF2F; padding: 20px; border-radius: 0; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; border-left: 4px solid var(--primary); }
+
+/* FOOTER - Authoritative Info */
+.status-footer, .footer {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
+    background: var(--bg-surface); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 24px;
+    font-size: 0.7rem; color: var(--text_muted); font-family: var(--font-mono);
+    border-top: 1px solid var(--border); z-index: 1000;
+}
+.footer-link { color: var(--text-muted); text-decoration: underline; }
+.footer-link:hover { color: var(--primary); }
+
+/* Square Buttons */
+.form__button, .b-button { background: var(--primary); color: white; padding: 10px 20px; border-radius: 0; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; cursor: pointer; border: none; transition: var(--transition); }
+.form__button:hover, .b-button:hover { background: #B91C1C; }
+
+/* Responsive */
+@media (min-width: 1024px) {
+    .sidebar { left: 0; }
+    .main-content { margin-left: 280px; }
+    .top-bar__toggle { display: none; }
+}
+</style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="top-bar__brand">BEJSON <span>LIBRARIES</span></div>
+        <button class="top-bar__toggle" aria-label="Toggle Menu" style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&#9776;</button>
+    </header>
+
+    <nav class="sidebar">
+        <ul style="list-style:none;">
+            <li>
+  <div class="sidebar__category">Home <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../../index.html" class="sidebar__link">> Dashboard Index</a></li>
+    <li><a href="../../../crash_course.html" class="sidebar__link">> Crash Course v21</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_bejson_js.html" class="sidebar__link">> lib_bejson_bejson.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_core_js.html" class="sidebar__link">> lib_bejson_core.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_errors_js.html" class="sidebar__link">> lib_bejson_errors.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_parse_js.html" class="sidebar__link">> lib_bejson_parse.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_state_js.html" class="sidebar__link">> lib_bejson_state.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_validator_js.html" class="sidebar__link">> lib_bejson_validator.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_mfdb_core_js.html" class="sidebar__link">> lib_mfdb_core.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_mfdb_validator_js.html" class="sidebar__link">> lib_mfdb_validator.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_cli_switch_game_js.html" class="sidebar__link">> cli/switch_game.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_assets_js.html" class="sidebar__link">> lib_bejson_assets.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_engine_core_js.html" class="sidebar__link">> lib_bejson_engine_core.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_events_js.html" class="sidebar__link">> lib_bejson_events.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_grid_js.html" class="sidebar__link">> lib_bejson_grid.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_input_js.html" class="sidebar__link">> lib_bejson_input.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_physics_js.html" class="sidebar__link">> lib_bejson_physics.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_renderer_js.html" class="sidebar__link">> lib_bejson_renderer.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_ui_screens_js.html" class="sidebar__link">> lib_bejson_ui_screens.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: External <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/External/ref_JS_External_jszip_min_js.html" class="sidebar__link">> jszip.min.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Utility/ref_JS_Utility_lib_bejson_utility_js.html" class="sidebar__link">> lib_bejson_utility.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: AI <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../AI/ref_PY_AI___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../AI/ref_PY_AI_cli_blogger_manager_py.html" class="sidebar__link">> cli/blogger_manager.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_gemini_py.html" class="sidebar__link">> lib_bejson_gemini.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_gemprofiles_py.html" class="sidebar__link">> lib_bejson_gemprofiles.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_genai_py.html" class="sidebar__link">> lib_bejson_genai.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_groq_py.html" class="sidebar__link">> lib_bejson_groq.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_bejson_openrouter_py.html" class="sidebar__link">> lib_bejson_openrouter.py</a></li>
+    <li><a href="../AI/ref_PY_AI_lib_brain_helper_py.html" class="sidebar__link">> lib_brain_helper.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: CMS <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../CMS/ref_PY_CMS___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_config_py.html" class="sidebar__link">> lib_cms_config.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_content_py.html" class="sidebar__link">> lib_cms_content.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_mfdb_py.html" class="sidebar__link">> lib_cms_mfdb.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_orchestrator_py.html" class="sidebar__link">> lib_cms_orchestrator.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_cms_taxonomy_py.html" class="sidebar__link">> lib_cms_taxonomy.py</a></li>
+    <li><a href="../CMS/ref_PY_CMS_lib_mfdb_extensions_py.html" class="sidebar__link">> lib_mfdb_extensions.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Core <span class="cat-arrow">▼</span></div>
+  <ul class="sidebar__category-items sidebar__category-items--open">
+    <li><a href="ref_PY_Core___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="ref_PY_Core_cli_bejson_server_py.html" class="sidebar__link">> cli/bejson_server.py</a></li>
+    <li><a href="ref_PY_Core_lib_be_core_py.html" class="sidebar__link">> lib_be_core.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_core_py.html" class="sidebar__link sidebar__link--active">> lib_bejson_core.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_env_py.html" class="sidebar__link">> lib_bejson_env.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_errors_py.html" class="sidebar__link">> lib_bejson_errors.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_mfdb_core_py.html" class="sidebar__link">> lib_bejson_mfdb_core.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_mfdb_validator_py.html" class="sidebar__link">> lib_bejson_mfdb_validator.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_parse_py.html" class="sidebar__link">> lib_bejson_parse.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_provider_py.html" class="sidebar__link">> lib_bejson_provider.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_state_management_py.html" class="sidebar__link">> lib_bejson_state_management.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_static_backend_py.html" class="sidebar__link">> lib_bejson_static_backend.py</a></li>
+    <li><a href="ref_PY_Core_lib_bejson_validator_py.html" class="sidebar__link">> lib_bejson_validator.py</a></li>
+    <li><a href="ref_PY_Core_lib_mfdb_core_py.html" class="sidebar__link">> lib_mfdb_core.py</a></li>
+    <li><a href="ref_PY_Core_lib_mfdb_validator_py.html" class="sidebar__link">> lib_mfdb_validator.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: HTML <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../HTML/ref_PY_HTML___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_bejson_diagram_html_py.html" class="sidebar__link">> lib_bejson_diagram_html.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_bejson_html2_skeletons_py.html" class="sidebar__link">> lib_bejson_html2_skeletons.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_bejson_to_html_py.html" class="sidebar__link">> lib_bejson_to_html.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_bejson_validator_diagram_py.html" class="sidebar__link">> lib_bejson_validator_diagram.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_animations_py.html" class="sidebar__link">> lib_html2_animations.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_body_py.html" class="sidebar__link">> lib_html2_body.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_charts_py.html" class="sidebar__link">> lib_html2_charts.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_feed_templates_py.html" class="sidebar__link">> lib_html2_feed_templates.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_flask_py.html" class="sidebar__link">> lib_html2_flask.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_metrics_py.html" class="sidebar__link">> lib_html2_metrics.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_page_templates_py.html" class="sidebar__link">> lib_html2_page_templates.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_showcase_py.html" class="sidebar__link">> lib_html2_showcase.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_sidemenu_py.html" class="sidebar__link">> lib_html2_sidemenu.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_tables_py.html" class="sidebar__link">> lib_html2_tables.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html2_widgets_py.html" class="sidebar__link">> lib_html2_widgets.py</a></li>
+    <li><a href="../HTML/ref_PY_HTML_lib_html_firebase_py.html" class="sidebar__link">> lib_html_firebase.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: System <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../System/ref_PY_System___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../System/ref_PY_System_cli_av_manager_py.html" class="sidebar__link">> cli/av_manager.py</a></li>
+    <li><a href="../System/ref_PY_System_cli_book_builder_py.html" class="sidebar__link">> cli/book_builder.py</a></li>
+    <li><a href="../System/ref_PY_System_cli_build_ebook_py.html" class="sidebar__link">> cli/build_ebook.py</a></li>
+    <li><a href="../System/ref_PY_System_lib_be_project_service_py.html" class="sidebar__link">> lib_be_project_service.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_assets_py.html" class="sidebar__link">> lib_bejson_assets.py</a></li>
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_events_py.html" class="sidebar__link">> lib_bejson_events.py</a></li>
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_physics_py.html" class="sidebar__link">> lib_bejson_physics.py</a></li>
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_tile_grids_py.html" class="sidebar__link">> lib_bejson_tile_grids.py</a></li>
+    <li><a href="../Gaming/ref_PY_Gaming_lib_bejson_ui_screens_py.html" class="sidebar__link">> lib_bejson_ui_screens.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Cognition <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Cognition/ref_PY_Cognition_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Utility/ref_PY_Utility_lib_bejson_utility_py.html" class="sidebar__link">> lib_bejson_utility.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: __pycache__ <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">SH: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_core_sh.html" class="sidebar__link">> lib_bejson_core.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_parse_sh.html" class="sidebar__link">> lib_bejson_parse.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_validator_sh.html" class="sidebar__link">> lib_bejson_validator.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_mfdb_core_sh.html" class="sidebar__link">> lib_mfdb_core.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_mfdb_validator_sh.html" class="sidebar__link">> lib_mfdb_validator.sh</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">SH: System <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../SH/System/ref_SH_System_lib_be_core_sh.html" class="sidebar__link">> lib_be_core.sh</a></li>
+    <li><a href="../../SH/System/ref_SH_System_lib_be_deps_sh.html" class="sidebar__link">> lib_be_deps.sh</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_assets_ts.html" class="sidebar__link">> bejson_assets.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_engine_ts.html" class="sidebar__link">> bejson_engine.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_events_ts.html" class="sidebar__link">> bejson_events.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_grid_ts.html" class="sidebar__link">> bejson_grid.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_input_ts.html" class="sidebar__link">> bejson_input.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_physics_ts.html" class="sidebar__link">> bejson_physics.ts</a></li>
+    <li><a href="../../TS/Gaming/ref_TS_Gaming_bejson_renderer_ts.html" class="sidebar__link">> bejson_renderer.ts</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../TS/Core/ref_TS_Core_bejson_core_ts.html" class="sidebar__link">> bejson_core.ts</a></li>
+    <li><a href="../../TS/Core/ref_TS_Core_bejson_types_ts.html" class="sidebar__link">> bejson_types.ts</a></li>
+    <li><a href="../../TS/Core/ref_TS_Core_bejson_validators_ts.html" class="sidebar__link">> bejson_validators.ts</a></li>
+    <li><a href="../../TS/Core/ref_TS_Core_mfdb_core_ts.html" class="sidebar__link">> mfdb_core.ts</a></li>
+    <li><a href="../../TS/Core/ref_TS_Core_mfdb_validators_ts.html" class="sidebar__link">> mfdb_validators.ts</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../TS/Utility/ref_TS_Utility_lib_bejson_utility_ts.html" class="sidebar__link">> lib_bejson_utility.ts</a></li>
+  </ul>
+</li>
+
+        </ul>
+    </nav>
+    <div id="overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:850;"></div>
+
+    <main class="main-content">
+        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 20px; font-family: var(--font-mono); text-transform: uppercase;"></div>
+        <h1>PY / Core / lib_bejson_core.py</h1><div style="display:flex; gap:24px; padding:24px; background:var(--bg-surface); margin-bottom:24px; border-left: 4px solid var(--primary);">
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">System</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">PY</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">Family</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">Core</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">API Density</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">45</div>
+        </div></div><p><a href="https://github.com/boehnenelton/bejson-libraries" target="_blank" style="color:var(--primary); font-weight:800; text-decoration:none;">[ CLONE REPO ON GITHUB ]</a></p>
+    <div class="card">
+        <h2 class="card__title">Public API Surface</h2>
+        <div style="font-size:0.95rem; color:var(--text-main);"><ul><li><code>class BEJSONCoreError</code></li><li><code>def __bejson_core_atomic_backup</code></li><li><code>def __bejson_core_restore_backup</code></li><li><code>def __init__</code></li><li><code>def _check_field_bounds</code></li><li><code>def _check_record_bounds</code></li><li><code>def _coerce_value</code></li><li><code>def bejson_core_acquire_lock</code></li><li><code>def bejson_core_add_column</code></li><li><code>def bejson_core_add_record</code></li><li><code>def bejson_core_atomic_write</code></li><li><code>def bejson_core_compact_print</code></li><li><code>def bejson_core_create_104</code></li><li><code>def bejson_core_create_104a</code></li><li><code>def bejson_core_create_104db</code></li><li><code>def bejson_core_filter_rows</code></li><li><code>def bejson_core_get_column</code></li><li><code>def bejson_core_get_field_applicability</code></li><li><code>def bejson_core_get_field_count</code></li><li><code>def bejson_core_get_field_def</code></li><li><code>def bejson_core_get_field_index</code></li><li><code>def bejson_core_get_field_values</code></li><li><code>def bejson_core_get_fields</code></li><li><code>def bejson_core_get_record</code></li><li><code>def bejson_core_get_record_count</code></li><li><code>def bejson_core_get_records_by_type</code></li><li><code>def bejson_core_get_records_types</code></li><li><code>def bejson_core_get_stats</code></li><li><code>def bejson_core_get_value_at</code></li><li><code>def bejson_core_get_version</code></li><li><code>def bejson_core_has_record_type</code></li><li><code>def bejson_core_is_valid</code></li><li><code>def bejson_core_load_file</code></li><li><code>def bejson_core_load_string</code></li><li><code>def bejson_core_pretty_print</code></li><li><code>def bejson_core_query_records</code></li><li><code>def bejson_core_query_records_advanced</code></li><li><code>def bejson_core_release_lock</code></li><li><code>def bejson_core_remove_column</code></li><li><code>def bejson_core_remove_record</code></li><li><code>def bejson_core_rename_column</code></li><li><code>def bejson_core_set_column</code></li><li><code>def bejson_core_set_value_at</code></li><li><code>def bejson_core_sort_by_field</code></li><li><code>def bejson_core_update_field</code></li></ul></div>
+    </div>
+    <div class="card">
+        <h2 class="card__title">Full Source Implementation</h2>
+        <div style="font-size:0.95rem; color:var(--text-main);">
+    <div style="background: #000; border-left: 4px solid var(--primary); margin: 24px 0; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase;">
+                FILE // lib_bejson_core.py
+            </div>
+            <button onclick="copyToClipboard('code_1779165756136')" style="background: var(--primary); color: white; border: none; padding: 4px 12px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase;">
+                Copy
+            </button>
+        </div>
+        <pre id="code_1779165756136" style="margin: 0; padding: 20px; color: #ADFF2F; font-family: var(--font-mono); font-size: 0.85rem; border: none; border-left: none;"><code>&quot;&quot;&quot;
+Library:      lib_bejson_core.py
+Family:       Core
+Jurisdiction: [&quot;BEJSON_LIBRARIES&quot;, &quot;PY&quot;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Low-level primitive operations for BEJSON document manipulation.
+&quot;&quot;&quot;
+
+import time
+
+import copy
+import json
+import os
+import sys
+import shutil
+import tempfile
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable
+
+LIB_DIR = os.path.dirname(os.path.abspath(__file__))
+if LIB_DIR not in sys.path:
+    sys.path.append(LIB_DIR)
+
+from lib_bejson_validator import (
+    BEJSONValidationError,
+    bejson_validator_validate_file,
+    bejson_validator_validate_string,
+)
+
+try:
+    from lib_bejson_errors import *
+except ImportError:
+    # Fallback if registry is missing
+    E_CORE_INVALID_VERSION = 20
+    E_CORE_INVALID_OPERATION = 21
+    E_CORE_INDEX_OUT_OF_BOUNDS = 22
+    E_CORE_FIELD_NOT_FOUND = 23
+    E_CORE_TYPE_CONVERSION_FAILED = 24
+    E_CORE_BACKUP_FAILED = 25
+    E_CORE_WRITE_FAILED = 26
+    E_CORE_QUERY_FAILED = 27
+
+class BEJSONCoreError(Exception):
+    def __init__(self, message: str, code: int):
+        super().__init__(message)
+        self.code = code
+
+
+# ---------------------------------------------------------------------------
+# ATOMIC FILE OPERATIONS
+# ---------------------------------------------------------------------------
+
+def __bejson_core_atomic_backup(file_path: str, backup_suffix: str = &quot;.backup&quot;) -&gt; str:
+    &quot;&quot;&quot;
+    Create a timestamped backup of file_path.
+    Returns the backup path, or &#x27;&#x27; if no file existed.
+    Mirrors __bejson_core_atomic_backup.
+    &quot;&quot;&quot;
+    path = Path(file_path)
+    if not path.exists():
+        return &quot;&quot;
+    timestamp = datetime.now().strftime(&quot;%Y%m%d_%H%M%S&quot;)
+    backup_path = path.with_name(f&quot;{path.name}{backup_suffix}.{timestamp}&quot;)
+    try:
+        shutil.copy2(path, backup_path)
+    except OSError as exc:
+        raise BEJSONCoreError(f&quot;Backup failed: {exc}&quot;, E_CORE_BACKUP_FAILED)
+    return str(backup_path)
+
+
+def __bejson_core_restore_backup(file_path: str, backup_path: str) -&gt; bool:
+    &quot;&quot;&quot;
+    Restore backup_path → file_path.
+    Mirrors __bejson_core_restore_backup.
+    &quot;&quot;&quot;
+    bp = Path(backup_path)
+    if bp.exists():
+        shutil.move(str(bp), file_path)
+        return True
+    return False
+
+
+def bejson_core_atomic_write(file_path: str, content: dict, create_backup: bool = True) -&gt; None:
+    &quot;&quot;&quot;
+    Validate content and write it atomically to file_path.
+    CRITICAL FIXES (v3.2:
+      - Same-partition temp files: temp file is created as a sibling to the
+        target file (same directory), guaranteeing atomic os.rename() on the
+        same filesystem.  Cross-device falls back to shutil.copy2.
+      - Explicit fsync: file descriptor is flushed via os.fsync() BEFORE
+        rename, closing the data-loss window from volatile page cache.
+      - Cross-filesystem safe: if os.rename fails (EXDEV), falls back to
+        shutil.copy2 + os.unlink (atomic enough with fsync).
+    Mirrors bejson_core_atomic_write.
+    &quot;&quot;&quot;
+    backup_path = &quot;&quot;
+    if create_backup:
+        backup_path = __bejson_core_atomic_backup(file_path)
+
+    json_text = json.dumps(content, indent=2)
+
+    # Write to a temp file first, validate, then rename
+    path = Path(file_path)
+    # Ensure output parent directory exists
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    # CRITICAL FIX: always create temp as a SIBLING to the target file
+    # so os.rename stays on the same partition (true atomic inode swap).
+    temp_dir = str(path.parent)
+    # Only fall back to system tmpdir if parent is not writable AND
+    # the user explicitly set TMPDIR (opt-in cross-partition fallback).
+    if not os.access(temp_dir, os.W_OK):
+        user_tmp = os.environ.get(&quot;TMPDIR&quot;, &quot;&quot;)
+        if user_tmp:
+            temp_dir = user_tmp
+            os.makedirs(temp_dir, exist_ok=True)
+        else:
+            raise BEJSONCoreError(
+                f&quot;Cannot write to target directory &#x27;{temp_dir}&#x27; and &quot;
+                &quot;TMPDIR not set. Set TMPDIR to a writable location on the &quot;
+                &quot;same partition as the target, or grant write permission.&quot;,
+                E_CORE_WRITE_FAILED,
+            )
+
+    tmp_fd = None
+    tmp_path = &quot;&quot;
+    try:
+        # Use O_WRONLY|O_CREAT|O_EXCL for safe temp file creation
+        fd, tmp_path = tempfile.mkstemp(
+            dir=temp_dir, suffix=&quot;.tmp&quot;, prefix=&quot;.bejson_&quot;
+        )
+        tmp_fd = fd
+        with os.fdopen(fd, &quot;w&quot;, encoding=&quot;utf-8&quot;) as tmp:
+            tmp.write(json_text)
+            # CRITICAL FIX: explicit fsync before close
+            tmp.flush()
+            os.fsync(tmp.fileno())
+    except OSError as exc:
+        if tmp_fd is not None:
+            try:
+                os.close(tmp_fd)
+            except OSError:
+                pass
+        if tmp_path:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+        if backup_path:
+            __bejson_core_restore_backup(file_path, backup_path)
+        raise BEJSONCoreError(f&quot;Write failed: {exc}&quot;, E_CORE_WRITE_FAILED)
+
+    # Validate the temp file BEFORE committing
+    try:
+        bejson_validator_validate_file(tmp_path)
+    except BEJSONValidationError as exc:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
+        if backup_path:
+            __bejson_core_restore_backup(file_path, backup_path)
+        raise BEJSONCoreError(f&quot;Validation failed: {exc}&quot;, E_CORE_WRITE_FAILED)
+
+    # Atomic rename (same-partition guaranteed by sibling temp)
+    try:
+        os.rename(tmp_path, file_path)
+        # fsync the directory entry to ensure rename is durable
+        dir_fd = os.open(str(path.parent), os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+    except OSError as exc:
+        # Cross-filesystem: fall back to copy2 + unlink (still safe with fsync)
+        try:
+            shutil.copy2(tmp_path, file_path)
+            os.unlink(tmp_path)
+        except OSError:
+            try:
+                os.unlink(tmp_path)
+            except OSError:
+                pass
+            if backup_path:
+                __bejson_core_restore_backup(file_path, backup_path)
+            raise BEJSONCoreError(f&quot;Atomic move failed: {exc}&quot;, E_CORE_WRITE_FAILED)
+
+    # Clean up old backup (write succeeded)
+    if backup_path:
+        Path(backup_path).unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------
+# DOCUMENT CREATION
+# ---------------------------------------------------------------------------
+
+def bejson_core_create_104(records_type: str, fields: list[dict], values: list[list]) -&gt; dict:
+    &quot;&quot;&quot;
+    Create a BEJSON 104 document.
+    Mirrors bejson_core_create_104.
+    &quot;&quot;&quot;
+    return {
+        &quot;Format&quot;: &quot;BEJSON&quot;,
+        &quot;Format_Version&quot;: &quot;104&quot;,
+        &quot;Format_Creator&quot;: &quot;Elton Boehnen&quot;,
+        &quot;Records_Type&quot;: [records_type],
+        &quot;Fields&quot;: fields,
+        &quot;Values&quot;: values,
+    }
+
+
+def bejson_core_create_104a(
+    records_type: str,
+    fields: list[dict],
+    values: list[list],
+    **custom_headers,
+) -&gt; dict:
+    &quot;&quot;&quot;
+    Create a BEJSON 104a document with optional custom top-level headers.
+    Mirrors bejson_core_create_104a.
+    &quot;&quot;&quot;
+    doc = {
+        &quot;Format&quot;: &quot;BEJSON&quot;,
+        &quot;Format_Version&quot;: &quot;104a&quot;,
+        &quot;Format_Creator&quot;: &quot;Elton Boehnen&quot;,
+        &quot;Records_Type&quot;: [records_type],
+        &quot;Fields&quot;: fields,
+        &quot;Values&quot;: values,
+    }
+    doc.update(custom_headers)
+    return doc
+
+
+def bejson_core_create_104db(
+    records_types: list[str], fields: list[dict], values: list[list]
+) -&gt; dict:
+    &quot;&quot;&quot;
+    Create a BEJSON 104db document (multi-type).
+    Mirrors bejson_core_create_104db.
+    &quot;&quot;&quot;
+    return {
+        &quot;Format&quot;: &quot;BEJSON&quot;,
+        &quot;Format_Version&quot;: &quot;104db&quot;,
+        &quot;Format_Creator&quot;: &quot;Elton Boehnen&quot;,
+        &quot;Records_Type&quot;: records_types,
+        &quot;Fields&quot;: fields,
+        &quot;Values&quot;: values,
+    }
+
+
+# ---------------------------------------------------------------------------
+# DOCUMENT LOADING &amp; PARSING
+# ---------------------------------------------------------------------------
+
+def bejson_core_load_file(file_path: str) -&gt; dict:
+    &quot;&quot;&quot;
+    Load and validate a BEJSON file from disk.
+    Mirrors bejson_core_load_file.
+    &quot;&quot;&quot;
+    path = Path(file_path)
+    if not path.exists():
+        raise BEJSONCoreError(f&quot;File not found: {file_path}&quot;, E_CORE_FIELD_NOT_FOUND)
+    bejson_validator_validate_file(file_path)
+    return json.loads(path.read_text(encoding=&quot;utf-8&quot;))
+
+
+def bejson_core_load_string(json_string: str) -&gt; dict:
+    &quot;&quot;&quot;
+    Parse and validate a BEJSON JSON string.
+    Mirrors bejson_core_load_string.
+    &quot;&quot;&quot;
+    bejson_validator_validate_string(json_string)
+    return json.loads(json_string)
+
+
+def bejson_core_get_version(doc: dict) -&gt; str:
+    &quot;&quot;&quot;Return the Format_Version. Mirrors bejson_core_get_version.&quot;&quot;&quot;
+    return doc[&quot;Format_Version&quot;]
+
+
+def bejson_core_get_records_types(doc: dict) -&gt; list[str]:
+    &quot;&quot;&quot;Return the Records_Type list. Mirrors bejson_core_get_records_types.&quot;&quot;&quot;
+    return doc[&quot;Records_Type&quot;]
+
+
+def bejson_core_get_fields(doc: dict) -&gt; list[dict]:
+    &quot;&quot;&quot;Return the Fields list. Mirrors bejson_core_get_fields.&quot;&quot;&quot;
+    return doc[&quot;Fields&quot;]
+
+
+def bejson_core_get_field_index(doc: dict, field_name: str) -&gt; int:
+    &quot;&quot;&quot;
+    Return the zero-based index of a field by name.
+    Raises BEJSONCoreError if not found.
+    Mirrors bejson_core_get_field_index.
+    &quot;&quot;&quot;
+    for i, f in enumerate(doc[&quot;Fields&quot;]):
+        if f[&quot;name&quot;] == field_name:
+            return i
+    raise BEJSONCoreError(f&quot;Field not found: {field_name}&quot;, E_CORE_FIELD_NOT_FOUND)
+
+
+def bejson_core_get_field_def(doc: dict, field_name: str) -&gt; dict:
+    &quot;&quot;&quot;
+    Return the field definition dict for a named field.
+    Mirrors bejson_core_get_field_def.
+    &quot;&quot;&quot;
+    for f in doc[&quot;Fields&quot;]:
+        if f[&quot;name&quot;] == field_name:
+            return f
+    raise BEJSONCoreError(f&quot;Field not found: {field_name}&quot;, E_CORE_FIELD_NOT_FOUND)
+
+
+def bejson_core_get_field_count(doc: dict) -&gt; int:
+    &quot;&quot;&quot;Return number of fields. Mirrors bejson_core_get_field_count.&quot;&quot;&quot;
+    return len(doc[&quot;Fields&quot;])
+
+
+def bejson_core_get_record_count(doc: dict) -&gt; int:
+    &quot;&quot;&quot;Return number of records. Mirrors bejson_core_get_record_count.&quot;&quot;&quot;
+    return len(doc[&quot;Values&quot;])
+
+
+# ---------------------------------------------------------------------------
+# POSITION-BASED INDEXING &amp; QUERYING
+# ---------------------------------------------------------------------------
+
+def _check_record_bounds(doc: dict, record_index: int):
+    if record_index &lt; 0 or record_index &gt;= bejson_core_get_record_count(doc):
+        raise BEJSONCoreError(
+            f&quot;Record index {record_index} out of bounds&quot;, E_CORE_INDEX_OUT_OF_BOUNDS
+        )
+
+
+def _check_field_bounds(doc: dict, field_index: int):
+    if field_index &lt; 0 or field_index &gt;= bejson_core_get_field_count(doc):
+        raise BEJSONCoreError(
+            f&quot;Field index {field_index} out of bounds&quot;, E_CORE_INDEX_OUT_OF_BOUNDS
+        )
+
+
+def bejson_core_get_value_at(doc: dict, record_index: int, field_index: int) -&gt; Any:
+    &quot;&quot;&quot;
+    Return the value at [record_index][field_index].
+    Mirrors bejson_core_get_value_at.
+    &quot;&quot;&quot;
+    _check_record_bounds(doc, record_index)
+    _check_field_bounds(doc, field_index)
+    return doc[&quot;Values&quot;][record_index][field_index]
+
+
+def bejson_core_get_record(doc: dict, record_index: int) -&gt; list:
+    &quot;&quot;&quot;
+    Return a record (list of values) by index.
+    Mirrors bejson_core_get_record.
+    &quot;&quot;&quot;
+    _check_record_bounds(doc, record_index)
+    return doc[&quot;Values&quot;][record_index]
+
+
+def bejson_core_get_field_values(doc: dict, field_name: str) -&gt; list:
+    &quot;&quot;&quot;
+    Return a list of all values for a named field across all records.
+    Mirrors bejson_core_get_field_values.
+    &quot;&quot;&quot;
+    idx = bejson_core_get_field_index(doc, field_name)
+    return [record[idx] for record in doc[&quot;Values&quot;]]
+
+
+def bejson_core_query_records(doc: dict, field_name: str, search_value: Any) -&gt; list[list]:
+    &quot;&quot;&quot;
+    Return all records where field_name == search_value (exact match).
+    Mirrors bejson_core_query_records.
+    &quot;&quot;&quot;
+    idx = bejson_core_get_field_index(doc, field_name)
+    return [record for record in doc[&quot;Values&quot;] if record[idx] == search_value]
+
+
+def bejson_core_query_records_advanced(doc: dict, **conditions) -&gt; list[list]:
+    &quot;&quot;&quot;
+    Return records matching all keyword conditions (AND logic).
+    Example: bejson_core_query_records_advanced(doc, age=30, city=&quot;NYC&quot;)
+    Mirrors bejson_core_query_records_advanced.
+    &quot;&quot;&quot;
+    field_indices = {name: bejson_core_get_field_index(doc, name) for name in conditions}
+    return [
+        record
+        for record in doc[&quot;Values&quot;]
+        if all(record[field_indices[name]] == val for name, val in conditions.items())
+    ]
+
+
+# ---------------------------------------------------------------------------
+# 104DB SPECIFIC OPERATIONS
+# ---------------------------------------------------------------------------
+
+def bejson_core_get_records_by_type(doc: dict, record_type: str) -&gt; list[list]:
+    &quot;&quot;&quot;
+    Return records whose Record_Type_Parent matches record_type.
+    Mirrors bejson_core_get_records_by_type.
+    &quot;&quot;&quot;
+    if bejson_core_get_version(doc) != &quot;104db&quot;:
+        raise BEJSONCoreError(&quot;Operation requires 104db document&quot;, E_CORE_INVALID_OPERATION)
+    return [record for record in doc[&quot;Values&quot;] if record[0] == record_type]
+
+
+def bejson_core_has_record_type(doc: dict, record_type: str) -&gt; bool:
+    &quot;&quot;&quot;
+    Return True if record_type is declared in Records_Type.
+    Mirrors bejson_core_has_record_type.
+    &quot;&quot;&quot;
+    return record_type in doc[&quot;Records_Type&quot;]
+
+
+def bejson_core_get_field_applicability(doc: dict, field_name: str) -&gt; str:
+    &quot;&quot;&quot;
+    Return the Record_Type_Parent for a field.
+    In 104db, this must be a valid record type (no &#x27;common&#x27;).
+    &quot;&quot;&quot;
+    field_def = bejson_core_get_field_def(doc, field_name)
+    rtp = field_def.get(&quot;Record_Type_Parent&quot;)
+    
+    version = bejson_core_get_version(doc)
+    if version == &quot;104db&quot;:
+        if rtp is None:
+            # Check for legacy &#x27;applies_to&#x27; only to provide a helpful error
+            if &quot;applies_to&quot; in field_def:
+                 raise BEJSONCoreError(f&quot;Field &#x27;{field_name}&#x27; uses legacy &#x27;applies_to&#x27;. 104db requires &#x27;Record_Type_Parent&#x27;.&quot;, E_CORE_INVALID_OPERATION)
+            raise BEJSONCoreError(f&quot;Field &#x27;{field_name}&#x27; missing Record_Type_Parent in 104db&quot;, E_CORE_INVALID_OPERATION)
+    
+    return rtp or &quot;common&quot;
+
+
+# ---------------------------------------------------------------------------
+# DATA MODIFICATION
+# All mutation functions return a new document dict (immutable style).
+# ---------------------------------------------------------------------------
+
+def _coerce_value(value: Any, field_type: str) -&gt; Any:
+    &quot;&quot;&quot;Coerce and validate a raw Python value to the declared field type.&quot;&quot;&quot;
+    if value is None:
+        return None
+    if field_type == &quot;string&quot;:
+        return str(value)
+    if field_type in (&quot;integer&quot;, &quot;number&quot;):
+        try:
+            return int(value) if field_type == &quot;integer&quot; else float(value)
+        except (TypeError, ValueError):
+            raise BEJSONCoreError(
+                f&quot;Cannot convert &#x27;{value}&#x27; to {field_type}&quot;, E_CORE_TYPE_CONVERSION_FAILED
+            )
+    if field_type == &quot;boolean&quot;:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str) and value.lower() in (&quot;true&quot;, &quot;false&quot;):
+            return value.lower() == &quot;true&quot;
+        raise BEJSONCoreError(
+            f&quot;Cannot convert &#x27;{value}&#x27; to boolean&quot;, E_CORE_TYPE_CONVERSION_FAILED
+        )
+    return value
+
+
+def bejson_core_set_value_at(
+    doc: dict, record_index: int, field_index: int, new_value: Any
+) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with the value at [record_index][field_index] replaced.
+    Mirrors bejson_core_set_value_at.
+    &quot;&quot;&quot;
+    _check_record_bounds(doc, record_index)
+    _check_field_bounds(doc, field_index)
+
+    field_def = doc[&quot;Fields&quot;][field_index]
+    coerced = _coerce_value(new_value, field_def[&quot;type&quot;])
+
+    doc = copy.deepcopy(doc)
+    doc[&quot;Values&quot;][record_index][field_index] = coerced
+    return doc
+
+
+def bejson_core_add_record(doc: dict, values: list) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with a record appended.
+    Mirrors bejson_core_add_record.
+    &quot;&quot;&quot;
+    field_count = bejson_core_get_field_count(doc)
+    if len(values) != field_count:
+        raise BEJSONCoreError(
+            f&quot;Record must have {field_count} values, got {len(values)}&quot;,
+            E_CORE_INVALID_OPERATION,
+        )
+    coerced = [_coerce_value(v, doc[&quot;Fields&quot;][i][&quot;type&quot;]) for i, v in enumerate(values)]
+    doc = copy.deepcopy(doc)
+    doc[&quot;Values&quot;].append(coerced)
+    return doc
+
+
+def bejson_core_remove_record(doc: dict, record_index: int) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with the record at record_index removed.
+    Mirrors bejson_core_remove_record.
+    &quot;&quot;&quot;
+    _check_record_bounds(doc, record_index)
+    doc = copy.deepcopy(doc)
+    del doc[&quot;Values&quot;][record_index]
+    return doc
+
+
+def bejson_core_update_field(
+    doc: dict, record_index: int, field_name: str, new_value: Any
+) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with a named field updated in a specific record.
+    Mirrors bejson_core_update_field.
+    &quot;&quot;&quot;
+    field_index = bejson_core_get_field_index(doc, field_name)
+    return bejson_core_set_value_at(doc, record_index, field_index, new_value)
+
+
+# ---------------------------------------------------------------------------
+# TABLE OPERATIONS (COLUMN / ROW MANIPULATION)
+# ---------------------------------------------------------------------------
+
+def bejson_core_add_column(
+    doc: dict,
+    field_name: str,
+    field_type: str,
+    default_value: Any = None,
+    record_type_parent: str = &quot;&quot;,
+) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with a new column appended.
+    Mirrors bejson_core_add_column.
+    &quot;&quot;&quot;
+    try:
+        bejson_core_get_field_index(doc, field_name)
+        raise BEJSONCoreError(f&quot;Field &#x27;{field_name}&#x27; already exists&quot;, E_CORE_INVALID_OPERATION)
+    except BEJSONCoreError as exc:
+        if exc.code != E_CORE_FIELD_NOT_FOUND:
+            raise
+
+    new_field: dict = {&quot;name&quot;: field_name, &quot;type&quot;: field_type}
+    if record_type_parent:
+        new_field[&quot;Record_Type_Parent&quot;] = record_type_parent
+
+    doc = copy.deepcopy(doc)
+    doc[&quot;Fields&quot;].append(new_field)
+    for record in doc[&quot;Values&quot;]:
+        record.append(default_value)
+    return doc
+
+
+def bejson_core_remove_column(doc: dict, field_name: str) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with the named column removed.
+    Mirrors bejson_core_remove_column.
+    &quot;&quot;&quot;
+    idx = bejson_core_get_field_index(doc, field_name)
+    doc = copy.deepcopy(doc)
+    del doc[&quot;Fields&quot;][idx]
+    for record in doc[&quot;Values&quot;]:
+        del record[idx]
+    return doc
+
+
+def bejson_core_rename_column(doc: dict, old_name: str, new_name: str) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with a column renamed.
+    Mirrors bejson_core_rename_column.
+    &quot;&quot;&quot;
+    idx = bejson_core_get_field_index(doc, old_name)
+    try:
+        bejson_core_get_field_index(doc, new_name)
+        raise BEJSONCoreError(f&quot;Field &#x27;{new_name}&#x27; already exists&quot;, E_CORE_INVALID_OPERATION)
+    except BEJSONCoreError as exc:
+        if exc.code != E_CORE_FIELD_NOT_FOUND:
+            raise
+
+    doc = copy.deepcopy(doc)
+    doc[&quot;Fields&quot;][idx][&quot;name&quot;] = new_name
+    return doc
+
+
+def bejson_core_get_column(doc: dict, field_name: str) -&gt; list:
+    &quot;&quot;&quot;
+    Return all values for a column. Mirrors bejson_core_get_column.
+    Delegates to bejson_core_get_field_values.
+    &quot;&quot;&quot;
+    return bejson_core_get_field_values(doc, field_name)
+
+
+def bejson_core_set_column(doc: dict, field_name: str, values: list) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with an entire column replaced.
+    Mirrors bejson_core_set_column.
+    &quot;&quot;&quot;
+    idx = bejson_core_get_field_index(doc, field_name)
+    record_count = bejson_core_get_record_count(doc)
+    if len(values) != record_count:
+        raise BEJSONCoreError(
+            f&quot;Value count ({len(values)}) must match record count ({record_count})&quot;,
+            E_CORE_INVALID_OPERATION,
+        )
+    doc = copy.deepcopy(doc)
+    for i, val in enumerate(values):
+        doc[&quot;Values&quot;][i][idx] = val
+    return doc
+
+
+def bejson_core_filter_rows(doc: dict, predicate) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document containing only records for which predicate(record) is True.
+    predicate receives a raw list (the record values).
+    Mirrors bejson_core_filter_rows.
+    &quot;&quot;&quot;
+    doc = copy.deepcopy(doc)
+    doc[&quot;Values&quot;] = [record for record in doc[&quot;Values&quot;] if predicate(record)]
+    return doc
+
+
+def bejson_core_sort_by_field(doc: dict, field_name: str, ascending: bool = True) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a new document with Values sorted by a named field.
+    Mirrors bejson_core_sort_by_field.
+    &quot;&quot;&quot;
+    idx = bejson_core_get_field_index(doc, field_name)
+    doc = copy.deepcopy(doc)
+    doc[&quot;Values&quot;].sort(key=lambda r: (r[idx] is None, r[idx]), reverse=not ascending)
+    return doc
+
+
+# ---------------------------------------------------------------------------
+# UTILITY FUNCTIONS
+# ---------------------------------------------------------------------------
+
+def bejson_core_pretty_print(doc: dict) -&gt; str:
+    &quot;&quot;&quot;Return a pretty-printed JSON string. Mirrors bejson_core_pretty_print.&quot;&quot;&quot;
+    return json.dumps(doc, indent=2)
+
+
+def bejson_core_compact_print(doc: dict) -&gt; str:
+    &quot;&quot;&quot;Return a compact JSON string. Mirrors bejson_core_compact_print.&quot;&quot;&quot;
+    return json.dumps(doc, separators=(&quot;,&quot;, &quot;:&quot;))
+
+
+def bejson_core_is_valid(doc: dict) -&gt; bool:
+    &quot;&quot;&quot;
+    Return True if doc is a valid BEJSON document, False otherwise.
+    Mirrors bejson_core_is_valid.
+    &quot;&quot;&quot;
+    try:
+        bejson_validator_validate_string(json.dumps(doc))
+        return True
+    except (BEJSONValidationError, Exception):
+        return False
+
+
+def bejson_core_get_stats(doc: dict) -&gt; dict:
+    &quot;&quot;&quot;
+    Return a statistics dict for the document.
+    Mirrors bejson_core_get_stats.
+    &quot;&quot;&quot;
+    return {
+        &quot;version&quot;: bejson_core_get_version(doc),
+        &quot;field_count&quot;: bejson_core_get_field_count(doc),
+        &quot;record_count&quot;: bejson_core_get_record_count(doc),
+        &quot;records_types&quot;: bejson_core_get_records_types(doc),
+    }
+
+# ---------------------------------------------------------------------------
+# LOCKING
+# ---------------------------------------------------------------------------
+
+def bejson_core_acquire_lock(file_path: str, timeout: int = 10) -&gt; bool:
+    &quot;&quot;&quot;Acquire a lock file for the given file_path.&quot;&quot;&quot;
+    lock_path = file_path + &quot;.lock&quot;
+    start_time = time.time()
+    while time.time() - start_time &lt; timeout:
+        try:
+            # Use O_EXCL to ensure atomic creation
+            fd = os.open(lock_path, os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            with os.fdopen(fd, &quot;w&quot;) as f:
+                f.write(str(os.getpid()))
+            return True
+        except FileExistsError:
+            time.sleep(0.1)
+    return False
+
+def bejson_core_release_lock(file_path: str) -&gt; None:
+    &quot;&quot;&quot;Release the lock file for the given file_path.&quot;&quot;&quot;
+    lock_path = file_path + &quot;.lock&quot;
+    if os.path.exists(lock_path):
+        os.unlink(lock_path)
+</code></pre>
+    </div>
+    <script>
+        if (typeof copyToClipboard !== 'function') {
+            window.copyToClipboard = (id) => {
+                const el = document.getElementById(id);
+                const text = el.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = event.target;
+                    const oldText = btn.innerText;
+                    btn.innerText = 'Copied!';
+                    setTimeout(() => btn.innerText = oldText, 2000);
+                });
+            };
+        }
+    </script>
+    </div>
+    </div><div style="text-align:center; font-size:0.7rem; color:var(--text-muted); margin-top:40px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:1px;">built from BEJSON HTML3 Libraries 2.0</div>
+    </main>
+
+    <footer class="status-footer">
+        <div>SYSTEM // <span>ONLINE</span></div>
+        <div></div>
+        <div style="text-align: right;">
+            <a href="https://github.com/boehnenelton" class="footer-link">GITHUB</a> | 
+            <a href="https://boehnenelton2024.pages.dev" class="footer-link">PORTFOLIO</a> | 
+            <span>ELTON BOEHNEN</span>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {{
+            const toggle = document.querySelector('.top-bar__toggle');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            if (toggle && sidebar) {{
+                toggle.addEventListener('click', () => {{
+                    const open = sidebar.classList.toggle('sidebar--open');
+                    overlay.style.display = open ? 'block' : 'none';
+                }});
+                overlay.addEventListener('click', () => {{
+                    sidebar.classList.remove('sidebar--open');
+                    overlay.style.display = 'none';
+                }});
+            }}
+
+            document.querySelectorAll('.sidebar__category').forEach(cat => {{
+                cat.addEventListener('click', () => {{
+                    const items = cat.nextElementSibling;
+                    if (items && items.classList.contains('sidebar__category-items')) {{
+                        const isOpen = items.classList.toggle('sidebar__category-items--open');
+                        const arrow = cat.querySelector('.cat-arrow');
+                        if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+                    }}
+                }});
+            }});
+
+            window.switchSubTab = (tabId) => {{
+                document.querySelectorAll(".tab-content").forEach(c => c.style.display = "none");
+                document.querySelectorAll(".subtabs__btn").forEach(b => {{
+                   b.style.background = "transparent";
+                   b.style.color = "var(--text-muted)";
+                }});
+                const target = document.getElementById(tabId);
+                if (target) target.style.display = "block";
+            }};
+        }});
+    </script>
+</body>
+</html>

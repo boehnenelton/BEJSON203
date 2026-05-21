@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API: bejson_validators.ts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+:root {
+    --primary: #DE2626;
+    --bg-page: oklch(12% 0.01 250);
+    --bg-surface: oklch(16% 0.01 250);
+    --text-main: oklch(92% 0.01 250);
+    --text-muted: oklch(65% 0.01 250);
+    --border: oklch(22% 0.01 250);
+    --font-base: 'Inter', 'Roboto', system-ui, sans-serif;
+    --font-mono: 'Roboto Mono', 'Source Code Pro', monospace;
+    --transition: 0.15s ease;
+}
+
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; scroll-behavior: smooth; font-size: 16px; }
+body {
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-family: var(--font-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding-top: 60px;
+    padding-bottom: 80px;
+}
+
+/* Typography */
+h1 { 
+    font-size: clamp(1.75rem, 4vw, 2.5rem); 
+    font-weight: 800; 
+    letter-spacing: -0.02em; 
+    color: var(--text-main); 
+    line-height: 1.1; 
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+h2 { 
+    font-size: 1.1rem; 
+    font-weight: 800; 
+    letter-spacing: -0.01em; 
+    color: var(--primary); 
+    text-transform: uppercase; 
+    margin-bottom: 1rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+h3, h4 { 
+    font-weight: 700; 
+    color: var(--text-main);
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+a { color: var(--primary); text-decoration: none; transition: var(--transition); }
+a:hover { opacity: 0.8; }
+
+/* Navigation */
+.top-bar {
+    position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+    background: rgba(18, 18, 20, 0.9); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; z-index: 1000; border-bottom: 2px solid var(--primary);
+}
+.top-bar__brand { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.top-bar__brand span { color: var(--primary); }
+
+.sidebar {
+    position: fixed; top: 60px; left: -280px; width: 280px;
+    height: calc(100vh - 60px); background-color: var(--bg-page);
+    transition: var(--transition); z-index: 900; overflow-y: auto;
+    padding: 20px 0; border-right: 1px solid var(--border);
+}
+.sidebar--open { left: 0; }
+.sidebar__category {
+    padding: 12px 24px; font-size: 0.65rem; font-weight: 800;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;
+    cursor: pointer; display: flex; justify-content: space-between;
+}
+.sidebar__category:hover { color: var(--primary); }
+.sidebar__category-items { display: none; list-style: none; }
+.sidebar__category-items--open { display: block; }
+
+.sidebar__link {
+    display: block; padding: 10px 24px 10px 40px; color: var(--text-muted);
+    font-size: 0.8rem; font-weight: 500;
+    word-break: break-all;
+}
+.sidebar__link:hover, .sidebar__link--active { color: var(--text-main); background: var(--bg-surface); }
+.sidebar__link--active { border-left: 4px solid var(--primary); color: var(--primary); }
+
+/* Layout Components */
+.card, .b-card { background-color: var(--bg-surface); border-radius: 0; padding: 24px; margin-bottom: 24px; transition: var(--transition); }
+.table-container { overflow-x: auto; border-radius: 0; }
+.data-table, .b-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; background: var(--bg-surface); }
+.data-table th, .b-table th { background: var(--primary); padding: 12px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #FFFFFF; font-weight: 800; }
+.data-table td, .b-table td { padding: 12px 16px; border-top: 1px solid var(--border); word-break: break-word; }
+.data-table tr:hover { background: rgba(255,255,255,0.02); }
+
+pre { background: #000; color: #ADFF2F; padding: 20px; border-radius: 0; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; border-left: 4px solid var(--primary); }
+
+/* FOOTER - Authoritative Info */
+.status-footer, .footer {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
+    background: var(--bg-surface); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 24px;
+    font-size: 0.7rem; color: var(--text_muted); font-family: var(--font-mono);
+    border-top: 1px solid var(--border); z-index: 1000;
+}
+.footer-link { color: var(--text-muted); text-decoration: underline; }
+.footer-link:hover { color: var(--primary); }
+
+/* Square Buttons */
+.form__button, .b-button { background: var(--primary); color: white; padding: 10px 20px; border-radius: 0; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; cursor: pointer; border: none; transition: var(--transition); }
+.form__button:hover, .b-button:hover { background: #B91C1C; }
+
+/* Responsive */
+@media (min-width: 1024px) {
+    .sidebar { left: 0; }
+    .main-content { margin-left: 280px; }
+    .top-bar__toggle { display: none; }
+}
+</style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="top-bar__brand">BEJSON <span>LIBRARIES</span></div>
+        <button class="top-bar__toggle" aria-label="Toggle Menu" style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&#9776;</button>
+    </header>
+
+    <nav class="sidebar">
+        <ul style="list-style:none;">
+            <li>
+  <div class="sidebar__category">Home <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../../index.html" class="sidebar__link">> Dashboard Index</a></li>
+    <li><a href="../../../crash_course.html" class="sidebar__link">> Crash Course v21</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_bejson_js.html" class="sidebar__link">> lib_bejson_bejson.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_core_js.html" class="sidebar__link">> lib_bejson_core.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_errors_js.html" class="sidebar__link">> lib_bejson_errors.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_parse_js.html" class="sidebar__link">> lib_bejson_parse.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_state_js.html" class="sidebar__link">> lib_bejson_state.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_validator_js.html" class="sidebar__link">> lib_bejson_validator.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_mfdb_core_js.html" class="sidebar__link">> lib_mfdb_core.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_mfdb_validator_js.html" class="sidebar__link">> lib_mfdb_validator.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_cli_switch_game_js.html" class="sidebar__link">> cli/switch_game.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_assets_js.html" class="sidebar__link">> lib_bejson_assets.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_engine_core_js.html" class="sidebar__link">> lib_bejson_engine_core.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_events_js.html" class="sidebar__link">> lib_bejson_events.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_grid_js.html" class="sidebar__link">> lib_bejson_grid.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_input_js.html" class="sidebar__link">> lib_bejson_input.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_physics_js.html" class="sidebar__link">> lib_bejson_physics.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_renderer_js.html" class="sidebar__link">> lib_bejson_renderer.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_ui_screens_js.html" class="sidebar__link">> lib_bejson_ui_screens.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: External <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/External/ref_JS_External_jszip_min_js.html" class="sidebar__link">> jszip.min.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Utility/ref_JS_Utility_lib_bejson_utility_js.html" class="sidebar__link">> lib_bejson_utility.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: AI <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/AI/ref_PY_AI___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_cli_blogger_manager_py.html" class="sidebar__link">> cli/blogger_manager.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_gemini_py.html" class="sidebar__link">> lib_bejson_gemini.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_gemprofiles_py.html" class="sidebar__link">> lib_bejson_gemprofiles.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_genai_py.html" class="sidebar__link">> lib_bejson_genai.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_groq_py.html" class="sidebar__link">> lib_bejson_groq.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_openrouter_py.html" class="sidebar__link">> lib_bejson_openrouter.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_brain_helper_py.html" class="sidebar__link">> lib_brain_helper.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: CMS <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/CMS/ref_PY_CMS___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_config_py.html" class="sidebar__link">> lib_cms_config.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_content_py.html" class="sidebar__link">> lib_cms_content.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_mfdb_py.html" class="sidebar__link">> lib_cms_mfdb.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_orchestrator_py.html" class="sidebar__link">> lib_cms_orchestrator.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_taxonomy_py.html" class="sidebar__link">> lib_cms_taxonomy.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_mfdb_extensions_py.html" class="sidebar__link">> lib_mfdb_extensions.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/Core/ref_PY_Core___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_cli_bejson_server_py.html" class="sidebar__link">> cli/bejson_server.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_be_core_py.html" class="sidebar__link">> lib_be_core.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_core_py.html" class="sidebar__link">> lib_bejson_core.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_env_py.html" class="sidebar__link">> lib_bejson_env.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_errors_py.html" class="sidebar__link">> lib_bejson_errors.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_mfdb_core_py.html" class="sidebar__link">> lib_bejson_mfdb_core.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_mfdb_validator_py.html" class="sidebar__link">> lib_bejson_mfdb_validator.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_parse_py.html" class="sidebar__link">> lib_bejson_parse.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_provider_py.html" class="sidebar__link">> lib_bejson_provider.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_state_management_py.html" class="sidebar__link">> lib_bejson_state_management.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_static_backend_py.html" class="sidebar__link">> lib_bejson_static_backend.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_validator_py.html" class="sidebar__link">> lib_bejson_validator.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_mfdb_core_py.html" class="sidebar__link">> lib_mfdb_core.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_mfdb_validator_py.html" class="sidebar__link">> lib_mfdb_validator.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: HTML <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/HTML/ref_PY_HTML___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_bejson_diagram_html_py.html" class="sidebar__link">> lib_bejson_diagram_html.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_bejson_html2_skeletons_py.html" class="sidebar__link">> lib_bejson_html2_skeletons.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_bejson_to_html_py.html" class="sidebar__link">> lib_bejson_to_html.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_bejson_validator_diagram_py.html" class="sidebar__link">> lib_bejson_validator_diagram.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_animations_py.html" class="sidebar__link">> lib_html2_animations.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_body_py.html" class="sidebar__link">> lib_html2_body.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_charts_py.html" class="sidebar__link">> lib_html2_charts.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_feed_templates_py.html" class="sidebar__link">> lib_html2_feed_templates.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_flask_py.html" class="sidebar__link">> lib_html2_flask.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_metrics_py.html" class="sidebar__link">> lib_html2_metrics.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_page_templates_py.html" class="sidebar__link">> lib_html2_page_templates.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_showcase_py.html" class="sidebar__link">> lib_html2_showcase.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_sidemenu_py.html" class="sidebar__link">> lib_html2_sidemenu.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_tables_py.html" class="sidebar__link">> lib_html2_tables.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_widgets_py.html" class="sidebar__link">> lib_html2_widgets.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html_firebase_py.html" class="sidebar__link">> lib_html_firebase.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: System <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/System/ref_PY_System___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/System/ref_PY_System_cli_av_manager_py.html" class="sidebar__link">> cli/av_manager.py</a></li>
+    <li><a href="../../PY/System/ref_PY_System_cli_book_builder_py.html" class="sidebar__link">> cli/book_builder.py</a></li>
+    <li><a href="../../PY/System/ref_PY_System_cli_build_ebook_py.html" class="sidebar__link">> cli/build_ebook.py</a></li>
+    <li><a href="../../PY/System/ref_PY_System_lib_be_project_service_py.html" class="sidebar__link">> lib_be_project_service.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_assets_py.html" class="sidebar__link">> lib_bejson_assets.py</a></li>
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_events_py.html" class="sidebar__link">> lib_bejson_events.py</a></li>
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_physics_py.html" class="sidebar__link">> lib_bejson_physics.py</a></li>
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_tile_grids_py.html" class="sidebar__link">> lib_bejson_tile_grids.py</a></li>
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_ui_screens_py.html" class="sidebar__link">> lib_bejson_ui_screens.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Cognition <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/Cognition/ref_PY_Cognition_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/Utility/ref_PY_Utility_lib_bejson_utility_py.html" class="sidebar__link">> lib_bejson_utility.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: __pycache__ <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">SH: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_core_sh.html" class="sidebar__link">> lib_bejson_core.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_parse_sh.html" class="sidebar__link">> lib_bejson_parse.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_validator_sh.html" class="sidebar__link">> lib_bejson_validator.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_mfdb_core_sh.html" class="sidebar__link">> lib_mfdb_core.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_mfdb_validator_sh.html" class="sidebar__link">> lib_mfdb_validator.sh</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">SH: System <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../SH/System/ref_SH_System_lib_be_core_sh.html" class="sidebar__link">> lib_be_core.sh</a></li>
+    <li><a href="../../SH/System/ref_SH_System_lib_be_deps_sh.html" class="sidebar__link">> lib_be_deps.sh</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_assets_ts.html" class="sidebar__link">> bejson_assets.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_engine_ts.html" class="sidebar__link">> bejson_engine.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_events_ts.html" class="sidebar__link">> bejson_events.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_grid_ts.html" class="sidebar__link">> bejson_grid.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_input_ts.html" class="sidebar__link">> bejson_input.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_physics_ts.html" class="sidebar__link">> bejson_physics.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_renderer_ts.html" class="sidebar__link">> bejson_renderer.ts</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Core <span class="cat-arrow">▼</span></div>
+  <ul class="sidebar__category-items sidebar__category-items--open">
+    <li><a href="ref_TS_Core_bejson_core_ts.html" class="sidebar__link">> bejson_core.ts</a></li>
+    <li><a href="ref_TS_Core_bejson_types_ts.html" class="sidebar__link">> bejson_types.ts</a></li>
+    <li><a href="ref_TS_Core_bejson_validators_ts.html" class="sidebar__link sidebar__link--active">> bejson_validators.ts</a></li>
+    <li><a href="ref_TS_Core_mfdb_core_ts.html" class="sidebar__link">> mfdb_core.ts</a></li>
+    <li><a href="ref_TS_Core_mfdb_validators_ts.html" class="sidebar__link">> mfdb_validators.ts</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Utility/ref_TS_Utility_lib_bejson_utility_ts.html" class="sidebar__link">> lib_bejson_utility.ts</a></li>
+  </ul>
+</li>
+
+        </ul>
+    </nav>
+    <div id="overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:850;"></div>
+
+    <main class="main-content">
+        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 20px; font-family: var(--font-mono); text-transform: uppercase;"></div>
+        <h1>TS / Core / bejson_validators.ts</h1><div style="display:flex; gap:24px; padding:24px; background:var(--bg-surface); margin-bottom:24px; border-left: 4px solid var(--primary);">
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">System</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">TS</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">Family</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">Core</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">API Density</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">17</div>
+        </div></div><p><a href="https://github.com/boehnenelton/bejson-libraries" target="_blank" style="color:var(--primary); font-weight:800; text-decoration:none;">[ CLONE REPO ON GITHUB ]</a></p>
+    <div class="card">
+        <h2 class="card__title">Public API Surface</h2>
+        <div style="font-size:0.95rem; color:var(--text-main);"><ul><li><code>function _check104Specific</code></li><li><code>function _check104aSpecific</code></li><li><code>function _check104dbSpecific</code></li><li><code>function _checkFields</code></li><li><code>function _checkMandatoryKeys</code></li><li><code>function _checkTopLevel</code></li><li><code>function _checkValues</code></li><li><code>function _err</code></li><li><code>function _makeResult</code></li><li><code>function _typeMatches</code></li><li><code>function _warn</code></li><li><code>function assertValid</code></li><li><code>function isValid</code></li><li><code>function validate104</code></li><li><code>function validate104a</code></li><li><code>function validate104db</code></li><li><code>function validateDocument</code></li></ul></div>
+    </div>
+    <div class="card">
+        <h2 class="card__title">Full Source Implementation</h2>
+        <div style="font-size:0.95rem; color:var(--text-main);">
+    <div style="background: #000; border-left: 4px solid var(--primary); margin: 24px 0; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase;">
+                FILE // bejson_validators.ts
+            </div>
+            <button onclick="copyToClipboard('code_1779165756628')" style="background: var(--primary); color: white; border: none; padding: 4px 12px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase;">
+                Copy
+            </button>
+        </div>
+        <pre id="code_1779165756628" style="margin: 0; padding: 20px; color: #ADFF2F; font-family: var(--font-mono); font-size: 0.85rem; border: none; border-left: none;"><code>/**
+ * Library:      bejson_validators.ts
+ * Family:       Core
+ * Jurisdiction: [&quot;BEJSON_LIBRARIES&quot;, &quot;TS&quot;]
+ * Status:       OFFICIAL
+ * Author:       Elton Boehnen
+ * Version:      2.0.1 OFFICIAL
+ * MFDB Version: 1.31
+ * Format_Creator: Elton Boehnen
+ * Date:         2026-05-18
+ * Description:  Structural integrity checker for positional values and mandatory keys.
+ */
+
+import {
+  BEJSONDocument,
+  BEJSONField,
+  BEJSONFieldType,
+  BEJSONPrimitiveType,
+  BEJSONValue,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+  BEJSONValidationError,
+  BEJSON_VALIDATION_CODES as E,
+} from &quot;./bejson_types&quot;;
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+
+export function validateDocument(doc: unknown): ValidationResult {
+  const result = _makeResult();
+
+  // Step 1: structural sanity before touching any BEJSON fields
+  if (doc === null || doc === undefined || typeof doc !== &quot;object&quot; || Array.isArray(doc)) {
+    _err(result, E.INVALID_FORMAT_VALUE, &quot;Document root must be a non-null object.&quot;);
+    return result;
+  }
+
+  const d = doc as Record&lt;string, unknown&gt;;
+
+  // Step 2: mandatory keys
+  _checkMandatoryKeys(d, result);
+  if (!result.valid) return result; // can&#x27;t proceed without the six keys
+
+  const bej = doc as BEJSONDocument;
+
+  // Step 3: top-level value checks (Format, Format_Creator, Format_Version)
+  _checkTopLevel(bej, result);
+  if (!result.valid) return result;
+
+  // Step 4: Fields array
+  _checkFields(bej, result);
+  if (!result.valid) return result;
+
+  // Step 5: Values array
+  _checkValues(bej, result);
+
+  // Step 6: version-specific rules
+  switch (bej.Format_Version) {
+    case &quot;104&quot;:
+      _check104Specific(bej, result);
+      break;
+    case &quot;104a&quot;:
+      _check104aSpecific(bej, result);
+      break;
+    case &quot;104db&quot;:
+      _check104dbSpecific(bej, result);
+      break;
+  }
+
+  return result;
+}
+
+
+export function validate104(doc: unknown): ValidationResult {
+  const result = validateDocument(doc);
+  if (result.valid) {
+    const bej = doc as BEJSONDocument;
+    if (bej.Format_Version !== &quot;104&quot;) {
+      _err(result, E.INVALID_FORMAT_VERSION, &quot;Expected Format_Version \&quot;104\&quot;, got \&quot;&quot; + bej.Format_Version + &quot;\&quot;.&quot;);
+    }
+  }
+  return result;
+}
+
+
+export function validate104a(doc: unknown): ValidationResult {
+  const result = validateDocument(doc);
+  if (result.valid) {
+    const bej = doc as BEJSONDocument;
+    if (bej.Format_Version !== &quot;104a&quot;) {
+      _err(result, E.INVALID_FORMAT_VERSION, &quot;Expected Format_Version \&quot;104a\&quot;, got \&quot;&quot; + bej.Format_Version + &quot;\&quot;.&quot;);
+    }
+  }
+  return result;
+}
+
+
+export function validate104db(doc: unknown): ValidationResult {
+  const result = validateDocument(doc);
+  if (result.valid) {
+    const bej = doc as BEJSONDocument;
+    if (bej.Format_Version !== &quot;104db&quot;) {
+      _err(result, E.INVALID_FORMAT_VERSION, &quot;Expected Format_Version \&quot;104db\&quot;, got \&quot;&quot; + bej.Format_Version + &quot;\&quot;.&quot;);
+    }
+  }
+  return result;
+}
+
+
+export function assertValid(doc: unknown): void {
+  const result = validateDocument(doc);
+  if (!result.valid &amp;&amp; result.errors.length &gt; 0) {
+    const e = result.errors[0];
+    throw new BEJSONValidationError(e.code, e.message);
+  }
+}
+
+
+export function isValid(doc: unknown): boolean {
+  return validateDocument(doc).valid;
+}
+
+// ---------------------------------------------------------------------------
+// Step 2 — mandatory keys
+// ---------------------------------------------------------------------------
+
+const MANDATORY_KEYS = [&quot;Format&quot;, &quot;Format_Version&quot;, &quot;Format_Creator&quot;, &quot;Records_Type&quot;, &quot;Fields&quot;, &quot;Values&quot;] as const;
+
+function _checkMandatoryKeys(d: Record&lt;string, unknown&gt;, r: ValidationResult): void {
+  for (const key of MANDATORY_KEYS) {
+    if (!(key in d) || d[key] === undefined) {
+      _err(r, E.MISSING_MANDATORY_KEY, &quot;Missing mandatory key: &quot; + key, key);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 3 — top-level value constraints
+// ---------------------------------------------------------------------------
+
+function _checkTopLevel(doc: BEJSONDocument, r: ValidationResult): void {
+  if (doc.Format !== &quot;BEJSON&quot;) {
+    _err(r, E.INVALID_FORMAT_VALUE, &quot;Format must be \&quot;BEJSON\&quot;, got \&quot;&quot; + doc.Format + &quot;\&quot;.&quot;, &quot;Format&quot;);
+  }
+
+  const validVersions = [&quot;104&quot;, &quot;104a&quot;, &quot;104db&quot;];
+  if (!validVersions.includes(doc.Format_Version as string)) {
+    Version:     2.0.1 OFFICIAL
+  }
+
+  if (doc.Format_Creator !== &quot;Elton Boehnen&quot;) {
+    _err(r, E.INVALID_FORMAT_CREATOR, &quot;Format_Creator must be \&quot;Elton Boehnen\&quot;, got \&quot;&quot; + doc.Format_Creator + &quot;\&quot;.&quot;, &quot;Format_Creator&quot;);
+  }
+
+  if (!Array.isArray(doc.Records_Type) || doc.Records_Type.length === 0) {
+    _err(r, E.INVALID_RECORDS_TYPE, &quot;Records_Type must be a non-empty array.&quot;, &quot;Records_Type&quot;);
+  } else {
+    for (const rt of doc.Records_Type) {
+      if (typeof rt !== &quot;string&quot; || rt.trim() === &quot;&quot;) {
+        _err(r, E.INVALID_RECORDS_TYPE, &quot;All Records_Type entries must be non-empty strings.&quot;, &quot;Records_Type&quot;);
+        break;
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 4 — Fields array
+// ---------------------------------------------------------------------------
+
+const VALID_TYPES: BEJSONFieldType[] = [&quot;string&quot;, &quot;integer&quot;, &quot;number&quot;, &quot;boolean&quot;, &quot;array&quot;, &quot;object&quot;];
+
+function _checkFields(doc: BEJSONDocument, r: ValidationResult): void {
+  if (!Array.isArray(doc.Fields) || doc.Fields.length === 0) {
+    _err(r, E.INVALID_FIELDS, &quot;Fields must be a non-empty array.&quot;, &quot;Fields&quot;);
+    return;
+  }
+
+  const seen = new Set&lt;string&gt;();
+  for (let i = 0; i &lt; doc.Fields.length; i++) {
+    const field = doc.Fields[i] as BEJSONField;
+
+    if (!field || typeof field !== &quot;object&quot;) {
+      _err(r, E.INVALID_FIELDS, &quot;Fields[&quot; + i + &quot;] must be an object.&quot;, &quot;Fields&quot;);
+      continue;
+    }
+    if (typeof field.name !== &quot;string&quot; || field.name.trim() === &quot;&quot;) {
+      _err(r, E.INVALID_FIELDS, &quot;Fields[&quot; + i + &quot;].name must be a non-empty string.&quot;, &quot;Fields&quot;);
+    }
+    if (!VALID_TYPES.includes(field.type as BEJSONFieldType)) {
+      _err(r, E.INVALID_FIELDS, &quot;Fields[&quot; + i + &quot;].type is invalid: \&quot;&quot; + field.type + &quot;\&quot;.&quot;, &quot;Fields&quot;);
+    }
+    if (seen.has(field.name)) {
+      _err(r, E.DUPLICATE_FIELD_NAME, &quot;Duplicate field name: \&quot;&quot; + field.name + &quot;\&quot;.&quot;, field.name);
+    } else {
+      seen.add(field.name);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 5 — Values array
+// ---------------------------------------------------------------------------
+
+function _checkValues(doc: BEJSONDocument, r: ValidationResult): void {
+  if (!Array.isArray(doc.Values)) {
+    _err(r, E.INVALID_VALUES_STRUCTURE, &quot;Values must be an array.&quot;, &quot;Values&quot;);
+    return;
+  }
+
+  const fieldCount = doc.Fields.length;
+
+  for (let i = 0; i &lt; doc.Values.length; i++) {
+    const row = doc.Values[i];
+    if (!Array.isArray(row)) {
+      _err(r, E.INVALID_VALUES_STRUCTURE, &quot;Values[&quot; + i + &quot;] must be an array.&quot;, undefined, i);
+      continue;
+    }
+    if (row.length !== fieldCount) {
+      _err(r, E.RECORD_LENGTH_MISMATCH,
+        &quot;Values[&quot; + i + &quot;] has &quot; + row.length + &quot; elements but Fields has &quot; + fieldCount + &quot;.&quot;,
+        undefined, i);
+      continue;
+    }
+
+    // Type-check each cell
+    for (let fi = 0; fi &lt; fieldCount; fi++) {
+      const field = doc.Fields[fi];
+      const val = row[fi];
+      if (val === null) continue; // null always valid
+      if (!_typeMatches(val, field.type)) {
+        _err(r, E.VALUE_TYPE_MISMATCH,
+          &quot;Values[&quot; + i + &quot;][&quot; + fi + &quot;] (&quot; + field.name + &quot;): expected &quot; + field.type + &quot;, got &quot; + typeof val + &quot;.&quot;,
+          field.name, i);
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 6a — 104-specific rules
+// ---------------------------------------------------------------------------
+
+const FORBIDDEN_CUSTOM_KEYS_104 = new Set(MANDATORY_KEYS);
+
+function _check104Specific(doc: BEJSONDocument, r: ValidationResult): void {
+  // Single record type
+  if (doc.Records_Type.length !== 1) {
+    _err(r, E.VERSION_CONSTRAINT, &quot;BEJSON 104 requires exactly one Records_Type entry.&quot;, &quot;Records_Type&quot;);
+  }
+
+  // No custom top-level keys (Parent_Hierarchy is the only exception)
+  for (const key of Object.keys(doc)) {
+    if (!FORBIDDEN_CUSTOM_KEYS_104.has(key as typeof MANDATORY_KEYS[number]) &amp;&amp; key !== &quot;Parent_Hierarchy&quot;) {
+      _err(r, E.FORBIDDEN_CUSTOM_KEY, &quot;BEJSON 104 forbids custom top-level key: \&quot;&quot; + key + &quot;\&quot;.&quot;, key);
+    }
+  }
+
+  // Parent_Hierarchy, if present, must be a string
+  if (&quot;Parent_Hierarchy&quot; in doc &amp;&amp; typeof doc.Parent_Hierarchy !== &quot;string&quot;) {
+    _err(r, E.VERSION_CONSTRAINT, &quot;Parent_Hierarchy must be a string when present.&quot;, &quot;Parent_Hierarchy&quot;);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 6b — 104a-specific rules
+// ---------------------------------------------------------------------------
+
+const PRIMITIVE_TYPES: BEJSONPrimitiveType[] = [&quot;string&quot;, &quot;integer&quot;, &quot;number&quot;, &quot;boolean&quot;];
+const PASCAL_CASE_RE = /^[A-Z][A-Za-z0-9]*(_[A-Za-z0-9]+)*$/;
+
+function _check104aSpecific(doc: BEJSONDocument, r: ValidationResult): void {
+  // Single record type
+  if (doc.Records_Type.length !== 1) {
+    _err(r, E.VERSION_CONSTRAINT, &quot;BEJSON 104a requires exactly one Records_Type entry.&quot;, &quot;Records_Type&quot;);
+  }
+
+  // Fields must be primitive-only
+  for (let i = 0; i &lt; doc.Fields.length; i++) {
+    const field = doc.Fields[i];
+    if (!PRIMITIVE_TYPES.includes(field.type as BEJSONPrimitiveType)) {
+      _err(r, E.VERSION_CONSTRAINT,
+        &quot;BEJSON 104a: Fields[&quot; + i + &quot;].type \&quot;&quot; + field.type + &quot;\&quot; is not a primitive type.&quot;, field.name);
+    }
+  }
+
+  // Custom keys: must be PascalCase, must not collide with mandatory keys
+  for (const key of Object.keys(doc)) {
+    if (FORBIDDEN_CUSTOM_KEYS_104.has(key as typeof MANDATORY_KEYS[number])) continue;
+    if (key === &quot;Parent_Hierarchy&quot;) {
+      // Parent_Hierarchy is not defined for 104a but not strictly forbidden;
+      // emit a warning rather than an error since the spec is silent here.
+      continue;
+    }
+    if (!PASCAL_CASE_RE.test(key)) {
+      _err(r, E.INVALID_CUSTOM_KEY,
+        &quot;BEJSON 104a: custom header \&quot;&quot; + key + &quot;\&quot; must be PascalCase.&quot;, key);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Step 6c — 104db-specific rules
+// ---------------------------------------------------------------------------
+
+function _check104dbSpecific(doc: BEJSONDocument, r: ValidationResult): void {
+  // Two or more record types
+  if (doc.Records_Type.length &lt; 2) {
+    _err(r, E.VERSION_CONSTRAINT, &quot;BEJSON 104db requires at least two Records_Type entries.&quot;, &quot;Records_Type&quot;);
+  }
+
+  // No custom top-level keys (not even Parent_Hierarchy)
+  for (const key of Object.keys(doc)) {
+    if (!FORBIDDEN_CUSTOM_KEYS_104.has(key as typeof MANDATORY_KEYS[number])) {
+      _err(r, E.FORBIDDEN_CUSTOM_KEY, &quot;BEJSON 104db forbids custom top-level key: \&quot;&quot; + key + &quot;\&quot;.&quot;, key);
+    }
+  }
+
+  // First field must be Record_Type_Parent: string
+  if (doc.Fields.length === 0 || doc.Fields[0].name !== &quot;Record_Type_Parent&quot;) {
+    _err(r, E.MISSING_DISCRIMINATOR, &quot;BEJSON 104db: first field must be named \&quot;Record_Type_Parent\&quot;.&quot;, &quot;Fields&quot;);
+    return; // can&#x27;t continue safely
+  }
+  if (doc.Fields[0].type !== &quot;string&quot;) {
+    _err(r, E.MISSING_DISCRIMINATOR, &quot;BEJSON 104db: Record_Type_Parent field type must be \&quot;string\&quot;.&quot;, &quot;Record_Type_Parent&quot;);
+  }
+
+  // Every field except Record_Type_Parent must have Record_Type_Parent property
+  const validEntities = new Set(doc.Records_Type);
+  for (let i = 1; i &lt; doc.Fields.length; i++) {
+    const field = doc.Fields[i];
+    if (!field.Record_Type_Parent) {
+      _err(r, E.MISSING_DISCRIMINATOR,
+        &quot;BEJSON 104db: Fields[&quot; + i + &quot;] (\&quot;&quot; + field.name + &quot;\&quot;) is missing Record_Type_Parent assignment.&quot;, field.name);
+    } else if (!validEntities.has(field.Record_Type_Parent)) {
+      _err(r, E.VERSION_CONSTRAINT,
+        &quot;BEJSON 104db: Fields[&quot; + i + &quot;].Record_Type_Parent \&quot;&quot; + field.Record_Type_Parent + &quot;\&quot; is not in Records_Type.&quot;, field.name);
+    }
+  }
+
+  // Every record&#x27;s discriminator must match a declared entity
+  if (Array.isArray(doc.Values)) {
+    for (let i = 0; i &lt; doc.Values.length; i++) {
+      const row = doc.Values[i];
+      if (!Array.isArray(row) || row.length === 0) continue;
+      const discriminator = row[0];
+      if (typeof discriminator !== &quot;string&quot; || !validEntities.has(discriminator)) {
+        _err(r, E.VERSION_CONSTRAINT,
+          &quot;Values[&quot; + i + &quot;][0] discriminator \&quot;&quot; + discriminator + &quot;\&quot; not in Records_Type.&quot;, &quot;Record_Type_Parent&quot;, i);
+      }
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Type matching helper
+// ---------------------------------------------------------------------------
+
+function _typeMatches(val: unknown, type: BEJSONFieldType): boolean {
+  if (val === null) return true;
+  switch (type) {
+    case &quot;string&quot;:
+      return typeof val === &quot;string&quot;;
+    case &quot;integer&quot;:
+      return typeof val === &quot;number&quot; &amp;&amp; Number.isInteger(val);
+    case &quot;number&quot;:
+      return typeof val === &quot;number&quot;;
+    case &quot;boolean&quot;:
+      return typeof val === &quot;boolean&quot;;
+    case &quot;array&quot;:
+      return Array.isArray(val);
+    case &quot;object&quot;:
+      return typeof val === &quot;object&quot; &amp;&amp; !Array.isArray(val) &amp;&amp; val !== null;
+    default:
+      return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Result helpers
+// ---------------------------------------------------------------------------
+
+function _makeResult(): ValidationResult {
+  return { valid: true, errors: [], warnings: [] };
+}
+
+function _err(
+  r: ValidationResult,
+  code: number,
+  message: string,
+  field?: string,
+  recordIndex?: number
+): void {
+  r.valid = false;
+  const e: ValidationError = { code, message };
+  if (field !== undefined) e.field = field;
+  if (recordIndex !== undefined) e.recordIndex = recordIndex;
+  r.errors.push(e);
+}
+
+function _warn(
+  r: ValidationResult,
+  code: number,
+  message: string,
+  field?: string,
+  recordIndex?: number
+): void {
+  const w: ValidationWarning = { code, message };
+  if (field !== undefined) w.field = field;
+  if (recordIndex !== undefined) w.recordIndex = recordIndex;
+  r.warnings.push(w);
+}
+
+// Export _warn so mfdb_validators can reuse the pattern
+export { _warn as _emitWarning, _err as _emitError, _makeResult };
+</code></pre>
+    </div>
+    <script>
+        if (typeof copyToClipboard !== 'function') {
+            window.copyToClipboard = (id) => {
+                const el = document.getElementById(id);
+                const text = el.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = event.target;
+                    const oldText = btn.innerText;
+                    btn.innerText = 'Copied!';
+                    setTimeout(() => btn.innerText = oldText, 2000);
+                });
+            };
+        }
+    </script>
+    </div>
+    </div><div style="text-align:center; font-size:0.7rem; color:var(--text-muted); margin-top:40px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:1px;">built from BEJSON HTML3 Libraries 2.0</div>
+    </main>
+
+    <footer class="status-footer">
+        <div>SYSTEM // <span>ONLINE</span></div>
+        <div></div>
+        <div style="text-align: right;">
+            <a href="https://github.com/boehnenelton" class="footer-link">GITHUB</a> | 
+            <a href="https://boehnenelton2024.pages.dev" class="footer-link">PORTFOLIO</a> | 
+            <span>ELTON BOEHNEN</span>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {{
+            const toggle = document.querySelector('.top-bar__toggle');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            if (toggle && sidebar) {{
+                toggle.addEventListener('click', () => {{
+                    const open = sidebar.classList.toggle('sidebar--open');
+                    overlay.style.display = open ? 'block' : 'none';
+                }});
+                overlay.addEventListener('click', () => {{
+                    sidebar.classList.remove('sidebar--open');
+                    overlay.style.display = 'none';
+                }});
+            }}
+
+            document.querySelectorAll('.sidebar__category').forEach(cat => {{
+                cat.addEventListener('click', () => {{
+                    const items = cat.nextElementSibling;
+                    if (items && items.classList.contains('sidebar__category-items')) {{
+                        const isOpen = items.classList.toggle('sidebar__category-items--open');
+                        const arrow = cat.querySelector('.cat-arrow');
+                        if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+                    }}
+                }});
+            }});
+
+            window.switchSubTab = (tabId) => {{
+                document.querySelectorAll(".tab-content").forEach(c => c.style.display = "none");
+                document.querySelectorAll(".subtabs__btn").forEach(b => {{
+                   b.style.background = "transparent";
+                   b.style.color = "var(--text-muted)";
+                }});
+                const target = document.getElementById(tabId);
+                if (target) target.style.display = "block";
+            }};
+        }});
+    </script>
+</body>
+</html>

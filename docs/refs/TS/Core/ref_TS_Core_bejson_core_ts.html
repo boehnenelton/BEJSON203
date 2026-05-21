@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API: bejson_core.ts</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+:root {
+    --primary: #DE2626;
+    --bg-page: oklch(12% 0.01 250);
+    --bg-surface: oklch(16% 0.01 250);
+    --text-main: oklch(92% 0.01 250);
+    --text-muted: oklch(65% 0.01 250);
+    --border: oklch(22% 0.01 250);
+    --font-base: 'Inter', 'Roboto', system-ui, sans-serif;
+    --font-mono: 'Roboto Mono', 'Source Code Pro', monospace;
+    --transition: 0.15s ease;
+}
+
+/* Reset & Base */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { height: 100%; scroll-behavior: smooth; font-size: 16px; }
+body {
+    background-color: var(--bg-page);
+    color: var(--text-main);
+    font-family: var(--font-base);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding-top: 60px;
+    padding-bottom: 80px;
+}
+
+/* Typography */
+h1 { 
+    font-size: clamp(1.75rem, 4vw, 2.5rem); 
+    font-weight: 800; 
+    letter-spacing: -0.02em; 
+    color: var(--text-main); 
+    line-height: 1.1; 
+    margin-bottom: 0.5rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+h2 { 
+    font-size: 1.1rem; 
+    font-weight: 800; 
+    letter-spacing: -0.01em; 
+    color: var(--primary); 
+    text-transform: uppercase; 
+    margin-bottom: 1rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+h3, h4 { 
+    font-weight: 700; 
+    color: var(--text-main);
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+a { color: var(--primary); text-decoration: none; transition: var(--transition); }
+a:hover { opacity: 0.8; }
+
+/* Navigation */
+.top-bar {
+    position: fixed; top: 0; left: 0; width: 100%; height: 60px;
+    background: rgba(18, 18, 20, 0.9); backdrop-filter: blur(12px);
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 24px; z-index: 1000; border-bottom: 2px solid var(--primary);
+}
+.top-bar__brand { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.top-bar__brand span { color: var(--primary); }
+
+.sidebar {
+    position: fixed; top: 60px; left: -280px; width: 280px;
+    height: calc(100vh - 60px); background-color: var(--bg-page);
+    transition: var(--transition); z-index: 900; overflow-y: auto;
+    padding: 20px 0; border-right: 1px solid var(--border);
+}
+.sidebar--open { left: 0; }
+.sidebar__category {
+    padding: 12px 24px; font-size: 0.65rem; font-weight: 800;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;
+    cursor: pointer; display: flex; justify-content: space-between;
+}
+.sidebar__category:hover { color: var(--primary); }
+.sidebar__category-items { display: none; list-style: none; }
+.sidebar__category-items--open { display: block; }
+
+.sidebar__link {
+    display: block; padding: 10px 24px 10px 40px; color: var(--text-muted);
+    font-size: 0.8rem; font-weight: 500;
+    word-break: break-all;
+}
+.sidebar__link:hover, .sidebar__link--active { color: var(--text-main); background: var(--bg-surface); }
+.sidebar__link--active { border-left: 4px solid var(--primary); color: var(--primary); }
+
+/* Layout Components */
+.card, .b-card { background-color: var(--bg-surface); border-radius: 0; padding: 24px; margin-bottom: 24px; transition: var(--transition); }
+.table-container { overflow-x: auto; border-radius: 0; }
+.data-table, .b-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; background: var(--bg-surface); }
+.data-table th, .b-table th { background: var(--primary); padding: 12px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #FFFFFF; font-weight: 800; }
+.data-table td, .b-table td { padding: 12px 16px; border-top: 1px solid var(--border); word-break: break-word; }
+.data-table tr:hover { background: rgba(255,255,255,0.02); }
+
+pre { background: #000; color: #ADFF2F; padding: 20px; border-radius: 0; font-family: var(--font-mono); font-size: 0.8rem; line-height: 1.5; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; border-left: 4px solid var(--primary); }
+
+/* FOOTER - Authoritative Info */
+.status-footer, .footer {
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 50px;
+    background: var(--bg-surface); display: flex; align-items: center;
+    justify-content: space-between; padding: 0 24px;
+    font-size: 0.7rem; color: var(--text_muted); font-family: var(--font-mono);
+    border-top: 1px solid var(--border); z-index: 1000;
+}
+.footer-link { color: var(--text-muted); text-decoration: underline; }
+.footer-link:hover { color: var(--primary); }
+
+/* Square Buttons */
+.form__button, .b-button { background: var(--primary); color: white; padding: 10px 20px; border-radius: 0; font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: inline-block; cursor: pointer; border: none; transition: var(--transition); }
+.form__button:hover, .b-button:hover { background: #B91C1C; }
+
+/* Responsive */
+@media (min-width: 1024px) {
+    .sidebar { left: 0; }
+    .main-content { margin-left: 280px; }
+    .top-bar__toggle { display: none; }
+}
+</style>
+</head>
+<body>
+    <header class="top-bar">
+        <div class="top-bar__brand">BEJSON <span>LIBRARIES</span></div>
+        <button class="top-bar__toggle" aria-label="Toggle Menu" style="background:transparent; border:none; color:white; font-size:1.5rem; cursor:pointer;">&#9776;</button>
+    </header>
+
+    <nav class="sidebar">
+        <ul style="list-style:none;">
+            <li>
+  <div class="sidebar__category">Home <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../../index.html" class="sidebar__link">> Dashboard Index</a></li>
+    <li><a href="../../../crash_course.html" class="sidebar__link">> Crash Course v21</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_bejson_js.html" class="sidebar__link">> lib_bejson_bejson.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_core_js.html" class="sidebar__link">> lib_bejson_core.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_errors_js.html" class="sidebar__link">> lib_bejson_errors.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_parse_js.html" class="sidebar__link">> lib_bejson_parse.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_state_js.html" class="sidebar__link">> lib_bejson_state.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_bejson_validator_js.html" class="sidebar__link">> lib_bejson_validator.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_mfdb_core_js.html" class="sidebar__link">> lib_mfdb_core.js</a></li>
+    <li><a href="../../JS/Core/ref_JS_Core_lib_mfdb_validator_js.html" class="sidebar__link">> lib_mfdb_validator.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_cli_switch_game_js.html" class="sidebar__link">> cli/switch_game.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_assets_js.html" class="sidebar__link">> lib_bejson_assets.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_engine_core_js.html" class="sidebar__link">> lib_bejson_engine_core.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_events_js.html" class="sidebar__link">> lib_bejson_events.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_grid_js.html" class="sidebar__link">> lib_bejson_grid.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_input_js.html" class="sidebar__link">> lib_bejson_input.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_physics_js.html" class="sidebar__link">> lib_bejson_physics.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_renderer_js.html" class="sidebar__link">> lib_bejson_renderer.js</a></li>
+    <li><a href="../../JS/Gaming/ref_JS_Gaming_lib_bejson_ui_screens_js.html" class="sidebar__link">> lib_bejson_ui_screens.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: External <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/External/ref_JS_External_jszip_min_js.html" class="sidebar__link">> jszip.min.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">JS: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../JS/Utility/ref_JS_Utility_lib_bejson_utility_js.html" class="sidebar__link">> lib_bejson_utility.js</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: AI <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/AI/ref_PY_AI___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_cli_blogger_manager_py.html" class="sidebar__link">> cli/blogger_manager.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_gemini_py.html" class="sidebar__link">> lib_bejson_gemini.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_gemprofiles_py.html" class="sidebar__link">> lib_bejson_gemprofiles.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_genai_py.html" class="sidebar__link">> lib_bejson_genai.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_groq_py.html" class="sidebar__link">> lib_bejson_groq.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_bejson_openrouter_py.html" class="sidebar__link">> lib_bejson_openrouter.py</a></li>
+    <li><a href="../../PY/AI/ref_PY_AI_lib_brain_helper_py.html" class="sidebar__link">> lib_brain_helper.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: CMS <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/CMS/ref_PY_CMS___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_config_py.html" class="sidebar__link">> lib_cms_config.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_content_py.html" class="sidebar__link">> lib_cms_content.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_mfdb_py.html" class="sidebar__link">> lib_cms_mfdb.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_orchestrator_py.html" class="sidebar__link">> lib_cms_orchestrator.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_cms_taxonomy_py.html" class="sidebar__link">> lib_cms_taxonomy.py</a></li>
+    <li><a href="../../PY/CMS/ref_PY_CMS_lib_mfdb_extensions_py.html" class="sidebar__link">> lib_mfdb_extensions.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/Core/ref_PY_Core___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_cli_bejson_server_py.html" class="sidebar__link">> cli/bejson_server.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_be_core_py.html" class="sidebar__link">> lib_be_core.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_core_py.html" class="sidebar__link">> lib_bejson_core.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_env_py.html" class="sidebar__link">> lib_bejson_env.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_errors_py.html" class="sidebar__link">> lib_bejson_errors.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_mfdb_core_py.html" class="sidebar__link">> lib_bejson_mfdb_core.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_mfdb_validator_py.html" class="sidebar__link">> lib_bejson_mfdb_validator.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_parse_py.html" class="sidebar__link">> lib_bejson_parse.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_provider_py.html" class="sidebar__link">> lib_bejson_provider.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_state_management_py.html" class="sidebar__link">> lib_bejson_state_management.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_static_backend_py.html" class="sidebar__link">> lib_bejson_static_backend.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_bejson_validator_py.html" class="sidebar__link">> lib_bejson_validator.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_mfdb_core_py.html" class="sidebar__link">> lib_mfdb_core.py</a></li>
+    <li><a href="../../PY/Core/ref_PY_Core_lib_mfdb_validator_py.html" class="sidebar__link">> lib_mfdb_validator.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: HTML <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/HTML/ref_PY_HTML___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_bejson_diagram_html_py.html" class="sidebar__link">> lib_bejson_diagram_html.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_bejson_html2_skeletons_py.html" class="sidebar__link">> lib_bejson_html2_skeletons.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_bejson_to_html_py.html" class="sidebar__link">> lib_bejson_to_html.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_bejson_validator_diagram_py.html" class="sidebar__link">> lib_bejson_validator_diagram.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_animations_py.html" class="sidebar__link">> lib_html2_animations.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_body_py.html" class="sidebar__link">> lib_html2_body.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_charts_py.html" class="sidebar__link">> lib_html2_charts.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_feed_templates_py.html" class="sidebar__link">> lib_html2_feed_templates.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_flask_py.html" class="sidebar__link">> lib_html2_flask.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_metrics_py.html" class="sidebar__link">> lib_html2_metrics.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_page_templates_py.html" class="sidebar__link">> lib_html2_page_templates.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_showcase_py.html" class="sidebar__link">> lib_html2_showcase.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_sidemenu_py.html" class="sidebar__link">> lib_html2_sidemenu.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_tables_py.html" class="sidebar__link">> lib_html2_tables.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html2_widgets_py.html" class="sidebar__link">> lib_html2_widgets.py</a></li>
+    <li><a href="../../PY/HTML/ref_PY_HTML_lib_html_firebase_py.html" class="sidebar__link">> lib_html_firebase.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: System <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/System/ref_PY_System___init___py.html" class="sidebar__link">> __init__.py</a></li>
+    <li><a href="../../PY/System/ref_PY_System_cli_av_manager_py.html" class="sidebar__link">> cli/av_manager.py</a></li>
+    <li><a href="../../PY/System/ref_PY_System_cli_book_builder_py.html" class="sidebar__link">> cli/book_builder.py</a></li>
+    <li><a href="../../PY/System/ref_PY_System_cli_build_ebook_py.html" class="sidebar__link">> cli/build_ebook.py</a></li>
+    <li><a href="../../PY/System/ref_PY_System_lib_be_project_service_py.html" class="sidebar__link">> lib_be_project_service.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_assets_py.html" class="sidebar__link">> lib_bejson_assets.py</a></li>
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_events_py.html" class="sidebar__link">> lib_bejson_events.py</a></li>
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_physics_py.html" class="sidebar__link">> lib_bejson_physics.py</a></li>
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_tile_grids_py.html" class="sidebar__link">> lib_bejson_tile_grids.py</a></li>
+    <li><a href="../../PY/Gaming/ref_PY_Gaming_lib_bejson_ui_screens_py.html" class="sidebar__link">> lib_bejson_ui_screens.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Cognition <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/Cognition/ref_PY_Cognition_lib_bejson_cognition_py.html" class="sidebar__link">> lib_bejson_cognition.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../PY/Utility/ref_PY_Utility_lib_bejson_utility_py.html" class="sidebar__link">> lib_bejson_utility.py</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">PY: __pycache__ <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">SH: Core <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_core_sh.html" class="sidebar__link">> lib_bejson_core.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_parse_sh.html" class="sidebar__link">> lib_bejson_parse.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_bejson_validator_sh.html" class="sidebar__link">> lib_bejson_validator.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_mfdb_core_sh.html" class="sidebar__link">> lib_mfdb_core.sh</a></li>
+    <li><a href="../../SH/Core/ref_SH_Core_lib_mfdb_validator_sh.html" class="sidebar__link">> lib_mfdb_validator.sh</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">SH: System <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../../SH/System/ref_SH_System_lib_be_core_sh.html" class="sidebar__link">> lib_be_core.sh</a></li>
+    <li><a href="../../SH/System/ref_SH_System_lib_be_deps_sh.html" class="sidebar__link">> lib_be_deps.sh</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Gaming <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_assets_ts.html" class="sidebar__link">> bejson_assets.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_engine_ts.html" class="sidebar__link">> bejson_engine.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_events_ts.html" class="sidebar__link">> bejson_events.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_grid_ts.html" class="sidebar__link">> bejson_grid.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_input_ts.html" class="sidebar__link">> bejson_input.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_physics_ts.html" class="sidebar__link">> bejson_physics.ts</a></li>
+    <li><a href="../Gaming/ref_TS_Gaming_bejson_renderer_ts.html" class="sidebar__link">> bejson_renderer.ts</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Core <span class="cat-arrow">▼</span></div>
+  <ul class="sidebar__category-items sidebar__category-items--open">
+    <li><a href="ref_TS_Core_bejson_core_ts.html" class="sidebar__link sidebar__link--active">> bejson_core.ts</a></li>
+    <li><a href="ref_TS_Core_bejson_types_ts.html" class="sidebar__link">> bejson_types.ts</a></li>
+    <li><a href="ref_TS_Core_bejson_validators_ts.html" class="sidebar__link">> bejson_validators.ts</a></li>
+    <li><a href="ref_TS_Core_mfdb_core_ts.html" class="sidebar__link">> mfdb_core.ts</a></li>
+    <li><a href="ref_TS_Core_mfdb_validators_ts.html" class="sidebar__link">> mfdb_validators.ts</a></li>
+  </ul>
+</li>
+<li>
+  <div class="sidebar__category">TS: Utility <span class="cat-arrow">▶</span></div>
+  <ul class="sidebar__category-items">
+    <li><a href="../Utility/ref_TS_Utility_lib_bejson_utility_ts.html" class="sidebar__link">> lib_bejson_utility.ts</a></li>
+  </ul>
+</li>
+
+        </ul>
+    </nav>
+    <div id="overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:850;"></div>
+
+    <main class="main-content">
+        <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 20px; font-family: var(--font-mono); text-transform: uppercase;"></div>
+        <h1>TS / Core / bejson_core.ts</h1><div style="display:flex; gap:24px; padding:24px; background:var(--bg-surface); margin-bottom:24px; border-left: 4px solid var(--primary);">
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">System</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">TS</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">Family</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">Core</div>
+        </div>
+        <div style="flex:1;">
+            <div style="font-size: 0.65rem; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">API Density</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--primary);">37</div>
+        </div></div><p><a href="https://github.com/boehnenelton/bejson-libraries" target="_blank" style="color:var(--primary); font-weight:800; text-decoration:none;">[ CLONE REPO ON GITHUB ]</a></p>
+    <div class="card">
+        <h2 class="card__title">Public API Surface</h2>
+        <div style="font-size:0.95rem; color:var(--text-main);"><ul><li><code>async function _deriveKey</code></li><li><code>async function decryptRecord</code></li><li><code>async function encryptRecord</code></li><li><code>function _ab2base64</code></li><li><code>function _assertDoc</code></li><li><code>function _assertIndex</code></li><li><code>function _assertRowLength</code></li><li><code>function _base642ab</code></li><li><code>function _cloneWith</code></li><li><code>function _coerceValue</code></li><li><code>function _deriveKey</code></li><li><code>function _rowToObject</code></li><li><code>function appendField</code></li><li><code>function appendRecord</code></li><li><code>function createEmpty104</code></li><li><code>function createEmpty104a</code></li><li><code>function createEmpty104db</code></li><li><code>function decryptRecord</code></li><li><code>function deleteRecord</code></li><li><code>function encryptRecord</code></li><li><code>function flattenEntityRecord</code></li><li><code>function getAllRecords</code></li><li><code>function getEntityFields</code></li><li><code>function getFieldApplicability</code></li><li><code>function getFieldIndex</code></li><li><code>function getFieldNames</code></li><li><code>function getFieldValue</code></li><li><code>function getFields</code></li><li><code>function getRecord</code></li><li><code>function getRecordCount</code></li><li><code>function getRecordsByType</code></li><li><code>function parse</code></li><li><code>function queryRecords</code></li><li><code>function serialize</code></li><li><code>function setFieldValue</code></li><li><code>function sortByField</code></li><li><code>function updateRecord</code></li></ul></div>
+    </div>
+    <div class="card">
+        <h2 class="card__title">Full Source Implementation</h2>
+        <div style="font-size:0.95rem; color:var(--text-main);">
+    <div style="background: #000; border-left: 4px solid var(--primary); margin: 24px 0; position: relative;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);">
+            <div style="font-family: var(--font-mono); font-size: 0.7rem; color: var(--primary); font-weight: 800; text-transform: uppercase;">
+                FILE // bejson_core.ts
+            </div>
+            <button onclick="copyToClipboard('code_1779165756614')" style="background: var(--primary); color: white; border: none; padding: 4px 12px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase;">
+                Copy
+            </button>
+        </div>
+        <pre id="code_1779165756614" style="margin: 0; padding: 20px; color: #ADFF2F; font-family: var(--font-mono); font-size: 0.85rem; border: none; border-left: none;"><code>/**
+ * Library:      bejson_core.ts
+ * Family:       Core
+ * Jurisdiction: [&quot;BEJSON_LIBRARIES&quot;, &quot;TS&quot;]
+ * Status:       OFFICIAL
+ * Author:       Elton Boehnen
+ * Version:      2.0.1 OFFICIAL
+ * MFDB Version: 1.31
+ * Format_Creator: Elton Boehnen
+ * Date:         2026-05-18
+ * Description:  Low-level primitive operations for BEJSON document manipulation.
+ */
+
+import {
+  BEJSONDocument,
+  BEJSONField,
+  BEJSONValue,
+  BEJSONCoreError,
+  BEJSON_CORE_CODES,
+} from &quot;./bejson_types&quot;;
+
+// ---------------------------------------------------------------------------
+// Parse &amp; Serialize
+// ---------------------------------------------------------------------------
+
+
+export function parse(json: string): BEJSONDocument {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch (e) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.PARSE_ERROR,
+      &quot;Invalid JSON: &quot; + String(e)
+    );
+  }
+  if (raw === null || typeof raw !== &quot;object&quot; || Array.isArray(raw)) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.PARSE_ERROR,
+      &quot;Parsed JSON root must be an object.&quot;
+    );
+  }
+  return raw as BEJSONDocument;
+}
+
+
+export function serialize(doc: BEJSONDocument, indent: number = 2): string {
+  if (doc === null || doc === undefined) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.NULL_DOCUMENT,
+      &quot;Cannot serialize null or undefined document.&quot;
+    );
+  }
+  try {
+    return JSON.stringify(doc, null, indent || undefined);
+  } catch (e) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.SERIALIZATION_ERROR,
+      &quot;Serialization failed: &quot; + String(e)
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Field index helpers
+// ---------------------------------------------------------------------------
+
+
+export function getFieldIndex(doc: BEJSONDocument, name: string): number {
+  _assertDoc(doc);
+  const idx = doc.Fields.findIndex((f) =&gt; f.name === name);
+  if (idx === -1) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.FIELD_NOT_FOUND,
+      &quot;Field not found: &quot; + name
+    );
+  }
+  return idx;
+}
+
+
+export function getFieldNames(doc: BEJSONDocument): string[] {
+  _assertDoc(doc);
+  return doc.Fields.map((f) =&gt; f.name);
+}
+
+
+export function getFields(doc: BEJSONDocument): BEJSONField[] {
+  _assertDoc(doc);
+  return doc.Fields.map((f) =&gt; Object.assign({}, f));
+}
+
+// ---------------------------------------------------------------------------
+// Record accessors
+// ---------------------------------------------------------------------------
+
+
+export function getRecord(
+  doc: BEJSONDocument,
+  index: number
+): Record&lt;string, BEJSONValue&gt; {
+  _assertDoc(doc);
+  _assertIndex(doc, index);
+  return _rowToObject(doc.Fields, doc.Values[index]);
+}
+
+
+export function getAllRecords(
+  doc: BEJSONDocument
+): Record&lt;string, BEJSONValue&gt;[] {
+  _assertDoc(doc);
+  return doc.Values.map((row) =&gt; _rowToObject(doc.Fields, row));
+}
+
+
+export function getFieldValue(
+  doc: BEJSONDocument,
+  index: number,
+  fieldName: string
+): BEJSONValue {
+  _assertDoc(doc);
+  _assertIndex(doc, index);
+  const fi = getFieldIndex(doc, fieldName);
+  return doc.Values[index][fi];
+}
+
+
+export function getRecordCount(doc: BEJSONDocument): number {
+  _assertDoc(doc);
+  return doc.Values.length;
+}
+
+// ---------------------------------------------------------------------------
+// 104db — entity-scoped record access
+// ---------------------------------------------------------------------------
+
+
+export function getRecordsByType(
+  doc: BEJSONDocument,
+  type: string
+): Record&lt;string, BEJSONValue&gt;[] {
+  _assertDoc(doc);
+  if (doc.Format_Version !== &quot;104db&quot;) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.UNSUPPORTED_OPERATION,
+      &quot;getRecordsByType is only valid on BEJSON 104db documents.&quot;
+    );
+  }
+  // In 104db, the first field MUST be Record_Type_Parent (index 0)
+  return doc.Values.filter((row) =&gt; row[0] === type).map((row) =&gt;
+    _rowToObject(doc.Fields, row)
+  );
+}
+
+
+export function getFieldApplicability(
+  doc: BEJSONDocument,
+  fieldName: string
+): string {
+  _assertDoc(doc);
+  const field = doc.Fields.find((f) =&gt; f.name === fieldName);
+  if (!field) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.FIELD_NOT_FOUND,
+      `Field not found: ${fieldName}`
+    );
+  }
+
+  const rtp = field.Record_Type_Parent;
+  if (doc.Format_Version === &quot;104db&quot;) {
+    if (!rtp) {
+      if ((field as any).applies_to) {
+        throw new BEJSONCoreError(
+          BEJSON_CORE_CODES.UNSUPPORTED_OPERATION,
+          `Field &#x27;${fieldName}&#x27; uses legacy &#x27;applies_to&#x27;. 104db requires &#x27;Record_Type_Parent&#x27;.`
+        );
+      }
+      throw new BEJSONCoreError(
+        BEJSON_CORE_CODES.UNSUPPORTED_OPERATION,
+        `Field &#x27;${fieldName}&#x27; missing Record_Type_Parent in 104db`
+      );
+    }
+  }
+  return rtp || &quot;common&quot;;
+}
+
+
+export function queryRecords(
+  doc: BEJSONDocument,
+  fieldName: string,
+  searchValue: BEJSONValue
+): Record&lt;string, BEJSONValue&gt;[] {
+  _assertDoc(doc);
+  const idx = getFieldIndex(doc, fieldName);
+  return doc.Values.filter((row) =&gt; row[idx] === searchValue).map((row) =&gt;
+    _rowToObject(doc.Fields, row)
+  );
+}
+
+
+export function sortByField(
+  doc: BEJSONDocument,
+  fieldName: string,
+  ascending: boolean = true
+): BEJSONDocument {
+  _assertDoc(doc);
+  const idx = getFieldIndex(doc, fieldName);
+  const sortedValues = [...doc.Values].sort((a, b) =&gt; {
+    const valA = a[idx];
+    const valB = b[idx];
+    if (valA === valB) return 0;
+    if (valA === null) return 1;
+    if (valB === null) return -1;
+    
+    let comparison = 0;
+    if (typeof valA === &#x27;string&#x27; &amp;&amp; typeof valB === &#x27;string&#x27;) {
+      comparison = valA.localeCompare(valB);
+    } else {
+      comparison = (valA as any) &lt; (valB as any) ? -1 : 1;
+    }
+    return ascending ? comparison : -comparison;
+  });
+
+  return _cloneWith(doc, { Values: sortedValues });
+}
+
+
+export function getEntityFields(
+  doc: BEJSONDocument,
+  entityName: string
+): BEJSONField[] {
+  _assertDoc(doc);
+  if (doc.Format_Version !== &quot;104db&quot;) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.UNSUPPORTED_OPERATION,
+      &quot;getEntityFields is only valid on BEJSON 104db documents.&quot;
+    );
+  }
+  return doc.Fields.filter(
+    (f) =&gt; f.name !== &quot;Record_Type_Parent&quot; &amp;&amp; f.Record_Type_Parent === entityName
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Record mutations (return new document — documents are treated as immutable)
+// ---------------------------------------------------------------------------
+
+
+export function appendRecord(
+  doc: BEJSONDocument,
+  values: BEJSONValue[]
+): BEJSONDocument {
+  _assertDoc(doc);
+  _assertRowLength(doc, values);
+  const coerced = values.map((v, i) =&gt; _coerceValue(v, doc.Fields[i].type));
+  return _cloneWith(doc, { Values: [...doc.Values, coerced] });
+}
+
+
+export function updateRecord(
+  doc: BEJSONDocument,
+  index: number,
+  values: BEJSONValue[]
+): BEJSONDocument {
+  _assertDoc(doc);
+  _assertIndex(doc, index);
+  _assertRowLength(doc, values);
+  const coerced = values.map((v, i) =&gt; _coerceValue(v, doc.Fields[i].type));
+  const newValues = doc.Values.map((row, i) =&gt;
+    i === index ? coerced : row
+  );
+  return _cloneWith(doc, { Values: newValues });
+}
+
+
+export function setFieldValue(
+  doc: BEJSONDocument,
+  index: number,
+  fieldName: string,
+  value: BEJSONValue
+): BEJSONDocument {
+  _assertDoc(doc);
+  _assertIndex(doc, index);
+  const fi = getFieldIndex(doc, fieldName);
+  const coerced = _coerceValue(value, doc.Fields[fi].type);
+  const newValues = doc.Values.map((row, i) =&gt; {
+    if (i !== index) return row;
+    const newRow = [...row];
+    newRow[fi] = coerced;
+    return newRow;
+  });
+  return _cloneWith(doc, { Values: newValues });
+}
+
+
+export function deleteRecord(
+  doc: BEJSONDocument,
+  index: number
+): BEJSONDocument {
+  _assertDoc(doc);
+  _assertIndex(doc, index);
+  const newValues = doc.Values.filter((_, i) =&gt; i !== index);
+  return _cloneWith(doc, { Values: newValues });
+}
+
+// ---------------------------------------------------------------------------
+// Schema mutations
+// ---------------------------------------------------------------------------
+
+
+export function appendField(
+  doc: BEJSONDocument,
+  field: BEJSONField,
+  defaultValue: BEJSONValue = null
+): BEJSONDocument {
+  _assertDoc(doc);
+  if (doc.Fields.some((f) =&gt; f.name === field.name)) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.WRITE_LENGTH_MISMATCH,
+      &quot;Field already exists: &quot; + field.name
+    );
+  }
+  const newFields = [...doc.Fields, { ...field }];
+  const newValues = doc.Values.map((row) =&gt; [...row, defaultValue]);
+  return _cloneWith(doc, { Fields: newFields, Values: newValues });
+}
+
+// ---------------------------------------------------------------------------
+// Document factory helpers
+// ---------------------------------------------------------------------------
+
+
+export function createEmpty104(
+  recordType: string,
+  fields: BEJSONField[],
+  parentHierarchy?: string
+): BEJSONDocument {
+  const doc: BEJSONDocument = {
+    Format: &quot;BEJSON&quot;,
+    Version:     2.0.1 OFFICIAL
+    Format_Creator: &quot;Elton Boehnen&quot;,
+    Records_Type: [recordType],
+    Fields: fields.map((f) =&gt; ({ ...f })),
+    Values: [],
+  };
+  if (parentHierarchy !== undefined) {
+    doc.Parent_Hierarchy = parentHierarchy;
+  }
+  return doc;
+}
+
+
+export function createEmpty104a(
+  recordType: string,
+  fields: BEJSONField[],
+  customHeaders: Record&lt;string, string | number | boolean&gt; = {}
+): BEJSONDocument {
+  const doc: BEJSONDocument = {
+    Format: &quot;BEJSON&quot;,
+    Version:     2.0.1 OFFICIAL
+    Format_Creator: &quot;Elton Boehnen&quot;,
+    ...customHeaders,
+    Records_Type: [recordType],
+    Fields: fields.map((f) =&gt; ({ ...f })),
+    Values: [],
+  };
+  return doc;
+}
+
+
+export function createEmpty104db(
+  recordTypes: string[],
+  entityFields: BEJSONField[]
+): BEJSONDocument {
+  const discriminator: BEJSONField = {
+    name: &quot;Record_Type_Parent&quot;,
+    type: &quot;string&quot;,
+  };
+  return {
+    Format: &quot;BEJSON&quot;,
+    Version:     2.0.1 OFFICIAL
+    Format_Creator: &quot;Elton Boehnen&quot;,
+    Records_Type: [...recordTypes],
+    Fields: [discriminator, ...entityFields.map((f) =&gt; ({ ...f }))],
+    Values: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Utility — flatten a record for 104db (strip discriminator, nulled fields)
+// ---------------------------------------------------------------------------
+
+
+export function flattenEntityRecord(
+  doc: BEJSONDocument,
+  record: Record&lt;string, BEJSONValue&gt;
+): Record&lt;string, BEJSONValue&gt; {
+  if (doc.Format_Version !== &quot;104db&quot;) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.UNSUPPORTED_OPERATION,
+      &quot;flattenEntityRecord is only valid on BEJSON 104db documents.&quot;
+    );
+  }
+  const entityName = record[&quot;Record_Type_Parent&quot;] as string;
+  const result: Record&lt;string, BEJSONValue&gt; = {};
+  for (const field of doc.Fields) {
+    if (field.name === &quot;Record_Type_Parent&quot;) continue;
+    if (field.Record_Type_Parent === entityName) {
+      result[field.name] = record[field.name];
+    }
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+function _assertDoc(doc: BEJSONDocument): void {
+  if (doc === null || doc === undefined) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.NULL_DOCUMENT,
+      &quot;Document is null or undefined.&quot;
+    );
+  }
+}
+
+function _assertIndex(doc: BEJSONDocument, index: number): void {
+  if (index &lt; 0 || index &gt;= doc.Values.length) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.INDEX_OUT_OF_BOUNDS,
+      &quot;Record index &quot; + index + &quot; is out of bounds (length &quot; + doc.Values.length + &quot;).&quot;
+    );
+  }
+}
+
+function _assertRowLength(doc: BEJSONDocument, values: BEJSONValue[]): void {
+  if (values.length !== doc.Fields.length) {
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.WRITE_LENGTH_MISMATCH,
+      &quot;Row length &quot; + values.length + &quot; does not match Fields length &quot; + doc.Fields.length + &quot;.&quot;
+    );
+  }
+}
+
+function _rowToObject(
+  fields: BEJSONField[],
+  row: BEJSONValue[]
+): Record&lt;string, BEJSONValue&gt; {
+  const obj: Record&lt;string, BEJSONValue&gt; = {};
+  for (let i = 0; i &lt; fields.length; i++) {
+    obj[fields[i].name] = row[i];
+  }
+  return obj;
+}
+
+function _cloneWith(
+  doc: BEJSONDocument,
+  overrides: Partial&lt;BEJSONDocument&gt;
+): BEJSONDocument {
+  return Object.assign({}, doc, overrides);
+}
+
+function _coerceValue(value: any, fieldType: string): BEJSONValue {
+  if (fieldType === &quot;string&quot;) return String(value);
+  if (fieldType === &quot;integer&quot; || fieldType === &quot;number&quot;) {
+    const num =
+      fieldType === &quot;integer&quot; ? parseInt(value, 10) : parseFloat(value);
+    if (isNaN(num)) {
+      throw new BEJSONCoreError(
+        BEJSON_CORE_CODES.WRITE_TYPE_MISMATCH,
+        `Cannot convert &#x27;${value}&#x27; to ${fieldType}`
+      );
+    }
+    return num;
+  }
+  if (fieldType === &quot;boolean&quot;) {
+    if (typeof value === &quot;boolean&quot;) return value;
+    if (typeof value === &quot;string&quot;) {
+      if (value.toLowerCase() === &quot;true&quot;) return true;
+      if (value.toLowerCase() === &quot;false&quot;) return false;
+    }
+    throw new BEJSONCoreError(
+      BEJSON_CORE_CODES.WRITE_TYPE_MISMATCH,
+      `Cannot convert &#x27;${value}&#x27; to boolean`
+    );
+  }
+  return value as BEJSONValue;
+}
+
+// ---------------------------------------------------------------------------
+// Encryption Utilities (AES-GCM + PBKDF2)
+// ---------------------------------------------------------------------------
+
+async function _deriveKey(password: string, salt: Uint8Array): Promise&lt;CryptoKey&gt; {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    &quot;raw&quot;,
+    enc.encode(password),
+    { name: &quot;PBKDF2&quot; },
+    false,
+    [&quot;deriveKey&quot;]
+  );
+  return await crypto.subtle.deriveKey(
+    { name: &quot;PBKDF2&quot;, salt: salt, iterations: 100000, hash: &quot;SHA-256&quot; },
+    keyMaterial,
+    { name: &quot;AES-GCM&quot;, length: 256 },
+    false,
+    [&quot;encrypt&quot;, &quot;decrypt&quot;]
+  );
+}
+
+function _ab2base64(buf: ArrayBuffer): string {
+  return btoa(String.fromCharCode(...new Uint8Array(buf)));
+}
+
+function _base642ab(base64: string): Uint8Array {
+  const b = atob(base64);
+  return new Uint8Array(b.length).map((_, i) =&gt; b.charCodeAt(i));
+}
+
+
+export async function encryptRecord(
+  doc: BEJSONDocument,
+  recordIndex: number,
+  password: string
+): Promise&lt;BEJSONDocument&gt; {
+  _assertDoc(doc);
+  _assertIndex(doc, recordIndex);
+
+  const record = doc.Values[recordIndex];
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const key = await _deriveKey(password, salt);
+  const saltB64 = _ab2base64(salt);
+
+  const newValues = doc.Values.map(async (row, i) =&gt; {
+    if (i !== recordIndex) return row;
+    const newRow = [...row];
+    for (let j = 0; j &lt; newRow.length; j++) {
+      const field = doc.Fields[j];
+      if (field.name === &quot;Record_Type_Parent&quot; || field.name === &quot;is_encrypted&quot;)
+        continue;
+      if (
+        newRow[j] === null ||
+        (typeof newRow[j] === &quot;string&quot; &amp;&amp; (newRow[j] as string).startsWith(&quot;ENC:AES-GCM:&quot;))
+      )
+        continue;
+
+      const dataEnc = new TextEncoder().encode(JSON.stringify(newRow[j]));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const ciphertext = await crypto.subtle.encrypt(
+        { name: &quot;AES-GCM&quot;, iv: iv },
+        key,
+        dataEnc
+      );
+
+      const ivB64 = _ab2base64(iv);
+      const ctB64 = _ab2base64(ciphertext);
+      newRow[j] = &quot;ENC:AES-GCM:&quot; + saltB64 + &quot;:&quot; + ivB64 + &quot;:&quot; + ctB64;
+    }
+
+    const ieIdx = doc.Fields.findIndex((f) =&gt; f.name === &quot;is_encrypted&quot;);
+    if (ieIdx !== -1) newRow[ieIdx] = true;
+    return newRow;
+  });
+
+  return _cloneWith(doc, { Values: await Promise.all(newValues) });
+}
+
+
+export async function decryptRecord(
+  doc: BEJSONDocument,
+  recordIndex: number,
+  password: string
+): Promise&lt;BEJSONDocument&gt; {
+  _assertDoc(doc);
+  _assertIndex(doc, recordIndex);
+
+  const newValues = doc.Values.map(async (row, i) =&gt; {
+    if (i !== recordIndex) return row;
+    const newRow = [...row];
+
+    for (let j = 0; j &lt; newRow.length; j++) {
+      const val = newRow[j];
+      if (typeof val !== &quot;string&quot; || !val.startsWith(&quot;ENC:AES-GCM:&quot;)) continue;
+
+      const parts = val.split(&quot;:&quot;);
+      if (parts.length !== 5) continue;
+
+      const [,,, ivB64, ctB64] = parts;
+      const saltB64 = parts[2];
+
+      try {
+        const salt = _base642ab(saltB64);
+        const iv = _base642ab(ivB64);
+        const ct = _base642ab(ctB64);
+        const key = await _deriveKey(password, salt);
+
+        const decrypted = await crypto.subtle.decrypt(
+          { name: &quot;AES-GCM&quot;, iv: iv },
+          key,
+          ct
+        );
+        newRow[j] = JSON.parse(new TextDecoder().decode(decrypted));
+      } catch (e) {
+        throw new BEJSONCoreError(
+          BEJSON_CORE_CODES.DECRYPTION_FAILED,
+          &quot;Decryption failed at field &quot; + j + &quot;: &quot; + (e as Error).message
+        );
+      }
+    }
+
+    const ieIdx = doc.Fields.findIndex((f) =&gt; f.name === &quot;is_encrypted&quot;);
+    if (ieIdx !== -1) {
+      newRow[ieIdx] = newRow.some((v, idx) =&gt; {
+        if (doc.Fields[idx].name === &quot;is_encrypted&quot;) return false;
+        return typeof v === &quot;string&quot; &amp;&amp; v.startsWith(&quot;ENC:AES-GCM:&quot;);
+      });
+    }
+    return newRow;
+  });
+
+  return _cloneWith(doc, { Values: await Promise.all(newValues) });
+}
+</code></pre>
+    </div>
+    <script>
+        if (typeof copyToClipboard !== 'function') {
+            window.copyToClipboard = (id) => {
+                const el = document.getElementById(id);
+                const text = el.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const btn = event.target;
+                    const oldText = btn.innerText;
+                    btn.innerText = 'Copied!';
+                    setTimeout(() => btn.innerText = oldText, 2000);
+                });
+            };
+        }
+    </script>
+    </div>
+    </div><div style="text-align:center; font-size:0.7rem; color:var(--text-muted); margin-top:40px; font-family:var(--font-mono); text-transform:uppercase; letter-spacing:1px;">built from BEJSON HTML3 Libraries 2.0</div>
+    </main>
+
+    <footer class="status-footer">
+        <div>SYSTEM // <span>ONLINE</span></div>
+        <div></div>
+        <div style="text-align: right;">
+            <a href="https://github.com/boehnenelton" class="footer-link">GITHUB</a> | 
+            <a href="https://boehnenelton2024.pages.dev" class="footer-link">PORTFOLIO</a> | 
+            <span>ELTON BOEHNEN</span>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {{
+            const toggle = document.querySelector('.top-bar__toggle');
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.getElementById('overlay');
+            
+            if (toggle && sidebar) {{
+                toggle.addEventListener('click', () => {{
+                    const open = sidebar.classList.toggle('sidebar--open');
+                    overlay.style.display = open ? 'block' : 'none';
+                }});
+                overlay.addEventListener('click', () => {{
+                    sidebar.classList.remove('sidebar--open');
+                    overlay.style.display = 'none';
+                }});
+            }}
+
+            document.querySelectorAll('.sidebar__category').forEach(cat => {{
+                cat.addEventListener('click', () => {{
+                    const items = cat.nextElementSibling;
+                    if (items && items.classList.contains('sidebar__category-items')) {{
+                        const isOpen = items.classList.toggle('sidebar__category-items--open');
+                        const arrow = cat.querySelector('.cat-arrow');
+                        if (arrow) arrow.textContent = isOpen ? '▼' : '▶';
+                    }}
+                }});
+            }});
+
+            window.switchSubTab = (tabId) => {{
+                document.querySelectorAll(".tab-content").forEach(c => c.style.display = "none");
+                document.querySelectorAll(".subtabs__btn").forEach(b => {{
+                   b.style.background = "transparent";
+                   b.style.color = "var(--text-muted)";
+                }});
+                const target = document.getElementById(tabId);
+                if (target) target.style.display = "block";
+            }};
+        }});
+    </script>
+</body>
+</html>

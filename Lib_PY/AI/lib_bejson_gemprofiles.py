@@ -1,0 +1,179 @@
+"""
+Library:      lib_bejson_gemprofiles.py
+Family:       AI
+Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Debugged and standardized library component.
+"""
+
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+import sys
+import os
+
+# Add parent directory to sys.path to import existing validator
+LIB_PATH = os.path.dirname(os.path.abspath(__file__))
+if LIB_PATH not in sys.path:
+    sys.path.append(LIB_PATH)
+
+import lib_bejson_validator
+
+PROFILE_FIELDS = [
+    {"name": "Record_Type_Parent", "type": "string"},
+    {"name": "Name", "type": "string"},
+    {"name": "Archetype", "type": "string"},
+    {"name": "Persona", "type": "string"},
+    {"name": "SystemInstruction", "type": "string"},
+    {"name": "ForbiddenTopics", "type": "array"},
+    {"name": "Avatar_Type", "type": "string"},
+    {"name": "Avatar_sourceUrl", "type": "string"},
+    {"name": "Avatar_Data", "type": "string"},
+    {"name": "MaxResponseTokens", "type": "integer"},
+    {"name": "Creativity", "type": "number"},
+    {"name": "Tone", "type": "array"},
+    {"name": "Formality", "type": "string"},
+    {"name": "Verbosity", "type": "string"},
+    {"name": "EmotionalExpression_Enabled", "type": "boolean"},
+    {"name": "EmotionalExpression_Intensity", "type": "number"},
+    {"name": "GoogleSearch_Enabled", "type": "boolean"},
+    {"name": "CodeInterpreter_Enabled", "type": "boolean"},
+    {"name": "EphemeralMemory", "type": "boolean"},
+    {"name": "CodeParsing_Mode", "type": "string"},
+    {"name": "CodeParsing_Languages", "type": "array"},
+    {"name": "CodeParsing_StructureValidation", "type": "boolean"},
+    {"name": "CodeParsing_VersionControl", "type": "boolean"},
+    {"name": "Thinking_Supported", "type": "boolean"}
+]
+
+def bejson_profiles_validate(doc: Dict[str, Any]) -> bool:
+    """Validates if a BEJSON document follows the AI Profile schema."""
+    try:
+        # 1. Standard BEJSON Validation
+        lib_bejson_validator.bejson_validator_validate_string(json.dumps(doc))
+        
+        # 2. Profile-Specific Schema Check
+        fields = doc.get("Fields", [])
+        field_names = [f["name"] for f in fields]
+        required_names = [f["name"] for f in PROFILE_FIELDS]
+        
+        # Check if all required fields are present (at least the core ones)
+        # Note: Some older profiles might not have 'Thinking_Supported'
+        core_required = required_names[:-1] 
+        for req in core_required:
+            if req not in field_names:
+                return False
+        
+        # 3. Check Records_Type
+        if "AI_Profile" not in doc.get("Records_Type", []):
+            return False
+            
+        return True
+    except Exception:
+        return False
+
+def bejson_profiles_create(
+    name: str,
+    archetype: str,
+    persona: str,
+    instruction: str,
+    **kwargs
+) -> Dict[str, Any]:
+    """Creates a new AI Profile BEJSON document."""
+    
+    # Default values for profile fields
+    values = [
+        "AI_Profile",
+        name,
+        archetype,
+        persona,
+        instruction,
+        kwargs.get("ForbiddenTopics", []),
+        kwargs.get("Avatar_Type", "Emoji"),
+        kwargs.get("Avatar_sourceUrl", ""),
+        kwargs.get("Avatar_Data", "🤖"),
+        kwargs.get("MaxResponseTokens", 16384),
+        kwargs.get("Creativity", 0.7),
+        kwargs.get("Tone", ["Professional", "Helpful"]),
+        kwargs.get("Formality", "Formal"),
+        kwargs.get("Verbosity", "Balanced"),
+        kwargs.get("EmotionalExpression_Enabled", False),
+        kwargs.get("EmotionalExpression_Intensity", 0.0),
+        kwargs.get("GoogleSearch_Enabled", True),
+        kwargs.get("CodeInterpreter_Enabled", True),
+        kwargs.get("EphemeralMemory", True),
+        kwargs.get("CodeParsing_Mode", "complete"),
+        kwargs.get("CodeParsing_Languages", []),
+        kwargs.get("CodeParsing_StructureValidation", True),
+        kwargs.get("CodeParsing_VersionControl", False),
+        kwargs.get("Thinking_Supported", True)
+    ]
+
+    profile = {
+        "Format": "BEJSON",
+        "Format_Version": "104",
+        "Format_Creator": "Elton Boehnen",
+        "Records_Type": ["AI_Profile"],
+        "Parent_Hierarchy": "/LLM_Configuration",
+        "Fields": PROFILE_FIELDS,
+        "Values": [values]
+    }
+    
+    return profile
+
+def bejson_profiles_save(profile: Dict[str, Any], path: str):
+    """Saves a profile to a file."""
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(profile, f, indent=2)
+
+# --- Targeted Querying & Editing ---
+
+def bejson_profiles_get_field_index(profile: Dict[str, Any], field_name: str) -> int:
+    """Returns the index of a field by name, or -1 if not found."""
+    fields = profile.get("Fields", [])
+    for i, f in enumerate(fields):
+        if f.get("name") == field_name:
+            return i
+    return -1
+
+def bejson_profiles_get_value(profile: Dict[str, Any], field_name: str, record_index: int = 0) -> Any:
+    """Queries a specific field value from a profile record."""
+    idx = bejson_profiles_get_field_index(profile, field_name)
+    if idx != -1 and len(profile.get("Values", [])) > record_index:
+        return profile["Values"][record_index][idx]
+    return None
+
+def bejson_profiles_update_value(profile: Dict[str, Any], field_name: str, new_value: Any, record_index: int = 0) -> bool:
+    """Updates a specific field value in a profile record. Returns True if successful."""
+    idx = bejson_profiles_get_field_index(profile, field_name)
+    if idx != -1 and len(profile.get("Values", [])) > record_index:
+        # Basic type checking based on Fields definition
+        expected_type = profile["Fields"][idx].get("type")
+        
+        # Simple validation
+        if expected_type == "string" and not isinstance(new_value, str): return False
+        if expected_type == "integer" and not isinstance(new_value, int): return False
+        if expected_type == "boolean" and not isinstance(new_value, bool): return False
+        if expected_type == "array" and not isinstance(new_value, list): return False
+        
+        profile["Values"][record_index][idx] = new_value
+        return True
+    return False
+
+def bejson_profiles_query_by_name(profiles_dir: str, profile_name: str) -> Optional[Dict[str, Any]]:
+    """Searches a directory for a profile with a specific Name field."""
+    path = Path(profiles_dir)
+    for file in path.glob("*.bejson"):
+        try:
+            with open(file, "r") as f:
+                doc = json.load(f)
+                if bejson_profiles_get_value(doc, "Name") == profile_name:
+                    return doc
+        except:
+            continue
+    return None

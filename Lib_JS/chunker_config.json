@@ -1,0 +1,37 @@
+{
+  "project_name": "MyProject",
+  "version": "v1.5.4",
+  "extensions": [
+    ".py",
+    ".js",
+    ".ts",
+    ".html",
+    ".css",
+    ".md",
+    ".json",
+    ".sh",
+    ".txt",
+    ".bejson",
+    ".tsx",
+    ".jsx",
+    ".component.ts",
+    ".service.ts",
+    ".module.ts"
+  ],
+  "exclude_dirs": [
+    ".git",
+    "__pycache__",
+    "node_modules",
+    "lib",
+    "output",
+    ".mfdb_lock",
+    "dist",
+    "build",
+    ".angular",
+    ".next",
+    ".vscode",
+    ".idea",
+    "coverage"
+  ],
+  "output_base": "/storage/emulated/0/Admin/tools/Cli_Chunker/output"
+}
