@@ -11,3 +11,5 @@ Date:         2026-05-18
 Description:  Debugged and standardized library component.
 """
 
+
+from .lib_bejson_schema import *

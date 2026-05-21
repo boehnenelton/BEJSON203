@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Source: lib_be_deps.sh</title>
+    <title>Source: lib_bejson_schema.py</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -776,76 +776,119 @@
             <div class="carousel-slide active" style="display: block;">
                 <div class="schema-header" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #1a1a1a; border-bottom: 1px solid #333;">
                     <div style="display: flex; gap: 15px; align-items: center;">
-                        <span style="font-weight: bold; color: #fff;">SH / System / lib_be_deps.sh</span>
-                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_be_deps.sh</span>
+                        <span style="font-weight: bold; color: #fff;">PY / Core / lib_bejson_schema.py</span>
+                        <span style="background: #333; color: #aaa; padding: 2px 8px; border-radius: 3px; font-size: 0.8em; border: 1px solid #444;">📄 lib_bejson_schema.py</span>
                     </div>
                     <button class="copy-btn" onclick="copySchemaContent(this)" style="background: #fff; color: #000; border: none; padding: 4px 12px; cursor: pointer; font-weight: bold; border-radius: 2px;">Copy</button>
                 </div>
                 <pre style="margin: 0; padding: 15px; overflow-x: auto; background: #0a0a0a;"><code style="color: #00ff41; font-family: monospace; font-size: 0.9em;">
-# Library:      lib_be_deps.sh
-# Family:       System
-# Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;SH&#34;]
-# Status:       OFFICIAL
-# Author:       Elton Boehnen
-# Version:      2.0.1 OFFICIAL
-# MFDB Version: 1.31
-# Format_Creator: Elton Boehnen
-# Date:         2026-05-18
-# Description:  Shell-based dependency and environment validator.
+&#34;&#34;&#34;
+Library:      lib_bejson_schema.py
+Family:       Core
+Jurisdiction: [&#34;BEJSON_LIBRARIES&#34;, &#34;PY&#34;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-21
+Description:  Schema management and enforcement. Provides tools to extract,
+             store, and validate BEJSON documents against registered schemas.
+&#34;&#34;&#34;
 
-# JURISDICTIONS: [&#34;BASH&#34;, &#34;CORE_COMMAND&#34;]
+import json
+import os
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
-check_internet() {
-    # Ping Google DNS with 2s timeout
-    if ping -c 1 -W 2 8.8.8.8 &gt; /dev/null 2&gt;&amp;1; then
-        return 0 # Online
-    else
-        return 1 # Offline
-    fi
-}
+try:
+    from lib_bejson_core import bejson_core_load_file
+    from lib_bejson_validator import validate_bejson, ValidationResult
+except ImportError:
+    # Minimal stubs if running outside the library environment
+    def bejson_core_load_file(path):
+        with open(path, &#39;r&#39;, encoding=&#39;utf-8&#39;) as f:
+            return json.load(f)
+    
+    class ValidationResult:
+        def __init__(self):
+            self.valid = True
+            self.errors = []
+        def add_error(self, msg):
+            self.valid = False
+            self.errors.append(msg)
 
-install_dependencies() {
-    local deps=(&#34;rsync&#34; &#34;jq&#34; &#34;figlet&#34; &#34;toilet&#34;)
-    local missing=()
+def bejson_schema_extract(doc: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extracts the schema (structure) from a BEJSON document.
+    Returns a copy of the document with an empty Values array.
+    &#34;&#34;&#34;
+    schema = doc.copy()
+    schema[&#34;Values&#34;] = []
+    return schema
+
+def bejson_schema_validate_against(doc: Dict[str, Any], schema: Dict[str, Any]) -&gt; ValidationResult:
+    &#34;&#34;&#34;
+    Validates a BEJSON document against a specific schema.
+    Checks for:
+    - Version mismatch
+    - Records_Type mismatch
+    - Field name and type mismatch
+    - Positional integrity
+    &#34;&#34;&#34;
+    res = ValidationResult()
     
-    for dep in &#34;${deps[@]}&#34;; do
-        if ! command -v &#34;$dep&#34; &gt; /dev/null 2&gt;&amp;1; then
-            missing+=(&#34;$dep&#34;)
-        fi
-    done
+    # 1. Structural Basic Validation
+    # (Assuming the doc itself is valid BEJSON)
     
-    if [[ ${#missing[@]} -eq 0 ]]; then
-        return 0
-    fi
+    # 2. Version Check
+    if doc.get(&#34;Format_Version&#34;) != schema.get(&#34;Format_Version&#34;):
+        res.add_error(f&#34;Version mismatch: Document is {doc.get(&#39;Format_Version&#39;)}, Schema is {schema.get(&#39;Format_Version&#39;)}&#34;)
     
-    echo -e &#34;\033[38;2;222;38;38mMissing dependencies: ${missing[*]}\033[0m&#34;
+    # 3. Records_Type Check
+    if doc.get(&#34;Records_Type&#34;) != schema.get(&#34;Records_Type&#34;):
+        res.add_error(f&#34;Records_Type mismatch: Document types do not match schema types.&#34;)
     
-    if check_internet; then
-        echo -e &#34;\033[1;37mInternet detected. Attempting to install missing tools...\033[0m&#34;
-        # Determine package manager (Termux/apt)
-        if command -v pkg &gt; /dev/null 2&gt;&amp;1; then
-            pkg install -y &#34;${missing[@]}&#34;
-        elif command -v apt-get &gt; /dev/null 2&gt;&amp;1; then
-            sudo apt-get update &amp;&amp; sudo apt-get install -y &#34;${missing[@]}&#34;
-        else
-            echo -e &#34;\033[38;2;222;38;38mError: No supported package manager found (pkg/apt).\033[0m&#34;
-            return 1
-        fi
+    # 4. Fields Check (Names and Types)
+    doc_fields = doc.get(&#34;Fields&#34;, [])
+    sch_fields = schema.get(&#34;Fields&#34;, [])
+    
+    if len(doc_fields) != len(sch_fields):
+        res.add_error(f&#34;Field count mismatch: Document has {len(doc_fields)}, Schema has {len(sch_fields)}&#34;)
+    else:
+        for i, (df, sf) in enumerate(zip(doc_fields, sch_fields)):
+            if df.get(&#34;name&#34;) != sf.get(&#34;name&#34;):
+                res.add_error(f&#34;Field name mismatch at index {i}: expected &#39;{sf.get(&#39;name&#39;)}&#39;, found &#39;{df.get(&#39;name&#39;)}&#39;&#34;)
+            if df.get(&#34;type&#34;) != sf.get(&#34;type&#34;):
+                res.add_error(f&#34;Field type mismatch for &#39;{sf.get(&#39;name&#39;)}&#39;: expected &#39;{sf.get(&#39;type&#39;)}&#39;, found &#39;{df.get(&#39;type&#39;)}&#39;&#34;)
+            if sf.get(&#34;Record_Type_Parent&#34;) != df.get(&#34;Record_Type_Parent&#34;):
+                res.add_error(f&#34;Record_Type_Parent mismatch for &#39;{sf.get(&#39;name&#39;)}&#39;: expected &#39;{sf.get(&#39;Record_Type_Parent&#39;)}&#39;, found &#39;{df.get(&#39;Record_Type_Parent&#39;)}&#39;&#34;)
+
+    return res
+
+def bejson_schema_get_field_map(schema: Dict[str, Any]) -&gt; Dict[str, Dict[str, Any]]:
+    &#34;&#34;&#34;
+    Returns a mapping of field names to their definitions.
+    &#34;&#34;&#34;
+    return {f[&#34;name&#34;]: f for f in schema.get(&#34;Fields&#34;, [])}
+
+def bejson_schema_infer_from_data(records_type: Union[str, List[str]], fields: List[Dict[str, str]], version: str = &#34;104a&#34;) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Utility to create a schema object from scratch.
+    &#34;&#34;&#34;
+    if isinstance(records_type, str):
+        records_type = [records_type]
         
-        # Verify installation
-        for dep in &#34;${missing[@]}&#34;; do
-            if ! command -v &#34;$dep&#34; &gt; /dev/null 2&gt;&amp;1; then
-                echo -e &#34;\033[38;2;222;38;38mFailed to install $dep.\033[0m&#34;
-                return 1
-            fi
-        done
-        echo -e &#34;\033[1;32mDependencies installed successfully.\033[0m&#34;
-    else
-        echo -e &#34;\033[38;2;222;38;38mNo internet connection. Skipping dependency installation.\033[0m&#34;
-        echo -e &#34;\033[1;37mNote: Some features (like BEPM project creation) may fail without rsync.\033[0m&#34;
-        sleep 2
-    fi
-}
+    return {
+        &#34;Format&#34;: &#34;BEJSON&#34;,
+        &#34;Format_Version&#34;: version,
+        &#34;Format_Creator&#34;: &#34;Elton Boehnen&#34;,
+        &#34;Records_Type&#34;: records_type,
+        &#34;Fields&#34;: fields,
+        &#34;Values&#34;: []
+    }
+
+
                 </code></pre>
             </div>
 
