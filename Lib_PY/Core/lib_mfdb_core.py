@@ -466,7 +466,7 @@ def mfdb_core_self_heal(manifest_path: str) -> Dict[str, Any]:
                         doc["Values"][i] = row[:field_count]
                         repaired += 1
                 if repaired > 0:
-                    bejson_core_atomic_write(entity_path, doc, create_backup=True)
+                    bejson_core_atomic_write(entity_path, doc)
                     report["actions"].append(f"Repaired {repaired} positional violations in {entity}")
             except Exception as e:
                 report["remaining_errors"].append(f"Failed to repair {entity}: {str(e)}")
@@ -490,7 +490,7 @@ def _mfdb_core_repair_hierarchy(entity_path: str, new_hierarchy: str) -> bool:
     try:
         doc = bejson_core_load_file(entity_path)
         doc["Parent_Hierarchy"] = new_hierarchy
-        bejson_core_atomic_write(entity_path, doc, create_backup=True)
+        bejson_core_atomic_write(entity_path, doc)
         return True
     except Exception:
         return False

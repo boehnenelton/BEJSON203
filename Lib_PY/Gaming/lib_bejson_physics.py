@@ -4,11 +4,12 @@ Family:       Gaming
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.0 OFFICIAL (Simulation Parity)
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-05-22
 Description:  2D/3D physics calculation engine for BEJSON-based simulations.
+REMEDIATED:   Synchronized friction (0.9) and restitution with bejson_physics.ts.
 """
 
 import math
@@ -39,6 +40,8 @@ class BEJSONPhysics:
             "Values": []
         }
         self.gravity = {"x": 0, "y": 9.8}
+        self.friction = 0.9  # Parity with bejson_physics.ts
+        self.restitution = 0.8 # Energy loss on collision
 
     def add_body(self, body_id, x, y, width, height, **options):
         vx = options.get("vx", 0)
@@ -58,6 +61,10 @@ class BEJSONPhysics:
             if row[8]: # isStatic
                 continue
             
+            # Apply friction to current velocity
+            row[5] *= self.friction
+            row[6] *= self.friction
+            
             # Apply gravity
             row[5] += self.gravity["x"] * dt # vx
             row[6] += self.gravity["y"] * dt # vy
@@ -66,7 +73,7 @@ class BEJSONPhysics:
             row[1] += row[5] * dt # x
             row[2] += row[6] * dt # y
 
-        # 2. Collision (Simplified)
+        # 2. Collision Resolution
         for i in range(len(values)):
             body_a = values[i]
             for j in range(i + 1, len(values)):
@@ -82,11 +89,28 @@ class BEJSONPhysics:
 
     def _resolve_collision(self, a, b):
         if a[8] and b[8]: return
-        # Simple velocity swap for dynamic-dynamic
-        temp_vx, temp_vy = a[5], a[6]
-        a[5], a[6] = b[5], b[6]
-        b[5], b[6] = temp_vx, temp_vy
+        
+        # Advanced Resolution: Elastic collision with restitution
+        # For dynamic-static or dynamic-dynamic
+        if a[8]: # a is static
+            b[5] *= -self.restitution
+            b[6] *= -self.restitution
+        elif b[8]: # b is static
+            a[5] *= -self.restitution
+            a[6] *= -self.restitution
+        else:
+            # Simple momentum exchange for dynamic-dynamic
+            m_a, m_b = a[7], b[7]
+            temp_vx_a, temp_vy_a = a[5], a[6]
+            
+            # v' = (v1(m1-m2) + 2*m2*v2) / (m1+m2)
+            a[5] = (temp_vx_a * (m_a - m_b) + 2 * m_b * b[5]) / (m_a + m_b) * self.restitution
+            a[6] = (temp_vy_a * (m_a - m_b) + 2 * m_b * b[6]) / (m_a + m_b) * self.restitution
+            
+            b[5] = (b[5] * (m_b - m_a) + 2 * m_a * temp_vx_a) / (m_a + m_b) * self.restitution
+            b[6] = (b[6] * (m_b - m_a) + 2 * m_a * temp_vy_a) / (m_a + m_b) * self.restitution
 
     def export_bejson(self):
         import json
         return json.dumps(self.bejson, indent=2)
+

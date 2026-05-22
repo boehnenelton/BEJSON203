@@ -75,7 +75,7 @@ const CryptoUtils = {
         );
     },
 
-    ab2base64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); },
+    ab2base64(buf) { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); },
     base642ab(base64) { const b = atob(base64); return new Uint8Array(b.length).map((_, i) => b.charCodeAt(i)); },
 
     async encryptRecord(doc, recordIndex, password) {

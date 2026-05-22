@@ -87,6 +87,7 @@ def get_random_available_port(start=5001, end=5020):
 
 try:
     from lib_bejson_env import resolve_path
+from lib_bejson_core import bejson_core_atomic_write
 except ImportError:
     def resolve_path(p): return p.replace("{HOME}", os.path.expanduser("~"))
 
@@ -109,11 +110,8 @@ def register_server(name, port):
         record = ['Running_Server', now, 'ServerLib', name, url, None, None, str(port), 'ONLINE', 'Global']
         data['Values'].append(record)
         
-        # Atomic write via temp file
-        tmp_path = reg_path + ".tmp"
-        with open(tmp_path, 'w') as f:
-            json.dump(data, f, indent=2)
-        os.replace(tmp_path, reg_path)
+        # Atomic write via library standard
+        bejson_core_atomic_write(reg_path, data)
         
         print(f" [ServerLib] REGISTERED: {name} on {url}")
     except Exception as e:
@@ -134,10 +132,7 @@ def unregister_server(name):
         
         data['Values'] = [v for v in data['Values'] if not (v[0] == 'Running_Server' and v[3] == name)]
         
-        tmp_path = reg_path + ".tmp"
-        with open(tmp_path, 'w') as f:
-            json.dump(data, f, indent=2)
-        os.replace(tmp_path, reg_path)
+        bejson_core_atomic_write(reg_path, data)
         
         print(f" [ServerLib] UNREGISTERED: {name}")
     except Exception as e:
