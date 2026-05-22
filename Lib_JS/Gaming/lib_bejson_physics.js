@@ -60,10 +60,13 @@ class SwitchPhysics {
     }
 
     applyImpulse(id, ix, iy) {
+        const b = this.bodies.Values.find(v => v[0] === id);
+        if (!b) return;
+        const mass = b[8] || 1;
         if (!this.impulses.has(id)) this.impulses.set(id, { x: 0, y: 0 });
         const imp = this.impulses.get(id);
-        imp.x += ix;
-        imp.y += iy;
+        imp.x += ix / mass;
+        imp.y += iy / mass;
     }
 
     step(dt, staticColliders = []) {
@@ -136,8 +139,31 @@ class SwitchPhysics {
 
     _resolveCollision(a, b) {
         if (a[7] && b[7]) return;
-        const tempVx = a[5]; a[5] = b[5]; b[5] = tempVx;
-        const tempVy = a[6]; a[6] = b[6]; b[6] = tempVy;
+        
+        const m1 = a[8] || 1;
+        const m2 = b[8] || 1;
+        const totalMass = m1 + m2;
+
+        const v1x = a[5];
+        const v1y = a[6];
+        const v2x = b[5];
+        const v2y = b[6];
+
+        if (a[7]) { // a is static
+            b[5] = -v2x; b[6] = -v2y;
+            return;
+        }
+        if (b[7]) { // b is static
+            a[5] = -v1x; a[6] = -v1y;
+            return;
+        }
+
+        // Elastic collision formula for 1D applied to each axis
+        a[5] = ((v1x * (m1 - m2)) + (2 * m2 * v2x)) / totalMass;
+        b[5] = ((v2x * (m2 - m1)) + (2 * m1 * v1x)) / totalMass;
+
+        a[6] = ((v1y * (m1 - m2)) + (2 * m2 * v2y)) / totalMass;
+        b[6] = ((v2y * (m2 - m1)) + (2 * m1 * v1y)) / totalMass;
     }
 }
 

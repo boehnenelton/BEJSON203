@@ -23,7 +23,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-HTML_DIR = os.path.join(os.path.dirname(SCRIPT_DIR), "HTML")
+HTML_DIR = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)), "HTML")
 if HTML_DIR not in sys.path:
     sys.path.append(HTML_DIR)
 

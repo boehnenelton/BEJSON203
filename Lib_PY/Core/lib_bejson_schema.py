@@ -111,3 +111,12 @@ def bejson_schema_validate_against(doc: Dict[str, Any], schema_fields: List[Dict
             return False
     return True
 
+
+# 5. List Manager v1.0.0
+# Authoritative for hierarchical list data used in JS Lister.
+SCHEMA_LIST_MANAGER_v100 = [
+    {"name": "id",          "type": "string"},  # Unique identifier
+    {"name": "parent_id",   "type": "string"},  # Parent ID for hierarchy (null for root)
+    {"name": "title",       "type": "string"},  # Item title
+    {"name": "description", "type": "string"},  # Detailed description
+]

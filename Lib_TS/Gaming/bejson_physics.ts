@@ -66,8 +66,9 @@ export class BEJSONPhysics {
   applyImpulse(id: string, ix: number, iy: number) {
     const b = this.bodies.Values.find(v => v[0] === id);
     if (!b) return;
-    (b[5] as number) += ix;
-    (b[6] as number) += iy;
+    const mass = (b[8] as number) || 1;
+    (b[5] as number) += ix / mass;
+    (b[6] as number) += iy / mass;
   }
 
   moveBody(id: string, dx: number, dy: number, staticColliders: any[] = []) {
@@ -156,9 +157,31 @@ export class BEJSONPhysics {
   private _resolveCollision(a: any[], b: any[]) {
     if (a[7] && b[7]) return; // both static
     
-    // Simple push-apart logic would go here, 
-    // for now we just swap velocities for dynamic-dynamic
-    const tempVx = a[5]; a[5] = b[5]; b[5] = tempVx;
-    const tempVy = a[6]; a[6] = b[6]; b[6] = tempVy;
+    const m1 = (a[8] as number) || 1;
+    const m2 = (b[8] as number) || 1;
+    const totalMass = m1 + m2;
+
+    const v1x = a[5] as number;
+    const v1y = a[6] as number;
+    const v2x = b[5] as number;
+    const v2y = b[6] as number;
+
+    if (a[7]) { // a is static
+        (b[5] as number) = -v2x; 
+        (b[6] as number) = -v2y;
+        return;
+    }
+    if (b[7]) { // b is static
+        (a[5] as number) = -v1x; 
+        (a[6] as number) = -v1y;
+        return;
+    }
+
+    // Elastic collision formula for 1D applied to each axis
+    (a[5] as number) = ((v1x * (m1 - m2)) + (2 * m2 * v2x)) / totalMass;
+    (b[5] as number) = ((v2x * (m2 - m1)) + (2 * m1 * v1x)) / totalMass;
+
+    (a[6] as number) = ((v1y * (m1 - m2)) + (2 * m2 * v2y)) / totalMass;
+    (b[6] as number) = ((v2y * (m2 - m1)) + (2 * m1 * v1y)) / totalMass;
   }
 }
