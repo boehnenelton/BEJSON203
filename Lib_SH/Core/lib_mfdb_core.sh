@@ -3,14 +3,18 @@
 # Jurisdiction: ["BEJSON_LIBRARIES", "SH"]
 # Status:       OFFICIAL
 # Author:       Elton Boehnen
-# Version:      2.0.1 OFFICIAL
+# Version:      2.0.2 OFFICIAL
 # MFDB Version: 1.31
 # Format_Creator: Elton Boehnen
-# Date:         2026-05-18
+# Date:         2026-06-02
 # Description:  Multi-file database orchestrator managing manifests and entity synchronization.
+#
+# CHANGELOG v2.0.2:
+#   [SH3] Fixed: removed top-level `set -o nounset` to prevent polluting host script options.
 
+# NOTE: set -o nounset intentionally omitted — library files must not modify
+# global shell options; doing so breaks host scripts that source this file. (SH3)
 set -o pipefail
-set -o nounset
 
 # Source dependencies if not already loaded.
 _MFDB_CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

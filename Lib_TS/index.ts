@@ -4,18 +4,18 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-05-18
+ * Date:         2026-06-02
  * Description:  Main entry point for TypeScript library family.
  */
 
 // Types & error classes
-export * from "./bejson_types";
+export * from "./Core/lib_bejson_types";
 
 // Core operations (parse, serialize, record CRUD)
-export * from "./bejson_core";
+export * from "./Core/lib_bejson_core";
 
 // BEJSON validators (104, 104a, 104db)
 export {
@@ -25,7 +25,7 @@ export {
   validate104db,
   assertValid,
   isValid,
-} from "./bejson_validators";
+} from "./Core/lib_bejson_validators";
 
 // MFDB validators
 export {
@@ -35,7 +35,7 @@ export {
   validateDatabase,
   decodeManifestRecords,
   decodeDatabaseMeta,
-} from "./mfdb_validators";
+} from "./Core/lib_mfdb_validators";
 
 // MFDB core
 export {
@@ -43,18 +43,18 @@ export {
   registerEntity,
   unregisterEntity,
   syncRecordCount,
-} from "./mfdb_core";
+} from "./Core/lib_mfdb_core";
 
-export type { EntityValidationOptions, DatabaseValidationOptions } from "./mfdb_validators";
-export type { CreateManifestOptions as MFDBCreateManifestOptions } from "./mfdb_core";
+export type { EntityValidationOptions, DatabaseValidationOptions } from "./Core/lib_mfdb_validators";
+export type { CreateManifestOptions as MFDBCreateManifestOptions } from "./Core/lib_mfdb_core";
 
-export * from "./bejson_assets";
-export * from "./bejson_engine";
-export * from "./bejson_events";
-export * from "./bejson_grid";
-export * from "./bejson_input";
-export * from "./bejson_physics";
-export * from "./bejson_renderer";
+export * from "./Gaming/bejson_assets";
+export * from "./Gaming/bejson_engine";
+export * from "./Gaming/bejson_events";
+export * from "./Gaming/bejson_grid";
+export * from "./Gaming/bejson_input";
+export * from "./Gaming/bejson_physics";
+export * from "./Gaming/bejson_renderer";
 
 // Schema management
-export * from "./bejson_schema";
+export * from "./Core/lib_bejson_schema";

@@ -1,0 +1,30 @@
+{
+  "project_name": "Gaming",
+  "version": "v1.6.0",
+  "extensions": [
+    ".py",
+    ".js",
+    ".ts",
+    ".html",
+    ".css",
+    ".md",
+    ".json",
+    ".sh",
+    ".txt",
+    ".bejson",
+    ".tsx",
+    ".jsx"
+  ],
+  "exclude_dirs": [
+    ".git",
+    "__pycache__",
+    "node_modules",
+    "lib",
+    "output",
+    ".mfdb_lock",
+    "dist",
+    "build"
+  ],
+  "output_base": "{ADMIN_ROOT}/tools/Cli_Chunker/output",
+  "evade_mime": true
+}

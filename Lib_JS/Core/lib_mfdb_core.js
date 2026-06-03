@@ -4,7 +4,7 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "JS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
  * Date:         2026-05-18
@@ -101,5 +101,5 @@ class MFDBArchive {
 window.MFDB_CORE = {
     ...window.MFDB_CORE,
     MFDBArchive,
-    version: "1.21"
+    version: "1.31"  // FIX JS4: was "1.21"; spec is MFDB v1.31
 };

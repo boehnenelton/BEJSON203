@@ -47,18 +47,21 @@ from lib_mfdb_validator import (
 )
 
 try:
-    from lib_bejson_errors import *
-except ImportError:
-    # Fallback if registry is missing
-    E_MFDB_CORE_MANIFEST_NOT_FOUND  = 50
-    E_MFDB_CORE_ENTITY_NOT_FOUND    = 51
-    E_MFDB_CORE_WRITE_FAILED        = 52
-    E_MFDB_CORE_CREATE_FAILED       = 53
-    E_MFDB_CORE_INVALID_OPERATION   = 54
-    E_MFDB_CORE_INDEX_OUT_OF_BOUNDS = 55
-    E_MFDB_CORE_JOIN_FAILED         = 56
-    E_MFDB_CORE_ARCHIVE_ERROR       = 70
-    E_MFDB_CORE_MOUNT_CONFLICT      = 71
+    from lib_bejson_errors import (
+        E_MFDB_CORE_MANIFEST_NOT_FOUND,
+        E_MFDB_CORE_ENTITY_NOT_FOUND,
+        E_MFDB_CORE_WRITE_FAILED,
+        E_MFDB_CORE_CREATE_FAILED,
+        E_MFDB_CORE_INVALID_OPERATION,
+        E_MFDB_CORE_INDEX_OUT_OF_BOUNDS,
+        E_MFDB_CORE_JOIN_FAILED,
+        E_MFDB_CORE_ARCHIVE_ERROR,
+        E_MFDB_CORE_MOUNT_CONFLICT
+    )
+except ImportError as e:
+    import logging
+    logging.critical(f"[MFDB_CORE] FATAL: Error registry unreachable: {e}")
+    raise SystemExit(1)
 
 
 class MFDBCoreError(Exception):

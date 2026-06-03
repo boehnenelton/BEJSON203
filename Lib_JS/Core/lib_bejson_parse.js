@@ -4,7 +4,7 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "JS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
  * Date:         2026-05-18
@@ -118,6 +118,8 @@ function save_files(proj, files, cfg) {
   const path    = require('path');
   let AdmZip;
   try { AdmZip = require('adm-zip'); } catch (e) { /* optional dependency */ }
+  
+  const { secure_zip_validate } = require('./lib_bejson_secure_zip.js');
 
   const scriptDir  = path.dirname(path.resolve(__filename || __dirname));
   const DEFAULT_OUT = path.join(scriptDir, 'output');
@@ -148,10 +150,17 @@ function save_files(proj, files, cfg) {
   }
 
   try {
-    fs.mkdirSync(target, { recursive: true });
+    // Phase 2: Resolve and Guard target path
+    const targetPath = path.resolve(target);
+    fs.mkdirSync(targetPath, { recursive: true });
 
     for (const f of files) {
-      const fpath = path.join(target, f.name);
+      // Phase 2: Assert boundary prefixes (mitigate Zip Slip / Traversal)
+      const fpath = path.resolve(targetPath, f.name);
+      if (!fpath.startsWith(targetPath)) {
+        throw new Error(`Path Traversal detected: "${f.name}" escapes target directory`);
+      }
+      
       const fdir  = path.dirname(fpath);
       if (!fs.existsSync(fdir)) fs.mkdirSync(fdir, { recursive: true });
       fs.writeFileSync(fpath, f.content, 'utf8');
@@ -196,6 +205,11 @@ function save_files(proj, files, cfg) {
     fs.writeFileSync(path.join(target, '_REPORT.txt'), reportText, 'utf8');
 
     // Build zip (files + report)
+    // FIX JS7: guard against adm-zip not being installed. Without this guard,
+    // new AdmZip() throws TypeError after files have already been written to disk.
+    if (!AdmZip) {
+      return { success: false, message: 'adm-zip is not installed. Run: npm install adm-zip' };
+    }
     const zip = new AdmZip();
     for (const f of files) zip.addFile(f.name, Buffer.from(f.content, 'utf8'));
     zip.addFile('_REPORT.txt', Buffer.from(reportText, 'utf8'));

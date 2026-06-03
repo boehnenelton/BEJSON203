@@ -3,15 +3,16 @@
 # Jurisdiction: ["BEJSON_LIBRARIES", "SH"]
 # Status:       OFFICIAL
 # Author:       Elton Boehnen
-# Version:      2.0.1 OFFICIAL
+# Version:      2.0.2 OFFICIAL
 # MFDB Version: 1.31
 # Format_Creator: Elton Boehnen
-# Date:         2026-05-21
+# Date:         2026-06-02
 # Description:  Rapid indexing and retrieval engine for dense tabular data.
-# REMEDIATED:   Optimized jq extraction to avoid subshell performance bottlenecks.
+# REMEDIATED:   Optimized jq extraction to avoid subshell performance bottlenecks; removed nounset (SH3).
 
+# NOTE: set -o nounset intentionally omitted — library files must not modify
+# global shell options; doing so breaks host scripts that source this file. (SH3)
 set -o pipefail
-set -o nounset
 
 BEJSON_PARSE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 

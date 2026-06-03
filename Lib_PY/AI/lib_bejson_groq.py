@@ -4,11 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.2.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-03
 Description:  Integration wrapper for Groq API services.
+RELATIONAL_ID: de2626-groq-hardened-001
 """
 
 import os
@@ -29,58 +30,15 @@ CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 
-try:
-    from lib_bejson_env import resolve_path as resolve_system_path
-except ImportError:
-    def resolve_system_path(path_str):
-        # Even the fallback should avoid hardcoded absolute paths if possible
-        internal_storage = os.environ.get("INTERNAL_STORAGE", os.path.expanduser("~"))
-        sc_root = os.environ.get("SC_ROOT", os.path.join(internal_storage, "Brain-Container/BEJSON_Core"))
-        resolved = path_str.replace("{SC_ROOT}", sc_root)
-        return os.path.expanduser(resolved)
-
-# --- SCHEMAS INFERRED VIA LIB_BEJSON_SCHEMA ---
-    "Format": "BEJSON",
-    "Format_Version": "104",
-    "Format_Creator": "Elton Boehnen",
-    "Records_Type": ["AI_Profile"],
-    "Parent_Hierarchy": "/LLM_Configuration",
-    "Fields": [
-        {"name": "Record_Type_Parent", "type": "string"},
-        {"name": "Name", "type": "string"},
-        {"name": "Archetype", "type": "string"},
-        {"name": "Persona", "type": "string"},
-        {"name": "SystemInstruction", "type": "string"},
-        {"name": "ForbiddenTopics", "type": "array"},
-        {"name": "Avatar_Type", "type": "string"},
-        {"name": "Avatar_sourceUrl", "type": "string"},
-        {"name": "Avatar_Data", "type": "string"},
-        {"name": "MaxResponseTokens", "type": "integer"},
-        {"name": "Creativity", "type": "number"},
-        {"name": "Tone", "type": "array"},
-        {"name": "Formality", "type": "string"},
-        {"name": "Verbosity", "type": "string"},
-        {"name": "EmotionalExpression_Enabled", "type": "boolean"},
-        {"name": "EmotionalExpression_Intensity", "type": "number"},
-        {"name": "GoogleSearch_Enabled", "type": "boolean"},
-        {"name": "CodeInterpreter_Enabled", "type": "boolean"},
+# LOUD FAILURE: Core dependencies must exist
+from lib_bejson_env import resolve_path as resolve_system_path
+from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
+from lib_bejson_schema import SCHEMA_MODEL_REGISTRY, SCHEMA_AI_PROFILE
 
 # --- Environment & Setup ---
 LIB_DIR = os.environ.get("BEJSON_LIB_DIR", str(Path(__file__).resolve().parent))
 if LIB_DIR not in sys.path:
     sys.path.insert(0, LIB_DIR)
-
-try:
-    from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
-except ImportError:
-    def bejson_core_load_file(p):
-        with open(p, 'r') as f: return json.load(f)
-    def bejson_core_get_field_index(d, n):
-        for i, f in enumerate(d.get("Fields", [])):
-            if f["name"] == n: return i
-        return -1
-    def bejson_core_atomic_write(p, d):
-        with open(p, 'w') as f: json.dump(d, f, indent=2)
 
 # --- Registry Managers ---
 class GroqKeyRegistry:
@@ -100,7 +58,8 @@ class GroqKeyRegistry:
             data = bejson_core_load_file(str(self.file_path))
             idx = bejson_core_get_field_index(data, "key")
             if idx != -1:
-                self.keys = [row[idx] for row in data["Values"] if "YOUR_GROQ_KEY" not in str(row[idx]) and "KEY_HERE" not in str(row[idx])]
+                # SECURITY: Reject placeholders
+                self.keys = [row[idx] for row in data["Values"] if row[idx] and "YOUR_" not in str(row[idx]) and "KEY_HERE" not in str(row[idx]) and str(row[idx]).strip() != ""]
         except Exception as e:
             logging.error(f"[GroqLib] Failed to load keys from {self.file_path}: {e}")
             self.keys = []

@@ -14,14 +14,22 @@ Description:  Integration layer for Firebase services (Firestore, Auth, Storage)
 import os
 import json
 
-# SECURITY: Hardcoded credentials removed. Caller must provide config via get_firebase_init_script.
+def validate_firebase_config(config: dict):
+    """Ensures all required Firebase parameters are present."""
+    required = ["apiKey", "authDomain", "projectId", "storageBucket", "messagingSenderId", "appId"]
+    missing = [key for key in required if not config.get(key) or config.get(key) == "MISSING"]
+    if missing:
+        raise RuntimeError(f"CRITICAL: Missing essential Firebase environment variables: {', '.join(missing)}")
+
+# SECURITY: Hardcoded credentials removed. Use environment variables.
+# Defaults removed to prevent information disclosure (Mandate: POL-SEC-004).
 FIREBASE_CONFIG = {
-    "apiKey": os.getenv("FIREBASE_API_KEY", "MISSING"),
-    "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN", "MISSING"),
-    "projectId": os.getenv("FIREBASE_PROJECT_ID", "MISSING"),
-    "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET", "MISSING"),
-    "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID", "MISSING"),
-    "appId": os.getenv("FIREBASE_APP_ID", "MISSING")
+    "apiKey": os.getenv("FIREBASE_API_KEY"),
+    "authDomain": os.getenv("FIREBASE_AUTH_DOMAIN"),
+    "projectId": os.getenv("FIREBASE_PROJECT_ID"),
+    "storageBucket": os.getenv("FIREBASE_STORAGE_BUCKET"),
+    "messagingSenderId": os.getenv("FIREBASE_MESSAGING_SENDER_ID"),
+    "appId": os.getenv("FIREBASE_APP_ID")
 }
 
 SDK_VERSION = "12.12.1"
@@ -34,6 +42,8 @@ def get_firebase_init_script(config, services=None):
     """
     if not config:
         raise ValueError("Firebase configuration 'config' is required.")
+    
+    validate_firebase_config(config)
         
     services = services or []
     cfg_json = json.dumps(config, indent=2)

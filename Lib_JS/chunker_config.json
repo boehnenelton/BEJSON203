@@ -33,5 +33,5 @@
     ".idea",
     "coverage"
   ],
-  "output_base": "/storage/emulated/0/Admin/resources/chunks"
+  "output_base": "{ADMIN_ROOT}/resources/chunks"
 }

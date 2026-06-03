@@ -4,24 +4,31 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.0 OFFICIAL (Registry Fixed)
+Version:      2.2.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-22
-Description:  Integration wrapper for Google Gemini API with key rotation support.
-REMEDIATED:   Aligned with unified Model Registry; Gemini 2.5 Flash as default.
+Date:         2026-06-03
+Description:  Integration wrapper for Google Gemini API using the official google-genai SDK.
+RELATIONAL_ID: de2626-gemini-hardened-003
 """
 
 import os
 import sys
 import json
 import time
-import requests
 import random
 import copy
 import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
+
+try:
+    from google import genai
+    from google.genai import types
+except ImportError:
+    # We don't crash here to allow registry management without the SDK, 
+    # but the API class will fail if used.
+    genai = None
 
 # --- Sibling Resolution ---
 LIB_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -30,6 +37,7 @@ if LIB_DIR not in sys.path: sys.path.insert(0, LIB_DIR)
 CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
 
+# LOUD FAILURE: Core dependencies must exist
 try:
     from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
     from lib_bejson_schema import SCHEMA_MODEL_REGISTRY
@@ -49,21 +57,31 @@ class GeminiKeyRegistry:
     def _create_default(self):
         try:
             os.makedirs(self.file_path.parent, exist_ok=True)
+            # SECURITY: Remove placeholder "YOUR_KEY_HERE" from default template
             default_keys = {
                 "Format": "BEJSON", "Format_Version": "104", "Records_Type": ["ApiKey"],
                 "Fields": [{"name": "key", "type": "string"}],
-                "Values": [["YOUR_KEY_HERE"]]
+                "Values": []
             }
             bejson_core_atomic_write(str(self.file_path), default_keys)
         except Exception as e: logging.warning(f"[GeminiLib] Key default fail: {e}")
 
     def load(self):
         try:
+            # REMEDIATED: Support centralized registry + Environment Variables (Phase 2)
+            env_keys = os.environ.get("GEMINI_API_KEYS", "").split(",")
+            self.keys = [k.strip() for k in env_keys if k.strip()]
+
             data = bejson_core_load_file(str(self.file_path))
             idx = bejson_core_get_field_index(data, "key")
             if idx != -1:
-                self.keys = [row[idx] for row in data["Values"] if "YOUR_KEY" not in str(row[idx])]
-        except Exception: self.keys = []
+                # SECURITY: Reject placeholders
+                registry_keys = [row[idx] for row in data["Values"] if row[idx] and "YOUR_" not in str(row[idx]) and "KEY_HERE" not in str(row[idx])]
+                self.keys.extend(registry_keys)
+        except Exception:
+            # Fallback to env keys if file load fails
+            env_keys = os.environ.get("GEMINI_API_KEYS", "").split(",")
+            self.keys = [k.strip() for k in env_keys if k.strip()]
 
 class GeminiModelRegistry:
     def __init__(self, file_path: Union[str, Path]):
@@ -111,25 +129,48 @@ class GeminiAPI:
     def __init__(self, key_registry: GeminiKeyRegistry, model_registry: GeminiModelRegistry):
         self.keys = key_registry
         self.models = model_registry
-        self.endpoint = "https://generativelanguage.googleapis.com/v1beta/models"
+        if genai is None:
+            # LOUD FAILURE: SDK must exist for API operations
+            logging.critical("[GeminiLib] google-genai SDK not installed. Please run 'pip install google-genai'.")
+            raise RuntimeError("google-genai SDK not installed.")
 
     def generate(self, prompt: str, model_id: str = None, **config) -> str:
-        if not self.keys.keys: raise Exception("No Gemini API keys found.")
+        if genai is None:
+            raise RuntimeError("google-genai SDK not installed.")
+        if not self.keys.keys:
+            raise Exception("No Gemini API keys found.")
+        
         key = random.choice(self.keys.keys)
         mid = model_id or self.models.active_model_id
         
-        url = f"{self.endpoint}/{mid}:generateContent?key={key}"
-        payload = {"contents": [{"parts": [{"text": prompt}]}]}
+        client = genai.Client(api_key=key)
         
-        # Merge system instructions if provided
-        if "system_instruction" in config:
-            payload["system_instruction"] = {"parts": [{"text": config["system_instruction"]}]}
-
-        res = requests.post(url, json=payload, timeout=60)
-        res.raise_for_status()
+        # Prepare configuration
+        gen_config = {}
+        if "temperature" in config: gen_config["temperature"] = config["temperature"]
+        if "top_p" in config: gen_config["top_p"] = config["top_p"]
+        if "top_k" in config: gen_config["top_k"] = config["top_k"]
+        if "max_output_tokens" in config: gen_config["max_output_tokens"] = config["max_output_tokens"]
+        if "stop_sequences" in config: gen_config["stop_sequences"] = config["stop_sequences"]
+        
+        system_instruction = config.get("system_instruction")
         
         try:
-            return res.json()["candidates"][0]["content"]["parts"][0]["text"]
-        except (KeyError, IndexError):
-            raise Exception(f"Unexpected API response: {res.text}")
+            response = client.models.generate_content(
+                model=mid,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    **gen_config
+                )
+            )
+            return response.text
+        except Exception as e:
+            # SECURITY: Prevent key leakage in logs (though Client init is usually the risk)
+            # The SDK might include the key in error details
+            error_str = str(e)
+            import re
+            redacted_error = re.sub(r'[A-Za-z0-9_\-]{30,}', '[REDACTED]', error_str)
+            logging.error(f"[GeminiLib] Generation failed: {redacted_error}")
+            raise Exception(f"Gemini API Error: {redacted_error}")
 

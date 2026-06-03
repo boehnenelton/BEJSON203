@@ -15,12 +15,14 @@ bec_core_get_root() {
         echo "$BEC_ROOT"
         return 0
     fi
-    local root_file="${SC_ROOT:-/storage/emulated/0/Brain-Container/BEJSON_Core}/Data/state/BEC_ROOT.txt"
+    # REMEDIATED: Use BEJSON_STORAGE_ROOT to avoid hardcoded absolute paths (Phase 1)
+    local default_storage="${BEJSON_STORAGE_ROOT:-/storage/emulated/0}"
+    local root_file="${SC_ROOT:-$default_storage/Brain-Container/BEJSON_Core}/Data/state/BEC_ROOT.txt"
     if [[ -f "$root_file" ]]; then
         cat "$root_file"
     else
         # Fallback if state not yet initialized
-        echo "${SC_ROOT:-/storage/emulated/0/Brain-Container/BEJSON_Core}"
+        echo "${SC_ROOT:-$default_storage/Brain-Container/BEJSON_Core}"
     fi
 }
 

@@ -23,13 +23,12 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 if SCRIPT_DIR not in sys.path:
     sys.path.insert(0, SCRIPT_DIR)
 
-HTML_DIR = os.path.join(os.path.dirname(os.path.dirname(SCRIPT_DIR)), "HTML")
-if HTML_DIR not in sys.path:
-    sys.path.append(HTML_DIR)
+LIB_PY_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
+if LIB_PY_DIR not in sys.path:
+    sys.path.append(LIB_PY_DIR)
 
 try:
-    from lib_html2_page_templates import html_page, html_save as html_write
-    from lib_html2_body import html_brutal_table as html_table
+    from HTML import html_page, html_save as html_write, html_brutal_table as html_table
 except ImportError as e:
     print(f"CRITICAL BUILD FAILURE: Missing HTML generation dependencies. {e}")
     sys.exit(1)
@@ -100,8 +99,8 @@ def build_ebook():
             </section>
         </article>"""
         
-        full_html = html_page(title=f"Ref: {name}", body=body, nav_links=page_nav, dark=True)
-        html_write(os.path.join(output_root, rt_dir, target_filename), full_html)
+        full_html = html_page(title=f"Ref: {name}", content=body, nav_links=page_nav, dark=True)
+        html_write(full_html, os.path.join(output_root, rt_dir, target_filename))
 
     # Index
     index_nav = [("Home", "index.html")] + [(n["name"], f"{n['rt']}/{n['filename']}") for n in nav_data]
@@ -112,9 +111,9 @@ def build_ebook():
         link = f'<a href="{item["rt"]}/{item["filename"]}">{html_mod.escape(item["name"])}</a>'
         table_rows.append([item["rt"].upper(), link, html_mod.escape(row[f_idx["description"]])])
 
-    index_body = f"<h1>Index</h1>{html_table(table_rows, table_headers, dark=True, raw_cols=[1])}"
-    index_html = html_page(title="Library Index", body=index_body, nav_links=index_nav, dark=True)
-    html_write(os.path.join(output_root, "index.html"), index_html)
+    index_body = f"<h1>Index</h1>{html_table(table_headers, table_rows, escape=False)}"
+    index_html = html_page(title="Library Index", content=index_body, nav_links=index_nav, dark=True)
+    html_write(index_html, os.path.join(output_root, "index.html"))
 
 if __name__ == "__main__":
     build_ebook()

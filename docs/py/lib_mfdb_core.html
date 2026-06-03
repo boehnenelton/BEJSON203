@@ -1,0 +1,1665 @@
+<!DOCTYPE html>
+<html lang="en" class="u-dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ref: lib_mfdb_core.py</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+@layer reset, base, layout, components, interactive;
+
+
+@layer components {
+    /* Stats Bar */
+    .c-stats-bar {
+        display: flex; gap: 24px; padding: 24px;
+        background: var(--bg-surface); margin-bottom: 24px;
+        border-left: 4px solid var(--primary);
+    }
+    .c-stats-bar__item { flex: 1; }
+    .c-stats-bar__label {
+        font-size: 0.65rem; color: var(--text-muted);
+        font-family: var(--font-mono); text-transform: uppercase;
+    }
+    .c-stats-bar__value {
+        font-size: 1.5rem; font-weight: 800; color: var(--primary);
+    }
+
+    /* Cards */
+    .c-card {
+        background: var(--bg-page); border: 1px solid var(--border);
+        padding: 24px; margin-bottom: 24px; border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+    }
+    .c-card__title {
+        font-size: 1.1rem; color: var(--primary);
+        text-transform: uppercase; letter-spacing: 0.05em;
+        margin-bottom: 12px; font-weight: 800;
+    }
+    .c-card__body { font-size: 0.95rem; color: var(--text-main); }
+    
+    .c-card--brutal {
+        border: 4px solid var(--border); border-radius: 0;
+        box-shadow: 8px 8px 0px var(--border);
+    }
+
+    /* Badges */
+    .c-badge {
+        font-family: var(--font-mono); font-size: 0.65rem;
+        font-weight: 800; padding: 2px 8px;
+        background: var(--bg-alt); border-radius: 2px;
+        text-transform: uppercase;
+    }
+    .c-badge--success { color: oklch(70% 0.2 140); }
+    .c-badge--fail { color: oklch(60% 0.2 25); }
+
+    /* Code Box */
+    .c-code-box {
+        background: #000; border-left: 4px solid var(--primary);
+        margin: 24px 0; position: relative;
+    }
+    .c-code-box__header {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 8px 16px; background: rgba(255,255,255,0.05);
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .c-code-box__title {
+        font-family: var(--font-mono); font-size: 0.7rem;
+        color: var(--primary); font-weight: 800; text-transform: uppercase;
+    }
+    .c-code-box__copy {
+        background: var(--primary); color: white; border: none;
+        padding: 4px 12px; font-size: 0.65rem; font-weight: 800;
+        cursor: pointer; text-transform: uppercase;
+    }
+    .c-code-box__pre { margin: 0; padding: 20px; color: oklch(85% 0.2 140); overflow-x: auto; }
+    .c-code-box__code { font-family: var(--font-mono); font-size: 0.85rem; }
+
+    /* Tables */
+    .c-table-container { 
+        width: 100%; 
+        overflow-x: auto; 
+        margin-bottom: 24px; 
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+    }
+    .c-table {
+        width: 100%; border-collapse: collapse; font-size: 0.9rem;
+        min-width: 600px;
+    }
+    .c-table th {
+        background: var(--bg-alt); padding: 12px; text-align: left;
+        font-weight: 800; text-transform: uppercase; font-size: 0.75rem;
+        border-bottom: 2px solid var(--border); color: var(--text-muted);
+        position: sticky; top: 0; z-index: 10;
+    }
+    .c-table td { 
+        padding: 12px; 
+        border-bottom: 1px solid var(--border-muted); 
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+    .c-table tr:hover { background: var(--bg-alt); }
+
+    /* Subtabs */
+    .c-subtabs { 
+        display: flex; 
+        gap: 0; 
+        margin-bottom: 12px; 
+        border: 1px solid var(--border); 
+        width: 100%; 
+        overflow-x: auto; 
+        scrollbar-width: none; 
+        -ms-overflow-style: none;
+    }
+    .c-subtabs::-webkit-scrollbar { display: none; }
+    .c-subtabs__btn {
+        border: none; padding: 12px 24px; font-weight: 800; font-size: 0.8rem;
+        cursor: pointer; font-family: var(--font-sans); background: transparent;
+        color: var(--text-muted); transition: var(--transition);
+        white-space: nowrap;
+        border-right: 1px solid var(--border);
+    }
+    .c-subtabs__btn:last-child { border-right: none; }
+    .c-subtabs__btn:hover { background: var(--bg-alt); color: var(--primary); }
+    .c-subtabs__btn--active { background: var(--primary) !important; color: white !important; }
+
+    /* Typography & Body Text */
+    .c-card__body { 
+        font-size: 0.95rem; 
+        color: var(--text-main); 
+        line-height: 1.7;
+        max-width: 100%;
+        overflow-wrap: anywhere;
+        word-break: break-word;
+    }
+    .c-card__body p { margin-bottom: 1.25rem; }
+    .c-card__body ul, .c-card__body ol { margin-bottom: 1.25rem; padding-left: 1.5rem; }
+    .c-card__body li { margin-bottom: 0.6rem; }
+    .c-card__body h1, .c-card__body h2, .c-card__body h3 { 
+        color: var(--primary); 
+        margin-top: 1.5rem; 
+        margin-bottom: 0.75rem; 
+        text-transform: uppercase;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+    }
+
+    .c-dl { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .c-dl__item { margin-bottom: 12px; border-left: 2px solid var(--border); padding-left: 12px; }
+    .c-dl__term { font-size: 0.65rem; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase; }
+    .c-dl__desc { font-weight: 700; font-size: 1rem; color: var(--text-main); }
+    /* Card Grid */
+    .c-card-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 24px;
+    }
+
+    /* Widgets */
+    .c-widget {
+        background: var(--bg-page); border: 1px solid var(--border);
+        display: flex; flex-direction: column; overflow: hidden;
+        border-radius: var(--radius); box-shadow: var(--shadow-sm);
+    }
+    .c-widget__header {
+        padding: 8px 16px; background: var(--bg-alt);
+        border-bottom: 1px solid var(--border); display: flex;
+        justify-content: space-between; font-family: var(--font-mono);
+        font-size: 0.7rem; font-weight: 700;
+    }
+    .c-widget__body { flex: 1; padding: 16px; overflow: auto; }
+
+    /* Gallery */
+    .c-gallery-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 16px;
+    }
+    .c-gallery-item {
+        background: var(--bg-surface); border: 1px solid var(--border);
+        padding: 8px; border-radius: var(--radius); transition: var(--transition);
+    }
+    .c-gallery-item:hover { transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+    .c-gallery-item img { width: 100%; height: 150px; object-fit: cover; border-radius: 4px; display: block; }
+    .c-gallery-item__label {
+        margin-top: 8px; font-size: 0.75rem; color: var(--text-muted);
+        text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    /* Video Grid */
+    .c-video-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+    }
+    .c-video-card {
+        background: var(--bg-page); border: 1px solid var(--border);
+        border-radius: var(--radius); overflow: hidden;
+    }
+    .c-video-card__header {
+        padding: 10px 16px; background: var(--bg-alt);
+        font-weight: 700; font-size: 0.85rem; border-bottom: 1px solid var(--border);
+    }
+    .c-video-card__embed { position: relative; padding-bottom: 56.25%; height: 0; }
+    .c-video-card__embed iframe {
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;
+    }
+
+    /* Info Box */
+    .c-info-box {
+        background: var(--bg-page); border: 1px solid var(--border);
+        padding: 24px; border-radius: var(--radius); position: relative;
+    }
+    .c-info-box__title {
+        font-size: 1rem; font-weight: 800; color: var(--primary);
+        margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .c-info-box__dot { width: 8px; height: 8px; background: var(--primary); border-radius: 50%; }
+    .c-info-box__content { font-size: 0.95rem; color: var(--text-main); line-height: 1.5; }
+    .c-info-box__link {
+        display: inline-block; margin-top: 16px; font-size: 0.85rem;
+        font-weight: 700; color: var(--primary); text-decoration: none;
+    }
+
+    /* Carousel */
+    .c-carousel { position: relative; overflow: hidden; width: 100%; border: 1px solid var(--border); background: var(--bg-surface); }
+    .c-carousel__track { display: flex; transition: transform 0.3s ease; }
+    .c-carousel__slide { min-width: 100%; padding: 20px; box-sizing: border-box; }
+    .c-carousel__controls { display: flex; justify-content: space-between; padding: 10px; background: rgba(0,0,0,0.05); }
+    .c-carousel__btn {
+        background: transparent; border: 1px solid var(--primary);
+        color: var(--primary); font-family: var(--font-mono);
+        padding: 5px 12px; cursor: pointer; font-weight: 700; font-size: 0.75rem;
+    }
+    .c-carousel__btn:hover { background: var(--primary); color: white; }
+
+    /* Dialog */
+    .c-dialog-mask {
+        display: none; position: fixed; z-index: 4000; left: 0; top: 0; width: 100%; height: 100%;
+        background-color: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+    }
+    .c-dialog {
+        position: relative; background-color: var(--bg-page); margin: 10% auto; padding: 0;
+        border: 2px solid var(--primary); width: 80%; max-width: 600px;
+        box-shadow: 10px 10px 0px rgba(0,0,0,0.1); border-radius: var(--radius);
+    }
+    .c-dialog__header {
+        padding: 12px 20px; background: var(--bg-alt); border-bottom: 1px solid var(--border);
+        display: flex; justify-content: space-between; align-items: center;
+    }
+    .c-dialog__title { font-family: var(--font-mono); font-weight: 800; font-size: 0.85rem; text-transform: uppercase; color: var(--primary); }
+    .c-dialog__close { background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-muted); }
+    .c-dialog__body { padding: 24px; font-size: 0.95rem; color: var(--text-main); line-height: 1.6; }
+    .c-dialog__footer {
+        padding: 12px 20px; background: var(--bg-alt); border-top: 1px solid var(--border);
+        display: flex; justify-content: flex-end; gap: 12px;
+    }
+
+    /* Lightbox */
+    .c-lightbox { display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.95); }
+    .c-lightbox__content { margin: auto; display: block; width: 85%; max-width: 1200px; max-height: 85%; margin-top: 5%; object-fit: contain; }
+    .c-lightbox__caption { margin: auto; display: block; width: 80%; text-align: center; color: white; padding: 20px 0; font-family: var(--font-mono); font-size: 0.9rem; }
+    .c-lightbox__close { position: absolute; top: 20px; right: 30px; color: white; font-size: 40px; font-weight: bold; cursor: pointer; }
+    /* Table Controls & Pagination */
+    .c-table-controls { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .c-table-controls__label { font-family: var(--font-mono); font-size: 0.7rem; font-weight: 800; color: var(--primary); text-transform: uppercase; }
+    .c-table-controls__select, .c-table-controls__input { 
+        font-family: var(--font-sans); font-size: 0.8rem; padding: 4px 12px; 
+        background-color: var(--bg-page); color: var(--text-main); border: 1px solid var(--border); 
+        border-radius: var(--radius); outline: none; cursor: pointer;
+    }
+    .c-table-controls__select:focus, .c-table-controls__input:focus { border-color: var(--primary); }
+    .c-table-controls__count { margin-left: auto; font-family: var(--font-mono); color: var(--text-muted); font-size: 0.7rem; font-weight: 700; }
+
+    .c-pagination { display: flex; align-items: center; gap: 8px; margin-top: 16px; }
+    .c-pagination__btn {
+        background: var(--bg-alt); border: 1px solid var(--border);
+        padding: 4px 12px; border-radius: var(--radius); cursor: pointer;
+        font-family: var(--font-mono); font-size: 0.75rem; font-weight: 700;
+        transition: var(--transition);
+    }
+    .c-pagination__btn:hover:not(:disabled) { background: var(--primary); color: white; border-color: var(--primary); }
+    .c-pagination__btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .c-pagination__info { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); }
+
+    /* Indicators (Used in Table Cells) */
+    .c-indicator { font-weight: 800; text-transform: uppercase; }
+    .c-indicator--success { color: oklch(70% 0.2 140); }
+    .c-indicator--fail { color: oklch(60% 0.2 25); }
+    .c-null-val { color: var(--text-muted); font-style: italic; opacity: 0.7; }
+    /* Animations */
+    .c-terminal-boot { font-family: var(--font-mono); color: var(--text-muted); padding: 24px; }
+    .c-terminal-line { margin-bottom: 8px; font-size: 0.85rem; }
+
+    .c-glitch-wrapper { position: relative; text-align: center; }
+    .c-glitch-text {
+        font-size: clamp(3rem, 10vw, 7rem); font-weight: 900;
+        letter-spacing: 0.5rem; color: var(--text-main); position: relative;
+    }
+    .c-glitch-text::before, .c-glitch-text::after {
+        content: attr(data-text); position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: transparent;
+    }
+    .c-glitch-text::before { left: 4px; text-shadow: -3px 0 var(--primary); clip-path: polygon(0 0, 100% 0, 100% 35%, 0 35%); animation: glitch-anim-1 0.4s infinite; }
+    .c-glitch-text::after { left: -4px; text-shadow: 3px 0 var(--text-main); clip-path: polygon(0 65%, 100% 65%, 100% 100%, 0 100%); animation: glitch-anim-1 0.3s infinite reverse; }
+    .c-glitch-subtitle { color: var(--primary); letter-spacing: 0.3rem; margin-top: 1rem; font-family: var(--font-mono); font-weight: 700; text-transform: uppercase; }
+    /* Metrics */
+    .c-metric-card {
+        background: var(--bg-surface); border: 1px solid var(--border);
+        padding: 24px; border-top: 4px solid var(--primary);
+        transition: var(--transition); border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+    }
+    .c-metric-card__title {
+        font-family: var(--font-mono); font-size: 0.7rem;
+        color: var(--text-muted); text-transform: uppercase; margin-bottom: 8px;
+        font-weight: 700;
+    }
+    .c-metric-card__value { font-size: 2rem; font-weight: 800; color: var(--text-main); }
+    .c-metric-card__trend {
+        font-family: var(--font-mono); font-size: 0.75rem;
+        margin-top: 12px; font-weight: 800; display: flex; align-items: center; gap: 4px;
+    }
+    .c-metric-card__trend-label { color: var(--text-muted); font-weight: 400; font-size: 0.7rem; }
+
+    .c-data-dist {
+        margin-bottom: 24px; background: var(--bg-surface);
+        border: 1px solid var(--border); padding: 20px;
+        border-radius: var(--radius);
+    }
+    .c-data-dist__title {
+        font-family: var(--font-mono); font-size: 0.75rem;
+        color: var(--text-muted); text-transform: uppercase;
+        margin-bottom: 16px; font-weight: 800;
+    }
+    .c-data-dist__track {
+        width: 100%; height: 16px; background: var(--border-muted);
+        overflow: hidden; margin-bottom: 20px; display: flex;
+        border-radius: 8px;
+    }
+    .c-data-dist__bar { height: 100%; transition: width 0.3s ease; }
+    .c-data-dist__legend { display: flex; flex-wrap: wrap; gap: 20px; }
+    .c-data-dist__legend-item { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 0.7rem; color: var(--text-main); }
+    .c-data-dist__swatch { width: 12px; height: 12px; border-radius: 2px; }
+
+    .c-summary-stats {
+        margin-bottom: 24px; background: var(--bg-surface);
+        border: 1px solid var(--border); border-radius: var(--radius);
+        overflow: hidden; display: flex; flex-direction: column;
+    }
+    .c-summary-stats__header {
+        padding: 12px 20px; border-bottom: 1px solid var(--border);
+        font-family: var(--font-mono); font-size: 0.75rem; font-weight: 800;
+        color: var(--text-main); text-transform: uppercase; background: var(--bg-alt);
+    }
+    .c-summary-stats__grid { display: flex; flex-wrap: wrap; background: var(--bg-page); }
+    .c-summary-stats__item {
+        flex: 1; min-width: 100px; text-align: center;
+        border-right: 1px solid var(--border-muted); padding: 16px;
+    }
+    .c-summary-stats__item:last-child { border-right: none; }
+    .c-summary-stats__label {
+        font-family: var(--font-mono); font-size: 0.65rem;
+        color: var(--text-muted); text-transform: uppercase;
+    }
+    .c-summary-stats__value { font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-top: 4px; }
+    /* Feed & Grid */
+    .c-feed { display: flex; flex-direction: column; gap: 32px; }
+    .c-feed-item {
+        padding-bottom: 32px; border-bottom: 1px solid var(--border-muted);
+    }
+    .c-feed-item:last-child { border-bottom: none; }
+    .c-feed-item__title { font-size: 1.5rem; margin-bottom: 8px; font-weight: 800; }
+    .c-feed-item__title a { color: var(--text-main); }
+    .c-feed-item__title a:hover { color: var(--primary); text-decoration: none; }
+    .c-feed-item__meta { font-family: var(--font-mono); font-size: 0.75rem; color: var(--text-muted); margin-bottom: 16px; }
+    .c-feed-item__body { font-size: 1.1rem; line-height: 1.6; color: var(--text-main); }
+    .c-feed-item__tags { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; }
+    .c-feed-tag {
+        font-family: var(--font-mono); font-size: 0.65rem; background: var(--bg-alt);
+        padding: 4px 10px; border-radius: 100px; color: var(--text-muted);
+        font-weight: 700; text-transform: uppercase;
+    }
+    /* Bento Grid */
+    .c-bento-grid {
+        display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-auto-rows: 200px; gap: 16px; padding: 16px; width: 100%;
+    }
+    .c-bento-item {
+        background: var(--bg-page); border: 1px solid var(--border);
+        padding: 24px; display: flex; flex-direction: column;
+        transition: var(--transition); border-radius: var(--radius);
+        box-shadow: var(--shadow-sm);
+    }
+    .c-bento-item:hover { transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.1); }
+    .c-bento-item--w2 { grid-column: span 2; }
+    .c-bento-item--w3 { grid-column: span 2; grid-row: span 2; }
+    .c-bento-item__label {
+        font-family: var(--font-mono); font-size: 0.7rem; color: var(--primary);
+        font-weight: 800; text-transform: uppercase; margin-bottom: 8px;
+    }
+    .c-bento-item__value { font-size: 1.5rem; font-weight: 800; color: var(--text-main); }
+    .c-bento-item--w3 .c-bento-item__value { font-size: 3rem; }
+    /* Forms & Buttons */
+    .c-button {
+        background: var(--primary); color: white; border: none;
+        padding: 10px 24px; font-family: var(--font-mono); font-weight: 800;
+        font-size: 0.75rem; cursor: pointer; border-radius: var(--radius);
+        text-transform: uppercase; transition: var(--transition);
+        display: inline-block; text-align: center;
+    }
+    .c-button:hover { opacity: 0.9; transform: translateY(-1px); }
+    .c-button:active { transform: translateY(0); }
+
+    .c-input {
+        background: var(--bg-page); border: 1px solid var(--border);
+        color: var(--text-main); padding: 8px 12px; font-family: var(--font-sans);
+        font-size: 0.9rem; border-radius: var(--radius); outline: none;
+        width: 100%; transition: border-color 0.2s;
+    }
+    .c-input:focus { border-color: var(--primary); }
+/* Utilities */
+.u-mb-8 { margin-bottom: 8px; }
+.u-font-mono { font-family: var(--font-mono); }
+.u-fs-tiny { font-size: 0.65rem; }
+.u-fs-small { font-size: 0.75rem; }
+.u-text-muted { color: var(--text-muted); }
+
+/* Dark Mode Utility */
+.u-dark {
+    --bg-page: oklch(10% 0 0);
+    --bg-alt: oklch(15% 0 0);
+    --bg-surface: oklch(15% 0 0);
+    --text-main: oklch(95% 0 0);
+    --text-muted: oklch(60% 0 0);
+    --border: oklch(25% 0 0);
+    --border-muted: oklch(20% 0 0);
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.5);
+}
+.u-dark body { background-color: var(--bg-page); color: var(--text-main); }
+.u-dark .c-header, .u-dark .c-sidebar, .u-dark .c-footer { background-color: var(--bg-page); border-color: var(--border); }
+.u-dark .c-card, .u-dark .c-widget, .u-dark .c-table { background-color: var(--bg-alt); border-color: var(--border); }
+.u-dark .c-table th { background-color: var(--bg-page); color: var(--text-muted); }
+}
+
+    /* Toasts */
+    .c-toast-container {
+        position: fixed; top: 24px; right: 24px; z-index: 9999;
+        display: flex; flex-direction: column; gap: 12px;
+    }
+    .c-toast {
+        background: var(--bg-page); border: 1px solid var(--border);
+        padding: 16px 24px; border-radius: var(--radius);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        font-family: var(--font-sans); font-size: 0.85rem; font-weight: 600;
+        display: flex; align-items: center; gap: 12px; min-width: 280px;
+        animation: toast-in 0.3s ease-out forwards;
+        border-left: 4px solid var(--primary);
+    }
+    @keyframes toast-in { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+
+    /* Progress Bar */
+    .c-progress-container { width: 100%; margin: 12px 0; }
+    .c-progress-bar {
+        width: 100%; height: 8px; background: var(--bg-alt);
+        border-radius: 100px; overflow: hidden; position: relative;
+    }
+    .c-progress-fill {
+        height: 100%; background: var(--primary); border-radius: 100px;
+        transition: width 0.4s ease;
+    }
+    .c-progress-label {
+        display: flex; justify-content: space-between; margin-bottom: 6px;
+        font-family: var(--font-mono); font-size: 0.65rem; color: var(--text-muted);
+        text-transform: uppercase; font-weight: 700;
+    }
+
+    /* Empty State */
+    .c-empty-state {
+        padding: 60px 24px; text-align: center; background: var(--bg-surface);
+        border: 1px dashed var(--border); border-radius: var(--radius);
+        display: flex; flex-direction: column; align-items: center; gap: 16px;
+    }
+    .c-empty-state__icon { font-size: 3rem; opacity: 0.3; }
+    .c-empty-state__title { font-weight: 800; font-size: 1.1rem; color: var(--text-main); }
+    .c-empty-state__text { font-size: 0.9rem; color: var(--text-muted); max-width: 400px; }
+
+    /* Accordion */
+    .c-accordion { border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .c-accordion__item { border-bottom: 1px solid var(--border); }
+    .c-accordion__item:last-child { border-bottom: none; }
+    .c-accordion__header {
+        padding: 16px 20px; background: var(--bg-page); cursor: pointer;
+        display: flex; justify-content: space-between; align-items: center;
+        font-weight: 700; font-size: 0.9rem; transition: background 0.2s;
+    }
+    .c-accordion__header:hover { background: var(--bg-alt); }
+    .c-accordion__icon { transition: transform 0.2s; color: var(--primary); }
+    .c-accordion__content { padding: 20px; background: var(--bg-surface); display: none; font-size: 0.95rem; }
+
+    /* Breadcrumbs */
+    .c-breadcrumbs { display: flex; align-items: center; gap: 8px; list-style: none; padding: 0; margin: 0; }
+    .c-breadcrumbs__item { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-muted); }
+    .c-breadcrumbs__item a { color: var(--primary); text-decoration: none; font-weight: 600; }
+    .c-breadcrumbs__separator { opacity: 0.5; font-family: var(--font-mono); }
+    /* Charts */
+    .c-chart-container {
+        position: relative; width: 100%; margin-bottom: 24px;
+        background: var(--bg-surface); border: 1px solid var(--border);
+        padding: 20px; border-left: 4px solid var(--primary);
+        border-radius: var(--radius);
+    }
+    .c-chart-title {
+        margin-top: 0; font-family: var(--font-mono); font-size: 0.85rem;
+        margin-bottom: 16px; color: var(--text-main); text-transform: uppercase;
+        font-weight: 800;
+    }
+}
+
+
+@layer reset {
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; min-height: 100dvh; scroll-behavior: smooth; font-size: 16px; }
+    body {
+        margin: 0; padding: 0;
+        background-color: var(--bg-page);
+        color: var(--text-main);
+        -webkit-font-smoothing: antialiased;
+        padding-bottom: 60px;
+        min-height: 100dvh;
+    }
+}
+
+@layer base {
+    :root {
+        --primary: oklch(65% 0.2 25);
+        --primary-muted: oklch(65% 0.2 25 / 0.1);
+        --bg-page: oklch(100% 0 0);
+        --bg-alt: oklch(98% 0.005 250);
+        --bg-surface: oklch(98% 0.005 250);
+        --text-main: oklch(20% 0 0);
+        --text-muted: oklch(50% 0 0);
+        --border: oklch(90% 0 0);
+        --border-muted: oklch(95% 0 0);
+        --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        --font-mono: 'Roboto Mono', 'Source Code Pro', monospace;
+        --sidebar-width: 250px;
+        --transition: all 0.2s ease;
+        --shadow-sm: 0 1px 3px rgba(0,0,0,0.05);
+        --radius: 6px;
+    }
+
+    body { font-family: var(--font-sans); line-height: 1.6; }
+    
+    h1, h2, h3, h4 { color: var(--text-main); line-height: 1.1; margin-bottom: 0.5rem; font-weight: 800; }
+    h1 { font-size: clamp(1.75rem, 4vw, 2.5rem); letter-spacing: -0.02em; }
+    h2 { font-size: 1.1rem; color: var(--primary); text-transform: uppercase; letter-spacing: 0.05em; }
+
+    a { color: var(--primary); text-decoration: none; transition: var(--transition); }
+    a:hover { text-decoration: underline; }
+    
+    pre {
+        background: var(--bg-alt);
+        padding: 16px;
+        border-radius: var(--radius);
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-break: break-all;
+        border: 1px solid var(--border-muted);
+        margin: 1rem 0;
+    }
+
+    code {
+        font-family: var(--font-mono);
+        background: var(--bg-alt);
+        padding: 2px 4px;
+        border-radius: 4px;
+        word-break: break-word;
+    }
+}
+
+@layer layout {
+    .c-header {
+        display: flex; align-items: center; width: 100%; height: 64px;
+        padding: 0 24px; background: var(--bg-page); border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 1000; gap: 16px;
+    }
+    .c-header__logo { font-weight: 600; font-size: 1.25rem; }
+    .c-header__logo span { color: var(--primary); }
+
+    .c-breadcrumbs { padding: 8px 24px; border-bottom: 1px solid var(--border-muted); font-size: 0.875rem; color: var(--text-muted); }
+    .c-breadcrumbs a { color: var(--primary); }
+
+    .c-container {
+        display: grid; grid-template-columns: var(--sidebar-width) 1fr; gap: 24px;
+        padding: 24px; min-height: calc(100vh - 120px);
+        width: 100%;
+    }
+
+    .c-main-content {
+        min-width: 0; /* CRITICAL: Prevents grid blowout from wide child content */
+        max-width: 100%;
+    }
+    .c-sidebar__top { flex: 1; overflow-y: auto; padding-bottom: 16px; }
+    .c-sidebar__bottom { padding: 16px; background: var(--bg-alt); border-top: 1px solid var(--border-muted); border-radius: var(--radius); }
+    
+    .c-sidebar__link {
+        padding: 8px 12px; font-size: 0.9rem; border-radius: var(--radius); color: var(--text-main);
+        transition: var(--transition); display: flex; align-items: center; gap: 10px; cursor: pointer;
+    }
+    .c-sidebar__link:hover { background-color: var(--bg-alt); color: var(--primary); }
+    .c-sidebar__link--active { background-color: var(--bg-alt); color: var(--primary); font-weight: 600; }
+
+    .c-footer {
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        background-color: var(--bg-page); border-top: 1px solid var(--border);
+        padding: 12px 24px; padding-bottom: calc(12px + env(safe-area-inset-bottom));
+        text-align: center; font-size: 0.85rem; color: var(--text-muted); z-index: 900;
+    }
+
+    @media (max-width: 1024px) {
+        .c-container { grid-template-columns: 1fr; }
+        .c-sidebar { position: fixed; left: -300px; transition: left 0.3s ease; z-index: 1001; height: 100dvh; }
+        .c-sidebar--open { left: 0; }
+        .c-sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; }
+        .c-sidebar-overlay--open { display: block; }
+    }
+
+    @media print {
+        .c-header, .c-sidebar, .c-footer, .c-sidebar-overlay, .c-hamburger, .c-breadcrumbs { display: none !important; }
+        .c-container { display: block; padding: 0; }
+        .c-main-content { width: 100%; }
+        .c-card { border: 1px solid #000 !important; box-shadow: none !important; break-inside: avoid; }
+        body { background: #fff !important; color: #000 !important; }
+    }
+}
+</style>
+</head>
+<body>
+    <header class="c-header">
+        <div class="c-hamburger" onclick="document.querySelector('.c-sidebar').classList.add('c-sidebar--open');document.querySelector('.c-sidebar-overlay').classList.add('c-sidebar-overlay--open');" style="cursor:pointer; display:flex; flex-direction:column; gap:4px; padding:4px;">
+            <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
+            <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
+            <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
+        </div>
+        <div class="c-header__logo">BEJSON <span>LIBRARIES</span></div>
+    </header>
+
+    <div class="c-breadcrumbs"><span>REF: LIB_MFDB_CORE.PY</span></div>
+
+    <div class="c-sidebar-overlay" onclick="this.classList.remove('c-sidebar-overlay--open');document.querySelector('.c-sidebar').classList.remove('c-sidebar--open');"></div>
+
+    <div class="c-container">
+        <aside class="c-sidebar">
+            <div class="c-sidebar__top">
+                <nav class="c-sidebar__links">
+                    <a href="../index.html" class="c-sidebar__link"><span>❯</span> Home</a>
+<a href="lib_bejson_gemini.html" class="c-sidebar__link"><span>❯</span> lib_bejson_gemini.py</a>
+<a href="lib_bejson_gemprofiles.html" class="c-sidebar__link"><span>❯</span> lib_bejson_gemprofiles.py</a>
+<a href="lib_bejson_genai.html" class="c-sidebar__link"><span>❯</span> lib_bejson_genai.py</a>
+<a href="lib_bejson_groq.html" class="c-sidebar__link"><span>❯</span> lib_bejson_groq.py</a>
+<a href="lib_bejson_openrouter.html" class="c-sidebar__link"><span>❯</span> lib_bejson_openrouter.py</a>
+<a href="lib_brain_helper.html" class="c-sidebar__link"><span>❯</span> lib_brain_helper.py</a>
+<a href="lib_cms_config.html" class="c-sidebar__link"><span>❯</span> lib_cms_config.py</a>
+<a href="lib_cms_content.html" class="c-sidebar__link"><span>❯</span> lib_cms_content.py</a>
+<a href="lib_cms_mfdb.html" class="c-sidebar__link"><span>❯</span> lib_cms_mfdb.py</a>
+<a href="lib_cms_orchestrator.html" class="c-sidebar__link"><span>❯</span> lib_cms_orchestrator.py</a>
+<a href="lib_cms_taxonomy.html" class="c-sidebar__link"><span>❯</span> lib_cms_taxonomy.py</a>
+<a href="lib_mfdb_extensions.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_extensions.py</a>
+<a href="lib_bejson_core.html" class="c-sidebar__link"><span>❯</span> lib_bejson_core.py</a>
+<a href="lib_bejson_parse.html" class="c-sidebar__link"><span>❯</span> lib_bejson_parse.py</a>
+<a href="lib_bejson_provider.html" class="c-sidebar__link"><span>❯</span> lib_bejson_provider.py</a>
+<a href="lib_mfdb_core.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_core.py</a>
+<a href="lib_bejson_static_backend.html" class="c-sidebar__link"><span>❯</span> lib_bejson_static_backend.py</a>
+<a href="lib_bejson_validator.html" class="c-sidebar__link"><span>❯</span> lib_bejson_validator.py</a>
+<a href="lib_mfdb_validator.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_validator.py</a>
+<a href="lib_bejson_mfdb_core.html" class="c-sidebar__link"><span>❯</span> lib_bejson_mfdb_core.py</a>
+<a href="lib_bejson_mfdb_validator.html" class="c-sidebar__link"><span>❯</span> lib_bejson_mfdb_validator.py</a>
+<a href="lib_bejson_state_management.html" class="c-sidebar__link"><span>❯</span> lib_bejson_state_management.py</a>
+<a href="lib_bejson_env.html" class="c-sidebar__link"><span>❯</span> lib_bejson_env.py</a>
+<a href="lib_bejson_errors.html" class="c-sidebar__link"><span>❯</span> lib_bejson_errors.py</a>
+<a href="lib_bejson_schema.html" class="c-sidebar__link"><span>❯</span> lib_bejson_schema.py</a>
+<a href="lib_bejson_list_validator.html" class="c-sidebar__link"><span>❯</span> lib_bejson_list_validator.py</a>
+<a href="lib_bejson_path_guard.html" class="c-sidebar__link"><span>❯</span> lib_bejson_path_guard.py</a>
+<a href="lib_bejson_diagram_html.html" class="c-sidebar__link"><span>❯</span> lib_bejson_diagram_html.py</a>
+<a href="lib_html3_version.html" class="c-sidebar__link"><span>❯</span> lib_html3_version.py</a>
+<a href="lib_bejson_to_html.html" class="c-sidebar__link"><span>❯</span> lib_bejson_to_html.py</a>
+<a href="lib_bejson_validator_diagram.html" class="c-sidebar__link"><span>❯</span> lib_bejson_validator_diagram.py</a>
+<a href="lib_html3_body.html" class="c-sidebar__link"><span>❯</span> lib_html3_body.py</a>
+<a href="lib_html3_charts.html" class="c-sidebar__link"><span>❯</span> lib_html3_charts.py</a>
+<a href="lib_html3_feed_templates.html" class="c-sidebar__link"><span>❯</span> lib_html3_feed_templates.py</a>
+<a href="lib_html3_flask.html" class="c-sidebar__link"><span>❯</span> lib_html3_flask.py</a>
+<a href="lib_html3_metrics.html" class="c-sidebar__link"><span>❯</span> lib_html3_metrics.py</a>
+<a href="lib_html3_page_templates.html" class="c-sidebar__link"><span>❯</span> lib_html3_page_templates.py</a>
+<a href="lib_html3_showcase.html" class="c-sidebar__link"><span>❯</span> lib_html3_showcase.py</a>
+<a href="lib_html3_sidemenu.html" class="c-sidebar__link"><span>❯</span> lib_html3_sidemenu.py</a>
+<a href="lib_html3_widgets.html" class="c-sidebar__link"><span>❯</span> lib_html3_widgets.py</a>
+<a href="lib_bejson_html3_skeletons.html" class="c-sidebar__link"><span>❯</span> lib_bejson_html3_skeletons.py</a>
+<a href="lib_html3_clipboard.html" class="c-sidebar__link"><span>❯</span> lib_html3_clipboard.py</a>
+<a href="lib_html_firebase.html" class="c-sidebar__link"><span>❯</span> lib_html_firebase.py</a>
+<a href="lib_html3_tables.html" class="c-sidebar__link"><span>❯</span> lib_html3_tables.py</a>
+<a href="lib_html3_animations.html" class="c-sidebar__link"><span>❯</span> lib_html3_animations.py</a>
+<a href="lib_bejson_html3_component_css.html" class="c-sidebar__link"><span>❯</span> lib_bejson_html3_component_css.py</a>
+<a href="lib_html3_bejson_renderer.html" class="c-sidebar__link"><span>❯</span> lib_html3_bejson_renderer.py</a>
+<a href="lib_html3_forms.html" class="c-sidebar__link"><span>❯</span> lib_html3_forms.py</a>
+<a href="lib_html3_pagination.html" class="c-sidebar__link"><span>❯</span> lib_html3_pagination.py</a>
+<a href="lib_html3_error_pages.html" class="c-sidebar__link"><span>❯</span> lib_html3_error_pages.py</a>
+<a href="lib_html3_dev_tools.html" class="c-sidebar__link"><span>❯</span> lib_html3_dev_tools.py</a>
+<a href="lib_be_project_service.html" class="c-sidebar__link"><span>❯</span> lib_be_project_service.py</a>
+<a href="lib_av_manager.html" class="c-sidebar__link"><span>❯</span> lib_av_manager.py</a>
+<a href="lib_be_core.html" class="c-sidebar__link"><span>❯</span> lib_be_core.py</a>
+<a href="lib_bejson_assets.html" class="c-sidebar__link"><span>❯</span> lib_bejson_assets.py</a>
+<a href="lib_bejson_events.html" class="c-sidebar__link"><span>❯</span> lib_bejson_events.py</a>
+<a href="lib_bejson_physics.html" class="c-sidebar__link"><span>❯</span> lib_bejson_physics.py</a>
+<a href="lib_bejson_tile_grids.html" class="c-sidebar__link"><span>❯</span> lib_bejson_tile_grids.py</a>
+<a href="lib_bejson_ui_screens.html" class="c-sidebar__link"><span>❯</span> lib_bejson_ui_screens.py</a>
+<a href="lib_bejson_cognition.html" class="c-sidebar__link"><span>❯</span> lib_bejson_cognition.py</a>
+<a href="lib_bejson_utility.html" class="c-sidebar__link"><span>❯</span> lib_bejson_utility.py</a>
+<a href="../sh/lib_bejson_core.html" class="c-sidebar__link"><span>❯</span> lib_bejson_core.sh</a>
+<a href="../sh/lib_bejson_parse.html" class="c-sidebar__link"><span>❯</span> lib_bejson_parse.sh</a>
+<a href="../sh/lib_bejson_validator.html" class="c-sidebar__link"><span>❯</span> lib_bejson_validator.sh</a>
+<a href="../sh/lib_mfdb_core.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_core.sh</a>
+<a href="../sh/lib_mfdb_validator.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_validator.sh</a>
+<a href="../sh/lib_bejson_schema.html" class="c-sidebar__link"><span>❯</span> lib_bejson_schema.sh</a>
+<a href="../sh/lib_bejson_list_validator.html" class="c-sidebar__link"><span>❯</span> lib_bejson_list_validator.sh</a>
+<a href="../sh/lib_bejson_errors.html" class="c-sidebar__link"><span>❯</span> lib_bejson_errors.sh</a>
+<a href="../sh/lib_be_core.html" class="c-sidebar__link"><span>❯</span> lib_be_core.sh</a>
+<a href="../sh/lib_be_deps.html" class="c-sidebar__link"><span>❯</span> lib_be_deps.sh</a>
+<a href="../js/lib_bejson_core.html" class="c-sidebar__link"><span>❯</span> lib_bejson_core.js</a>
+<a href="../js/lib_bejson_bejson.html" class="c-sidebar__link"><span>❯</span> lib_bejson_bejson.js</a>
+<a href="../js/lib_bejson_parse.html" class="c-sidebar__link"><span>❯</span> lib_bejson_parse.js</a>
+<a href="../js/lib_bejson_state.html" class="c-sidebar__link"><span>❯</span> lib_bejson_state.js</a>
+<a href="../js/lib_bejson_validator.html" class="c-sidebar__link"><span>❯</span> lib_bejson_validator.js</a>
+<a href="../js/lib_mfdb_core.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_core.js</a>
+<a href="../js/lib_mfdb_validator.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_validator.js</a>
+<a href="../js/lib_bejson_errors.html" class="c-sidebar__link"><span>❯</span> lib_bejson_errors.js</a>
+<a href="../js/lib_bejson_schema.html" class="c-sidebar__link"><span>❯</span> lib_bejson_schema.js</a>
+<a href="../js/lib_bejson_list_validator.html" class="c-sidebar__link"><span>❯</span> lib_bejson_list_validator.js</a>
+<a href="../js/lib_bejson_secure_zip.html" class="c-sidebar__link"><span>❯</span> lib_bejson_secure_zip.js</a>
+<a href="../js/lib_bejson_assets.html" class="c-sidebar__link"><span>❯</span> lib_bejson_assets.js</a>
+<a href="../js/lib_bejson_events.html" class="c-sidebar__link"><span>❯</span> lib_bejson_events.js</a>
+<a href="../js/lib_bejson_grid.html" class="c-sidebar__link"><span>❯</span> lib_bejson_grid.js</a>
+<a href="../js/lib_bejson_input.html" class="c-sidebar__link"><span>❯</span> lib_bejson_input.js</a>
+<a href="../js/lib_bejson_physics.html" class="c-sidebar__link"><span>❯</span> lib_bejson_physics.js</a>
+<a href="../js/lib_bejson_renderer.html" class="c-sidebar__link"><span>❯</span> lib_bejson_renderer.js</a>
+<a href="../js/lib_bejson_ui_screens.html" class="c-sidebar__link"><span>❯</span> lib_bejson_ui_screens.js</a>
+<a href="../js/lib_bejson_engine_core.html" class="c-sidebar__link"><span>❯</span> lib_bejson_engine_core.js</a>
+<a href="../js/lib_bejson_utility.html" class="c-sidebar__link"><span>❯</span> lib_bejson_utility.js</a>
+<a href="../js/lib_html3_table.html" class="c-sidebar__link"><span>❯</span> lib_html3_table.js</a>
+<a href="../js/lib_bejson_core.html" class="c-sidebar__link"><span>❯</span> lib_bejson_core.ts</a>
+<a href="../js/lib_bejson_field_map.html" class="c-sidebar__link"><span>❯</span> lib_bejson_field_map.ts</a>
+<a href="../js/lib_bejson_list_validator.html" class="c-sidebar__link"><span>❯</span> lib_bejson_list_validator.ts</a>
+<a href="../js/lib_bejson_schema.html" class="c-sidebar__link"><span>❯</span> lib_bejson_schema.ts</a>
+<a href="../js/lib_mfdb_core.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_core.ts</a>
+<a href="../js/lib_mfdb_validators.html" class="c-sidebar__link"><span>❯</span> lib_mfdb_validators.ts</a>
+<a href="../js/lib_bejson_types.html" class="c-sidebar__link"><span>❯</span> lib_bejson_types.ts</a>
+<a href="../js/lib_bejson_validators.html" class="c-sidebar__link"><span>❯</span> lib_bejson_validators.ts</a>
+<a href="../js/lib_bejson_utility.html" class="c-sidebar__link"><span>❯</span> lib_bejson_utility.ts</a>
+
+                </nav>
+            </div>
+            <div class="c-sidebar__bottom">
+                SYSTEM // <span>ONLINE</span><br>
+                
+            </div>
+        </aside>
+
+        <main class="c-main-content">
+            
+        <article class="lib-reference">
+            <header class="lib-header">
+                <span class="badge badge-py">PY</span>
+                <h1>lib_mfdb_core.py</h1>
+                <p>Multi-file database orchestrator managing manifests and entity synchronization.</p>
+            </header>
+            <section>
+                <h2>API</h2>
+                <ul><li><code>__init__</code></li><li><code>_get_manifest_entries</code></li><li><code>_get_manifest_entry</code></li><li><code>_read_file_content</code></li><li><code>_get_entity_path</code></li><li><code>_load_entity_doc</code></li><li><code>_write_entity_doc</code></li><li><code>_write_manifest_doc</code></li><li><code>_update_manifest_record_count</code></li><li><code>_calculate_file_hash</code></li><li><code>mount</code></li><li><code>commit</code></li><li><code>resurrect_file</code></li><li><code>unmount</code></li><li><code>mfdb_core_discover</code></li><li><code>mfdb_core_deep_verify</code></li><li><code>mfdb_core_self_heal</code></li><li><code>_mfdb_core_repair_hierarchy</code></li><li><code>mfdb_core_smart_repair</code></li><li><code>mfdb_core_load_manifest</code></li><li><code>mfdb_core_load_entity</code></li><li><code>mfdb_core_get_entity_doc</code></li><li><code>mfdb_core_get_stats</code></li><li><code>mfdb_core_query_entity</code></li><li><code>mfdb_core_build_index</code></li><li><code>mfdb_core_join</code></li><li><code>mfdb_core_add_entity_record</code></li><li><code>mfdb_core_remove_entity_record</code></li><li><code>mfdb_core_update_entity_record</code></li><li><code>mfdb_core_sync_manifest_count</code></li><li><code>mfdb_core_sync_all_counts</code></li><li><code>mfdb_core_create_entity_file</code></li><li><code>mfdb_core_create_database</code></li><li><code>mfdb_core_resolve_path</code></li></ul>
+            </section>
+            <section>
+                <h2>Code</h2>
+                <pre><code>&quot;&quot;&quot;
+Library:      lib_mfdb_core.py
+Family:       Core
+Jurisdiction: [&quot;BEJSON_LIBRARIES&quot;, &quot;PY&quot;]
+Status:       OFFICIAL
+Author:       Elton Boehnen
+Version:      2.0.1 OFFICIAL
+            MFDB Version: 1.31
+Format_Creator: Elton Boehnen
+Date:         2026-05-18
+Description:  Multi-file database orchestrator managing manifests and entity synchronization.
+&quot;&quot;&quot;
+
+# v1.21 adds Dynamic Recovery and Self-Healing.
+
+import json
+import os
+import shutil
+import tempfile
+import zipfile
+import hashlib
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional
+
+from lib_bejson_core import (
+    BEJSONCoreError,
+    bejson_core_atomic_write,
+    bejson_core_add_record,
+    bejson_core_remove_record,
+    bejson_core_update_field,
+    bejson_core_load_file,
+    bejson_core_get_record_count,
+    bejson_core_filter_rows,
+    bejson_core_sort_by_field,
+    bejson_core_get_field_index,
+)
+from lib_mfdb_validator import (
+    MFDBValidationError,
+    mfdb_validator_validate_manifest,
+    _load_json,
+    _rows_as_dicts,
+    _resolve_entity_path,
+    E_MFDB_BIDIRECTIONAL_FAIL,
+    E_MFDB_ENTITY_NOT_FOUND,
+    E_MFDB_MANIFEST_NOT_FOUND,
+)
+
+try:
+    from lib_bejson_errors import (
+        E_MFDB_CORE_MANIFEST_NOT_FOUND,
+        E_MFDB_CORE_ENTITY_NOT_FOUND,
+        E_MFDB_CORE_WRITE_FAILED,
+        E_MFDB_CORE_CREATE_FAILED,
+        E_MFDB_CORE_INVALID_OPERATION,
+        E_MFDB_CORE_INDEX_OUT_OF_BOUNDS,
+        E_MFDB_CORE_JOIN_FAILED,
+        E_MFDB_CORE_ARCHIVE_ERROR,
+        E_MFDB_CORE_MOUNT_CONFLICT
+    )
+except ImportError as e:
+    import logging
+    logging.critical(f&quot;[MFDB_CORE] FATAL: Error registry unreachable: {e}&quot;)
+    raise SystemExit(1)
+
+
+class MFDBCoreError(Exception):
+    &quot;&quot;&quot;Raised when an MFDB core operation fails.&quot;&quot;&quot;
+    def __init__(self, message: str, code: int):
+        super().__init__(message)
+        self.code = code
+
+
+# ---------------------------------------------------------------------------
+# Internal helpers
+# ---------------------------------------------------------------------------
+
+def _get_manifest_entries(manifest_path: str) -&gt; list[dict]:
+    doc = _load_json(manifest_path)
+    return _rows_as_dicts(doc)
+
+
+def _get_manifest_entry(manifest_path: str, entity_name: str) -&gt; dict:
+    entries = _get_manifest_entries(manifest_path)
+    entry   = next((e for e in entries if e.get(&quot;entity_name&quot;) == entity_name), None)
+    if entry is None:
+        raise MFDBCoreError(
+            f&quot;Entity &#x27;{entity_name}&#x27; not found in manifest: {manifest_path}&quot;,
+            E_MFDB_CORE_ENTITY_NOT_FOUND,
+        )
+    return entry
+
+
+
+def _read_file_content(path: str) -&gt; str:
+    &quot;&quot;&quot;Reads file content, supporting .mfdb.zip archives.&quot;&quot;&quot;
+    p = Path(path)
+    if p.is_file() and not path.lower().endswith(&quot;.zip&quot;):
+        return p.read_text(encoding=&quot;utf-8&quot;)
+    
+    # Check for zip path parts
+    parts = p.parts
+    for i, part in enumerate(parts):
+        if part.lower().endswith(&quot;.zip&quot;):
+            zip_path = str(Path(*parts[:i+1]))
+            inner_path = &quot;/&quot;.join(parts[i+1:])
+            if os.path.exists(zip_path):
+                with zipfile.ZipFile(zip_path, &quot;r&quot;) as z:
+                    if inner_path in z.namelist():
+                        return z.read(inner_path).decode(&quot;utf-8&quot;)
+                    elif not inner_path and &quot;104a.mfdb.bejson&quot; in z.namelist():
+                         return z.read(&quot;104a.mfdb.bejson&quot;).decode(&quot;utf-8&quot;)
+    
+    return p.read_text(encoding=&quot;utf-8&quot;)
+
+def _get_entity_path(manifest_path: str, entity_name: str) -&gt; str:
+    entry = _get_manifest_entry(manifest_path, entity_name)
+    return _resolve_entity_path(manifest_path, entry[&quot;file_path&quot;])
+
+
+def _load_entity_doc(manifest_path: str, entity_name: str) -&gt; dict:
+    &quot;&quot;&quot;Load and validate the raw BEJSON 104 doc for an entity.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    content = _read_file_content(entity_path)
+    from lib_bejson_core import bejson_core_load_string
+    return bejson_core_load_string(content)
+
+
+def _write_entity_doc(doc: dict, entity_path: str) -&gt; None:
+    bejson_core_atomic_write(entity_path, doc)
+
+
+def _write_manifest_doc(doc: dict, manifest_path: str) -&gt; None:
+    bejson_core_atomic_write(manifest_path, doc)
+
+
+def _update_manifest_record_count(
+    manifest_path: str, entity_name: str, count: int
+) -&gt; None:
+    &quot;&quot;&quot;Write a corrected record_count into the manifest for one entity.&quot;&quot;&quot;
+    doc        = _load_json(manifest_path)
+    fn_list    = [f[&quot;name&quot;] for f in doc[&quot;Fields&quot;]]
+    if &quot;record_count&quot; not in fn_list or &quot;entity_name&quot; not in fn_list:
+        return
+    rc_idx = fn_list.index(&quot;record_count&quot;)
+    en_idx = fn_list.index(&quot;entity_name&quot;)
+    for row in doc[&quot;Values&quot;]:
+        if row[en_idx] == entity_name:
+            row[rc_idx] = count
+            break
+    _write_manifest_doc(doc, manifest_path)
+
+
+def _calculate_file_hash(file_path: str) -&gt; str:
+    &quot;&quot;&quot;Generate SHA-256 hash for archive integrity checks.&quot;&quot;&quot;
+    sha256 = hashlib.sha256()
+    with open(file_path, &quot;rb&quot;) as f:
+        for chunk in iter(lambda: f.read(4096), b&quot;&quot;):
+            sha256.update(chunk)
+    return sha256.hexdigest()
+
+
+# ---------------------------------------------------------------------------
+# MFDBArchive (v1.2 Feature)
+# ---------------------------------------------------------------------------
+
+class MFDBArchive:
+    &quot;&quot;&quot;
+    Handles .mfdb.zip packaging, virtual mounting, and atomic repacking.
+    Standardized in MFDB v1.2 for portable transport.
+    Enhanced for CoreEvolution with sticky mounting and validation safety.
+    &quot;&quot;&quot;
+
+    @staticmethod
+    def mount(archive_path: str, target_dir: str, force: bool = False, sticky: bool = True) -&gt; str:
+        &quot;&quot;&quot;
+        Extract an MFDB archive to a workspace and create a session lock.
+        If sticky=True, it reuses existing valid extracted files.
+        Returns the absolute path to the extracted manifest.
+        &quot;&quot;&quot;
+        arc_p = Path(archive_path)
+        if not arc_p.exists():
+            raise MFDBCoreError(f&quot;Archive not found: {archive_path}&quot;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        target_p = Path(target_dir)
+        lock_file = target_p / &quot;.mfdb_lock&quot;
+        manifest_path = target_p / &quot;104a.mfdb.bejson&quot;
+
+        # Sticky check: If valid files exist and hash matches, just return manifest
+        if sticky and lock_file.exists() and manifest_path.exists():
+            try:
+                with open(lock_file, &quot;r&quot;) as f:
+                    lock_data = json.load(f)
+                
+                # Check if archive hash matches the one we mounted
+                current_arc_hash = _calculate_file_hash(archive_path)
+                if lock_data.get(&quot;original_hash&quot;) == current_arc_hash:
+                    # Validate the database structure before trusting the sticky mount
+                    from lib_mfdb_validator import mfdb_validator_validate_database
+                    if mfdb_validator_validate_database(str(manifest_path)):
+                        return str(manifest_path.absolute())
+            except Exception:
+                pass # Fall through to full re-extract if sticky fails
+
+        if lock_file.exists() and not force:
+            with open(lock_file, &quot;r&quot;) as f:
+                lock_data = json.load(f)
+            if lock_data.get(&quot;pid&quot;) != os.getpid():
+                raise MFDBCoreError(
+                    f&quot;Workspace {target_dir} is already locked by PID {lock_data.get(&#x27;pid&#x27;)}&quot;,
+                    E_MFDB_CORE_MOUNT_CONFLICT
+                )
+
+        # Clear existing workspace if it was invalid or if we are forcing re-extract
+        if target_p.exists():
+            shutil.rmtree(target_dir)
+        target_p.mkdir(parents=True, exist_ok=True)
+
+        with zipfile.ZipFile(archive_path, &#x27;r&#x27;) as zip_ref:
+            zip_ref.extractall(target_dir)
+
+        if not manifest_path.exists():
+            shutil.rmtree(target_dir)
+            raise MFDBCoreError(&quot;Invalid MFDB Archive: 104a.mfdb.bejson missing.&quot;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        # Create session lock with metadata
+        lock_data = {
+            &quot;pid&quot;: os.getpid(),
+            &quot;mounted_at&quot;: datetime.now(timezone.utc).isoformat(),
+            &quot;original_hash&quot;: _calculate_file_hash(archive_path),
+            &quot;archive_path&quot;: str(arc_p.absolute())
+        }
+        with open(lock_file, &quot;w&quot;) as f:
+            json.dump(lock_data, f)
+
+        return str(manifest_path.absolute())
+
+    @staticmethod
+    def commit(mount_dir: str, archive_path: Optional[str] = None, validate: bool = True) -&gt; str:
+        &quot;&quot;&quot;
+        Repack the workspace into a .mfdb.zip file atomically.
+        Refuses to write if validation fails (if validate=True).
+        &quot;&quot;&quot;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &quot;.mfdb_lock&quot;
+        manifest_path = mount_p / &quot;104a.mfdb.bejson&quot;
+        
+        if not lock_file.exists():
+            raise MFDBCoreError(f&quot;No active mount session found in {mount_dir}&quot;, E_MFDB_CORE_INVALID_OPERATION)
+
+        if validate:
+            if not manifest_path.exists():
+                raise MFDBCoreError(&quot;Commit rejected: Manifest missing in workspace.&quot;, E_MFDB_CORE_WRITE_FAILED)
+            
+            # Run full database validation before repacking
+            from lib_mfdb_validator import mfdb_validator_validate_database
+            try:
+                mfdb_validator_validate_database(str(manifest_path))
+            except Exception as e:
+                raise MFDBCoreError(f&quot;Commit rejected: Validation failed. {str(e)}&quot;, E_MFDB_CORE_WRITE_FAILED)
+
+        with open(lock_file, &quot;r&quot;) as f:
+            lock_data = json.load(f)
+
+        dest_path = archive_path or lock_data.get(&quot;archive_path&quot;)
+        if not dest_path:
+            raise MFDBCoreError(&quot;Destination archive path unknown.&quot;, E_MFDB_CORE_ARCHIVE_ERROR)
+
+        # Create new archive in temp location
+        fd, temp_arc = tempfile.mkstemp(suffix=&quot;.mfdb.zip&quot;)
+        os.close(fd)
+
+        try:
+            with zipfile.ZipFile(temp_arc, &#x27;w&#x27;, zipfile.ZIP_DEFLATED) as zipf:
+                for root, dirs, files in os.walk(mount_dir):
+                    for file in files:
+                        if file == &quot;.mfdb_lock&quot;: continue
+                        file_path = Path(root) / file
+                        arc_name = file_path.relative_to(mount_dir)
+                        zipf.write(file_path, arc_name)
+            
+            # Atomic swap
+            shutil.move(temp_arc, dest_path)
+            
+            # Update lock with new hash to maintain sticky state
+            lock_data[&quot;original_hash&quot;] = _calculate_file_hash(dest_path)
+            with open(lock_file, &quot;w&quot;) as f:
+                json.dump(lock_data, f)
+                
+        except Exception as e:
+            if os.path.exists(temp_arc): os.remove(temp_arc)
+            raise MFDBCoreError(f&quot;Commit failed: {str(e)}&quot;, E_MFDB_CORE_WRITE_FAILED)
+
+        return dest_path
+
+
+    @staticmethod
+    def resurrect_file(mount_dir: str, relative_path: str) -&gt; bool:
+        &quot;&quot;&quot;
+        Surgically extract a single file from the .mfdb.zip archive into the workspace.
+        Used for recovery when an entity file is missing or corrupted.
+        &quot;&quot;&quot;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &quot;.mfdb_lock&quot;
+        if not lock_file.exists():
+            return False
+
+        with open(lock_file, &quot;r&quot;) as f:
+            lock_data = json.load(f)
+        
+        archive_path = lock_data.get(&quot;archive_path&quot;)
+        if not archive_path or not os.path.exists(archive_path):
+            return False
+
+        try:
+            with zipfile.ZipFile(archive_path, &#x27;r&#x27;) as zip_ref:
+                # Check if file exists in zip
+                if relative_path in zip_ref.namelist():
+                    zip_ref.extract(relative_path, mount_dir)
+                    return True
+        except Exception:
+            pass
+        return False
+
+    @staticmethod
+    def unmount(mount_dir: str, cleanup: bool = True):
+        &quot;&quot;&quot;Release the lock and optionally delete the workspace.&quot;&quot;&quot;
+        mount_p = Path(mount_dir)
+        lock_file = mount_p / &quot;.mfdb_lock&quot;
+        if lock_file.exists():
+            os.remove(lock_file)
+        if cleanup and mount_p.exists():
+            shutil.rmtree(mount_dir)
+
+
+# ---------------------------------------------------------------------------
+# Discovery
+# ---------------------------------------------------------------------------
+
+def mfdb_core_discover(file_path: str) -&gt; str:
+    &quot;&quot;&quot;
+    Identify the MFDB role of any file.
+    Returns one of: &#x27;manifest&#x27;, &#x27;entity&#x27;, &#x27;archive&#x27;, &#x27;standalone&#x27;
+    &quot;&quot;&quot;
+    p = Path(file_path)
+    if not p.exists():
+        raise MFDBCoreError(f&quot;File not found: {file_path}&quot;, E_MFDB_CORE_MANIFEST_NOT_FOUND)
+
+    if p.suffix == &quot;.zip&quot; and &quot;.mfdb&quot; in p.name:
+        return &quot;archive&quot;
+
+    try:
+        doc = _load_json(file_path)
+    except Exception:
+        return &quot;standalone&quot;
+
+    version  = doc.get(&quot;Format_Version&quot;, &quot;&quot;)
+    filename = p.name
+    if version == &quot;104a&quot; and filename.endswith(&quot;.mfdb.bejson&quot;):
+        return &quot;manifest&quot;
+    if version == &quot;104&quot; and doc.get(&quot;Parent_Hierarchy&quot;):
+        return &quot;entity&quot;
+    return &quot;standalone&quot;
+
+
+# ---------------------------------------------------------------------------
+# Recovery &amp; Repair (v1.21 Feature)
+# ---------------------------------------------------------------------------
+
+def mfdb_core_deep_verify(manifest_path: str) -&gt; List[Dict[str, Any]]:
+    &quot;&quot;&quot;
+    Performs a deep audit of the entire MFDB database.
+    Checks for:
+      - Positional integrity (field vs value length)
+      - Type adherence (basic primitives)
+      - Manifest-entity consistency (record counts)
+      - Foreign key potential breakage (optional warnings)
+    Returns a list of finding dicts.
+    &quot;&quot;&quot;
+    findings = []
+    manifest_doc = bejson_core_load_file(manifest_path)
+    entries = _rows_as_dicts(manifest_doc)
+    
+    for entry in entries:
+        entity_name = entry.get(&quot;entity_name&quot;)
+        file_path_rel = entry.get(&quot;file_path&quot;)
+        expected_count = entry.get(&quot;record_count&quot;)
+        
+        entity_path = _resolve_entity_path(manifest_path, file_path_rel)
+        if not os.path.exists(entity_path):
+            findings.append({&quot;entity&quot;: entity_name, &quot;error&quot;: &quot;MISSING_FILE&quot;, &quot;path&quot;: file_path_rel})
+            continue
+            
+        try:
+            entity_doc = bejson_core_load_file(entity_path)
+            # 1. Check positional integrity
+            fields = entity_doc.get(&quot;Fields&quot;, [])
+            field_count = len(fields)
+            values = entity_doc.get(&quot;Values&quot;, [])
+            actual_count = len(values)
+            
+            if expected_count is not None and expected_count != actual_count:
+                findings.append({
+                    &quot;entity&quot;: entity_name, 
+                    &quot;warning&quot;: &quot;COUNT_MISMATCH&quot;, 
+                    &quot;expected&quot;: expected_count, 
+                    &quot;actual&quot;: actual_count
+                })
+            
+            for i, row in enumerate(values):
+                if len(row) != field_count:
+                    findings.append({
+                        &quot;entity&quot;: entity_name, 
+                        &quot;error&quot;: &quot;POSITIONAL_VIOLATION&quot;, 
+                        &quot;row&quot;: i, 
+                        &quot;expected&quot;: field_count, 
+                        &quot;actual&quot;: len(row)
+                    })
+                
+                # 2. Basic Type verification
+                for j, val in enumerate(row):
+                    if val is None: continue
+                    f_type = fields[j].get(&quot;type&quot;)
+                    if f_type == &quot;integer&quot; and not isinstance(val, int):
+                         findings.append({&quot;entity&quot;: entity_name, &quot;warning&quot;: &quot;TYPE_MISMATCH&quot;, &quot;row&quot;: i, &quot;field&quot;: fields[j][&quot;name&quot;], &quot;expected&quot;: &quot;integer&quot;, &quot;actual&quot;: type(val).__name__})
+                    elif f_type == &quot;number&quot; and not isinstance(val, (int, float)):
+                         findings.append({&quot;entity&quot;: entity_name, &quot;warning&quot;: &quot;TYPE_MISMATCH&quot;, &quot;row&quot;: i, &quot;field&quot;: fields[j][&quot;name&quot;], &quot;expected&quot;: &quot;number&quot;, &quot;actual&quot;: type(val).__name__})
+                    elif f_type == &quot;boolean&quot; and not isinstance(val, bool):
+                         findings.append({&quot;entity&quot;: entity_name, &quot;warning&quot;: &quot;TYPE_MISMATCH&quot;, &quot;row&quot;: i, &quot;field&quot;: fields[j][&quot;name&quot;], &quot;expected&quot;: &quot;boolean&quot;, &quot;actual&quot;: type(val).__name__})
+
+        except Exception as e:
+            findings.append({&quot;entity&quot;: entity_name, &quot;error&quot;: &quot;CORRUPT_JSON&quot;, &quot;message&quot;: str(e)})
+            
+    return findings
+
+
+def mfdb_core_self_heal(manifest_path: str) -&gt; Dict[str, Any]:
+    &quot;&quot;&quot;
+    Attempts to fix common issues identified by deep_verify.
+    Actions:
+      - Resyncs record_count in manifest.
+      - Padds short records with nulls (Positional Repair).
+      - Removes invalid records if necessary (Extreme measure).
+    Returns a report of actions taken.
+    &quot;&quot;&quot;
+    report = {&quot;actions&quot;: [], &quot;remaining_errors&quot;: []}
+    findings = mfdb_core_deep_verify(manifest_path)
+    
+    needs_manifest_sync = False
+    
+    for f in findings:
+        entity = f.get(&quot;entity&quot;)
+        if f.get(&quot;warning&quot;) == &quot;COUNT_MISMATCH&quot;:
+            _update_manifest_record_count(manifest_path, entity, f[&quot;actual&quot;])
+            report[&quot;actions&quot;].append(f&quot;Resynced record_count for {entity} to {f[&#x27;actual&#x27;]}&quot;)
+        
+        elif f.get(&quot;error&quot;) == &quot;POSITIONAL_VIOLATION&quot;:
+            # Attempt repair
+            entity_path = _get_entity_path(manifest_path, entity)
+            try:
+                doc = bejson_core_load_file(entity_path)
+                field_count = len(doc[&quot;Fields&quot;])
+                repaired = 0
+                for i, row in enumerate(doc[&quot;Values&quot;]):
+                    if len(row) &lt; field_count:
+                        doc[&quot;Values&quot;][i] = row + [None] * (field_count - len(row))
+                        repaired += 1
+                    elif len(row) &gt; field_count:
+                        doc[&quot;Values&quot;][i] = row[:field_count]
+                        repaired += 1
+                if repaired &gt; 0:
+                    bejson_core_atomic_write(entity_path, doc)
+                    report[&quot;actions&quot;].append(f&quot;Repaired {repaired} positional violations in {entity}&quot;)
+            except Exception as e:
+                report[&quot;remaining_errors&quot;].append(f&quot;Failed to repair {entity}: {str(e)}&quot;)
+        
+        elif f.get(&quot;error&quot;) == &quot;MISSING_FILE&quot;:
+            # Attempt resurrection
+            mount_dir = os.path.dirname(os.path.abspath(manifest_path))
+            if MFDBArchive.resurrect_file(mount_dir, f[&quot;path&quot;]):
+                report[&quot;actions&quot;].append(f&quot;Resurrected missing entity file: {f[&#x27;path&#x27;]}&quot;)
+            else:
+                report[&quot;remaining_errors&quot;].append(f&quot;Could not resurrect {entity}&quot;)
+        
+        elif f.get(&quot;error&quot;):
+            report[&quot;remaining_errors&quot;].append(f&quot;{entity}: {f[&#x27;error&#x27;]} - {f.get(&#x27;message&#x27;, &#x27;&#x27;)}&quot;)
+
+    return report
+
+
+def _mfdb_core_repair_hierarchy(entity_path: str, new_hierarchy: str) -&gt; bool:
+    &quot;&quot;&quot;Surgically update the Parent_Hierarchy header in a BEJSON 104 file.&quot;&quot;&quot;
+    try:
+        doc = bejson_core_load_file(entity_path)
+        doc[&quot;Parent_Hierarchy&quot;] = new_hierarchy
+        bejson_core_atomic_write(entity_path, doc)
+        return True
+    except Exception:
+        return False
+
+
+def mfdb_core_smart_repair(manifest_path: str, error: MFDBValidationError) -&gt; bool:
+    &quot;&quot;&quot;
+    Attempt to automatically repair the MFDB workspace based on a validation error.
+    Supported:
+      - E_MFDB_ENTITY_NOT_FOUND (33): Resurrects from archive.
+      - E_MFDB_BIDIRECTIONAL_FAIL (38) / E_MFDB_MANIFEST_NOT_FOUND (37): Patches Parent_Hierarchy.
+    &quot;&quot;&quot;
+    mount_dir = os.path.dirname(os.path.abspath(manifest_path))
+    ctx = error.context
+
+    if error.code == E_MFDB_ENTITY_NOT_FOUND or error.code == 33:
+        rel_path = ctx.get(&quot;file_path_rel&quot;)
+        if rel_path:
+            return MFDBArchive.resurrect_file(mount_dir, rel_path)
+
+    if error.code == E_MFDB_BIDIRECTIONAL_FAIL or error.code == E_MFDB_MANIFEST_NOT_FOUND:
+        entity_path = ctx.get(&quot;actual_path&quot;)
+        new_hierarchy = ctx.get(&quot;suggested_hierarchy&quot;)
+        # If suggested_hierarchy is missing but we are in a mount_dir, 
+        # assume standard v1.21 structure
+        if not new_hierarchy and entity_path:
+             new_hierarchy = &quot;../104a.mfdb.bejson&quot;
+
+        if entity_path and new_hierarchy:
+            return _mfdb_core_repair_hierarchy(entity_path, new_hierarchy)
+
+    return False
+
+
+# ---------------------------------------------------------------------------
+# Read operations
+# ---------------------------------------------------------------------------
+
+
+def mfdb_core_load_manifest(manifest_path: str) -&gt; list[dict]:
+    &quot;&quot;&quot;
+    Validate and load the manifest.
+    Returns all manifest records as a list of field-name-keyed dicts.
+    &quot;&quot;&quot;
+    mfdb_validator_validate_manifest(manifest_path)
+    return _get_manifest_entries(manifest_path)
+
+
+def mfdb_core_load_entity(manifest_path: str, entity_name: str) -&gt; list[dict]:
+    &quot;&quot;&quot;
+    Load all records for a named entity.
+    Returns a list of field-name-keyed dicts (dense - no null-padding).
+    &quot;&quot;&quot;
+    doc = _load_entity_doc(manifest_path, entity_name)
+    return _rows_as_dicts(doc)
+
+
+def mfdb_core_get_entity_doc(manifest_path: str, entity_name: str) -&gt; dict:
+    &quot;&quot;&quot;Return the raw BEJSON 104 document dict for a named entity.&quot;&quot;&quot;
+    return _load_entity_doc(manifest_path, entity_name)
+
+
+def mfdb_core_get_stats(manifest_path: str) -&gt; dict:
+    &quot;&quot;&quot;Return a summary statistics dict for the entire MFDB.&quot;&quot;&quot;
+    doc     = _load_json(manifest_path)
+    entries = _rows_as_dicts(doc)
+
+    entity_stats = []
+    for entry in entries:
+        resolved = _resolve_entity_path(manifest_path, entry[&quot;file_path&quot;])
+        if os.path.exists(resolved):
+            edoc        = _load_json(resolved)
+            rec_count   = len(edoc.get(&quot;Values&quot;, []))
+            field_count = len(edoc.get(&quot;Fields&quot;, []))
+        else:
+            rec_count   = -1
+            field_count = -1
+
+        entity_stats.append({
+            &quot;entity_name&quot;:  entry[&quot;entity_name&quot;],
+            &quot;file_path&quot;:    entry[&quot;file_path&quot;],
+            &quot;record_count&quot;: rec_count,
+            &quot;field_count&quot;:  field_count,
+            &quot;primary_key&quot;:  entry.get(&quot;primary_key&quot;),
+        })
+
+    return {
+        &quot;db_name&quot;:        doc.get(&quot;DB_Name&quot;, &quot;&quot;),
+        &quot;schema_version&quot;: doc.get(&quot;Schema_Version&quot;, &quot;&quot;),
+        &quot;entity_count&quot;:   len(entries),
+        &quot;entities&quot;:       entity_stats,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Query operations
+# ---------------------------------------------------------------------------
+
+def mfdb_core_query_entity(
+    manifest_path: str,
+    entity_name: str,
+    predicate: Callable[[dict], bool],
+) -&gt; list[dict]:
+    &quot;&quot;&quot;Return all records from an entity for which predicate(record) is True.&quot;&quot;&quot;
+    records = mfdb_core_load_entity(manifest_path, entity_name)
+    return [r for r in records if predicate(r)]
+
+
+def mfdb_core_build_index(
+    manifest_path: str,
+    entity_name: str,
+    field_name: str,
+) -&gt; dict:
+    &quot;&quot;&quot;Build an in-memory hash index on a field for fast lookups.&quot;&quot;&quot;
+    records = mfdb_core_load_entity(manifest_path, entity_name)
+    return {r[field_name]: r for r in records if r.get(field_name) is not None}
+
+
+def mfdb_core_join(
+    manifest_path: str,
+    from_entity:   str,
+    to_entity:     str,
+    from_fk:       str,
+    to_pk:         str,
+) -&gt; list[dict]:
+    &quot;&quot;&quot;Cross-entity equi-join.&quot;&quot;&quot;
+    from_records = mfdb_core_load_entity(manifest_path, from_entity)
+    to_index     = mfdb_core_build_index(manifest_path, to_entity, to_pk)
+
+    results = []
+    for record in from_records:
+        fk_val = record.get(from_fk)
+        target = to_index.get(fk_val, {})
+        merged = dict(record)
+        for k, v in target.items():
+            merged[f&quot;{to_entity}__{k}&quot;] = v
+        results.append(merged)
+
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Write operations
+# ---------------------------------------------------------------------------
+
+def mfdb_core_add_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    values:        list,
+    sync_count:    bool = True,
+) -&gt; dict:
+    &quot;&quot;&quot;Append a record to an entity file.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_add_record(doc, values)
+    _write_entity_doc(doc, entity_path)
+    if sync_count:
+        _update_manifest_record_count(manifest_path, entity_name, len(doc[&quot;Values&quot;]))
+    return doc
+
+
+def mfdb_core_remove_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    record_index:  int,
+    sync_count:    bool = True,
+) -&gt; dict:
+    &quot;&quot;&quot;Remove a record at record_index from an entity file.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_remove_record(doc, record_index)
+    _write_entity_doc(doc, entity_path)
+    if sync_count:
+        _update_manifest_record_count(manifest_path, entity_name, len(doc[&quot;Values&quot;]))
+    return doc
+
+
+def mfdb_core_update_entity_record(
+    manifest_path: str,
+    entity_name:   str,
+    record_index:  int,
+    field_name:    str,
+    new_value:     Any,
+) -&gt; dict:
+    &quot;&quot;&quot;Update a single named field in a specific record of an entity file.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    doc         = bejson_core_load_file(entity_path)
+    doc         = bejson_core_update_field(doc, record_index, field_name, new_value)
+    _write_entity_doc(doc, entity_path)
+    return doc
+
+
+# ---------------------------------------------------------------------------
+# Manifest sync
+# ---------------------------------------------------------------------------
+
+def mfdb_core_sync_manifest_count(manifest_path: str, entity_name: str) -&gt; int:
+    &quot;&quot;&quot;Re-count actual rows in an entity file and update the manifest.&quot;&quot;&quot;
+    entity_path = _get_entity_path(manifest_path, entity_name)
+    edoc        = _load_json(entity_path)
+    count       = len(edoc.get(&quot;Values&quot;, []))
+    _update_manifest_record_count(manifest_path, entity_name, count)
+    return count
+
+
+def mfdb_core_sync_all_counts(manifest_path: str) -&gt; dict:
+    &quot;&quot;&quot;Sync record_count for every entity listed in the manifest.&quot;&quot;&quot;
+    entries = _get_manifest_entries(manifest_path)
+    results = {}
+    for entry in entries:
+        name = entry[&quot;entity_name&quot;]
+        results[name] = mfdb_core_sync_manifest_count(manifest_path, name)
+    return results
+
+
+# ---------------------------------------------------------------------------
+# Database creation
+# ---------------------------------------------------------------------------
+
+def mfdb_core_create_entity_file(
+    manifest_path:  str,
+    entity_name:    str,
+    fields:         list[dict],
+    description:    str = &quot;&quot;,
+    primary_key:    str = &quot;&quot;,
+    schema_version: str = &quot;1.0&quot;,
+    file_path_rel:  str = &quot;&quot;,
+) -&gt; str:
+    &quot;&quot;&quot;Create a new entity file and register it in an existing manifest.&quot;&quot;&quot;
+    manifest_dir = os.path.dirname(os.path.abspath(manifest_path))
+
+    if not file_path_rel:
+        file_path_rel = f&quot;data/{entity_name.lower()}.bejson&quot;
+
+    resolved = os.path.normpath(os.path.join(manifest_dir, file_path_rel))
+    os.makedirs(os.path.dirname(resolved), exist_ok=True)
+
+    entity_dir         = os.path.dirname(resolved)
+    rel_to_manifest    = os.path.relpath(manifest_path, entity_dir)
+
+    entity_doc = {
+        &quot;Format&quot;:           &quot;BEJSON&quot;,
+        &quot;Format_Version&quot;:   &quot;104&quot;,
+        &quot;Format_Creator&quot;:   &quot;Elton Boehnen&quot;,
+        &quot;Parent_Hierarchy&quot;: rel_to_manifest,
+        &quot;Records_Type&quot;:     [entity_name],
+        &quot;Fields&quot;:           fields,
+        &quot;Values&quot;:           [],
+    }
+    bejson_core_atomic_write(resolved, entity_doc)
+
+    manifest_doc = _load_json(manifest_path)
+    fn_list      = [f[&quot;name&quot;] for f in manifest_doc[&quot;Fields&quot;]]
+
+    new_row = []
+    for fn in fn_list:
+        if   fn == &quot;entity_name&quot;:    new_row.append(entity_name)
+        elif fn == &quot;file_path&quot;:      new_row.append(file_path_rel)
+        elif fn == &quot;description&quot;:    new_row.append(description or None)
+        elif fn == &quot;record_count&quot;:   new_row.append(0)
+        elif fn == &quot;schema_version&quot;: new_row.append(schema_version)
+        elif fn == &quot;primary_key&quot;:    new_row.append(primary_key or None)
+        else:                        new_row.append(None)
+
+    manifest_doc[&quot;Values&quot;].append(new_row)
+    _write_manifest_doc(manifest_doc, manifest_path)
+
+    return resolved
+
+
+def mfdb_core_create_database(
+    root_dir:       str,
+    db_name:        str,
+    entities:       list[dict],
+    db_description: str = &quot;&quot;,
+    schema_version: str = &quot;1.0.0&quot;,
+    author:         str = &quot;Elton Boehnen&quot;,
+    mfdb_version:   str = &quot;1.3.1&quot;,
+    network_role: str = &quot;Master&quot;,
+) -&gt; str:
+    &quot;&quot;&quot;Create a new MFDB from scratch.&quot;&quot;&quot;
+    root = Path(root_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    manifest_path = str(root / &quot;104a.mfdb.bejson&quot;)
+
+    manifest_fields = [
+        {&quot;name&quot;: &quot;entity_name&quot;,    &quot;type&quot;: &quot;string&quot;},
+        {&quot;name&quot;: &quot;file_path&quot;,      &quot;type&quot;: &quot;string&quot;},
+        {&quot;name&quot;: &quot;description&quot;,    &quot;type&quot;: &quot;string&quot;},
+        {&quot;name&quot;: &quot;record_count&quot;,   &quot;type&quot;: &quot;integer&quot;},
+        {&quot;name&quot;: &quot;schema_version&quot;, &quot;type&quot;: &quot;string&quot;},
+        {&quot;name&quot;: &quot;primary_key&quot;,    &quot;type&quot;: &quot;string&quot;},
+    ]
+
+    manifest_values     = []
+    entity_defs_to_file = []
+
+    for entity in entities:
+        name   = entity[&quot;name&quot;]
+        fp_rel = entity.get(&quot;file_path&quot;, f&quot;data/{name.lower()}.bejson&quot;)
+        desc   = entity.get(&quot;description&quot;, &quot;&quot;)
+        pk     = entity.get(&quot;primary_key&quot;, &quot;&quot;)
+        sv     = entity.get(&quot;schema_version&quot;, &quot;1.0&quot;)
+        fields = entity[&quot;fields&quot;]
+
+        manifest_values.append([name, fp_rel, desc or None, 0, sv, pk or None])
+        entity_defs_to_file.append((name, fp_rel, fields))
+
+    created_at = datetime.now(timezone.utc).strftime(&quot;%Y-%m-%dT%H:%M:%SZ&quot;)
+
+    manifest_doc = {
+        &quot;Format&quot;:          &quot;BEJSON&quot;,
+        &quot;Format_Version&quot;:  &quot;104a&quot;,
+        &quot;Format_Creator&quot;:  &quot;Elton Boehnen&quot;,
+        &quot;MFDB_Version&quot;:    mfdb_version,
+        &quot;Network_Role&quot;: network_role,
+        &quot;DB_Name&quot;:         db_name,
+        &quot;DB_Description&quot;:  db_description,
+        &quot;Schema_Version&quot;:  schema_version,
+        &quot;Author&quot;:          author,
+        &quot;Created_At&quot;:      created_at,
+        &quot;Records_Type&quot;:    [&quot;mfdb&quot;],
+        &quot;Fields&quot;:          manifest_fields,
+        &quot;Values&quot;:          manifest_values,
+    }
+
+    bejson_core_atomic_write(manifest_path, manifest_doc)
+
+    for entity_name, fp_rel, fields in entity_defs_to_file:
+        resolved   = os.path.normpath(os.path.join(root_dir, fp_rel))
+        entity_dir = os.path.dirname(resolved)
+        os.makedirs(entity_dir, exist_ok=True)
+
+        rel_to_manifest = os.path.relpath(manifest_path, entity_dir)
+
+        entity_doc = {
+            &quot;Format&quot;:           &quot;BEJSON&quot;,
+            &quot;Format_Version&quot;:   &quot;104&quot;,
+            &quot;Format_Creator&quot;:   &quot;Elton Boehnen&quot;,
+            &quot;Parent_Hierarchy&quot;: rel_to_manifest,
+            &quot;Records_Type&quot;:     [entity_name],
+            &quot;Fields&quot;:           fields,
+            &quot;Values&quot;:           [],
+        }
+        bejson_core_atomic_write(resolved, entity_doc)
+
+    return manifest_path
+
+def mfdb_core_resolve_path(path_str: str) -&gt; str:
+    &quot;&quot;&quot;
+    Hardening: Resolve system placeholders in paths using lib_bejson_env.
+    Supports: {INTERNAL_STORAGE}, {SC_ROOT}, {PROJECTS_MGMT}, {ADMIN_LAYER}, 
+             internal_storage, ~, and environment variables in ${VAR} format.
+    &quot;&quot;&quot;
+    if not path_str:
+        return path_str
+    
+    try:
+        from lib_bejson_env import resolve_path
+        return resolve_path(path_str)
+    except ImportError:
+        # Minimal fallback without hardcoded absolute strings
+        # Defaults are handled inside resolve_path if imported, 
+        # otherwise we just expand ~ and vars
+        resolved = str(path_str)
+        # Expansion only
+        resolved = os.path.expanduser(resolved)
+        resolved = os.path.expandvars(resolved)
+        return os.path.normpath(resolved)
+</code></pre>
+            </section>
+        </article>
+        </main>
+    </div>
+
+    <footer class="c-footer">
+        &copy; 2026 ELTON BOEHNEN | 
+        <a href="https://github.com/boehnenelton">GITHUB</a> | 
+        <a href="https://boehnenelton2024.pages.dev">PORTFOLIO</a>
+    </footer>
+
+    <script>
+        window.switchSubTab = function(tabId) {{
+            document.querySelectorAll(".tab-content").forEach(function(c) {{ c.style.display = "none"; }});
+            const target = document.getElementById(tabId);
+            if (target) target.style.display = "block";
+        }};
+    </script>
+</body>
+</html>

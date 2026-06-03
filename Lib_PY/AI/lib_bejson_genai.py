@@ -4,11 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.2.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-03
 Description:  Interface for Google Generative AI (GenAI) models.
+RELATIONAL_ID: de2626-genai-hardened-002
 """
 
 import os
@@ -16,6 +17,7 @@ import json
 import time
 import random
 import sys
+import logging
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
@@ -28,10 +30,12 @@ CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 
+# LOUD FAILURE: Environment dependency must exist
 try:
     from lib_bejson_env import resolve_path
 except ImportError:
-    def resolve_path(p): return p
+    print("CRITICAL FAILURE: lib_bejson_env not found. System halting.")
+    sys.exit(1)
 
 # ANSI Status Colors
 C_RED = "\033[91m"
@@ -60,7 +64,11 @@ class GenAIKeyManager:
         self.load_keys()
 
     def load_keys(self):
-        """Load keys from the centralized BEJSON 104a key file."""
+        """Load keys from the centralized BEJSON 104a key file and environment variables."""
+        # REMEDIATED: Support centralized registry + Environment Variables (Phase 2)
+        env_keys = os.environ.get("GEMINI_API_KEYS", "").split(",")
+        self.keys = [k.strip() for k in env_keys if k.strip()]
+
         if not os.path.exists(self.key_file):
             return
         try:
@@ -77,11 +85,13 @@ class GenAIKeyManager:
                 
                 if key_idx != -1:
                     # Extract keys from Values
-                    self.keys = [row[key_idx] for row in doc.get("Values", []) if len(row) > key_idx and row[key_idx]]
-                    # Randomize order for true round-robin
-                    random.shuffle(self.keys)
+                    registry_keys = [row[key_idx] for row in doc.get("Values", []) if len(row) > key_idx and row[key_idx] and "YOUR_KEY" not in str(row[key_idx])]
+                    self.keys.extend(registry_keys)
+                    
+            # Randomize order for true round-robin
+            random.shuffle(self.keys)
         except Exception:
-            self.keys = []
+            pass
 
     def get_next_key(self) -> Optional[str]:
         """Get the next key in rotation."""
@@ -102,7 +112,7 @@ class GenAIClient:
         self.km = key_manager or GenAIKeyManager()
         self.status_callback: Optional[Callable[[str, str], None]] = None
         
-        # Try to import SDK
+        # LOUD FAILURE: SDK must exist
         try:
             from google import genai
             from google.genai import types
@@ -111,6 +121,17 @@ class GenAIClient:
             self.sdk_available = True
         except ImportError:
             self.sdk_available = False
+            logging.critical("CRITICAL: google-genai SDK not installed.")
+            # We don't exit here to allow instantiation for metadata checks, 
+            # but API methods will throw errors.
+
+    def _redact_error(self, error_msg: str) -> str:
+        """Surgical redaction to prevent key leakage in logs."""
+        # Simple heuristic: remove anything that looks like an API key (alphanumeric, long)
+        import re
+        # This is a basic catch-all for common key patterns in error messages
+        redacted = re.sub(r'[A-Za-z0-9_\-]{30,}', '[REDACTED]', error_msg)
+        return redacted
 
     def set_status_callback(self, callback: Callable[[str, str], None]):
         """Set a custom callback for status updates. (state, message)"""
@@ -197,8 +218,10 @@ class GenAIClient:
                 return response.text
 
             except Exception as e:
-                last_error = str(e)
-                self.update_status("error", f"KEY FAILED: {last_error[:50]}...")
+                # SECURITY: Redact error to prevent key leakage
+                last_error = self._redact_error(str(e))
+                self.update_status("error", f"KEY FAILED: {last_error[:40]}...")
+                logging.error(f"[GenAILib] Attempt {i+1} failed: {last_error}")
                 time.sleep(1) # Brief pause before next key
                 continue
 

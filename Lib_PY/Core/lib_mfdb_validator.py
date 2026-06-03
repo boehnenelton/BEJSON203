@@ -25,22 +25,25 @@ from lib_bejson_validator import (
 )
 
 try:
-    from lib_bejson_errors import *
-except ImportError:
-    # Error codes (30–49) fallback
-    E_MFDB_NOT_MANIFEST           = 30
-    E_MFDB_NOT_ENTITY_FILE        = 31
-    E_MFDB_MANIFEST_RECORDS_TYPE  = 32
-    E_MFDB_ENTITY_NOT_FOUND       = 33
-    E_MFDB_ENTITY_NAME_MISMATCH   = 34
-    E_MFDB_DUPLICATE_ENTRY        = 35
-    E_MFDB_NO_PARENT_HIERARCHY    = 36
-    E_MFDB_MANIFEST_NOT_FOUND     = 37
-    E_MFDB_BIDIRECTIONAL_FAIL     = 38
-    E_MFDB_FK_UNRESOLVED          = 39
-    E_MFDB_MISSING_REQUIRED_FIELD = 40
-    E_MFDB_NULL_REQUIRED          = 41
-    E_MFDB_INVALID_ARCHIVE        = 42
+    from lib_bejson_errors import (
+        E_MFDB_NOT_MANIFEST,
+        E_MFDB_NOT_ENTITY_FILE,
+        E_MFDB_MANIFEST_RECORDS_TYPE,
+        E_MFDB_ENTITY_NOT_FOUND,
+        E_MFDB_ENTITY_NAME_MISMATCH,
+        E_MFDB_DUPLICATE_ENTRY,
+        E_MFDB_NO_PARENT_HIERARCHY,
+        E_MFDB_MANIFEST_NOT_FOUND,
+        E_MFDB_BIDIRECTIONAL_FAIL,
+        E_MFDB_FK_UNRESOLVED,
+        E_MFDB_MISSING_REQUIRED_FIELD,
+        E_MFDB_NULL_REQUIRED,
+        E_MFDB_INVALID_ARCHIVE
+    )
+except ImportError as e:
+    import logging
+    logging.critical(f"[MFDB_VALIDATOR] FATAL: Error registry unreachable: {e}")
+    raise SystemExit(1)
 
 class MFDBValidationError(Exception):
     def __init__(self, message: str, code: int, context: dict = None):

@@ -4,7 +4,7 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.0 OFFICIAL (Unified Schema Registry)
+Version:      2.1.1 OFFICIAL (Unified Schema Registry)
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-05-22
@@ -22,29 +22,32 @@ from typing import Any, Dict, List, Optional, Union
 
 # 1. Project Management v1.4.0 (22 Fields)
 # Aligns ProjectService with official tracking standards.
+# FIX PY3: field names corrected from PascalCase to snake_case per BEJSON spec §14.7.
+# NOTE: This is a breaking schema migration — any persisted data using old field names
+#       (Project_ID, Project_Name, etc.) must be migrated before using this schema.
 SCHEMA_PROJECT_v140 = [
-    {"name": "Record_Type_Parent",    "type": "string"},  # 0
-    {"name": "Project_ID",            "type": "string"},  # 1
-    {"name": "Project_Name",          "type": "string"},  # 2
-    {"name": "Project_Path",          "type": "string"},  # 3
-    {"name": "Version",               "type": "string"},  # 4
-    {"name": "Created_At",            "type": "string"},  # 5
-    {"name": "Project_Type",          "type": "string"},  # 6
-    {"name": "Is_Active",             "type": "boolean"}, # 7
-    {"name": "Is_Visible",            "type": "boolean"}, # 8
-    {"name": "Is_Missing",            "type": "boolean"}, # 9
-    {"name": "Description",           "type": "string"},  # 10
-    {"name": "Tags",                  "type": "string"},  # 11
-    {"name": "Primary_Agent",         "type": "string"},  # 12
-    {"name": "Last_Sync",             "type": "string"},  # 13
-    {"name": "File_Count",            "type": "integer"}, # 14
-    {"name": "Total_Size_KB",         "type": "number"},  # 15
-    {"name": "Git_Enabled",           "type": "boolean"}, # 16
-    {"name": "Priority",              "type": "integer"}, # 17
-    {"name": "Category",              "type": "string"},  # 18
-    {"name": "Internal_Notes",        "type": "string"},  # 19
-    {"name": "Is_Archived",           "type": "boolean"}, # 20
-    {"name": "Is_Reset_Protected",    "type": "boolean"}, # 21
+    {"name": "record_type_parent",    "type": "string"},  # 0
+    {"name": "project_id",            "type": "string"},  # 1
+    {"name": "project_name",          "type": "string"},  # 2
+    {"name": "project_path",          "type": "string"},  # 3
+    {"name": "version",               "type": "string"},  # 4
+    {"name": "created_at",            "type": "string"},  # 5
+    {"name": "project_type",          "type": "string"},  # 6
+    {"name": "is_active",             "type": "boolean"}, # 7
+    {"name": "is_visible",            "type": "boolean"}, # 8
+    {"name": "is_missing",            "type": "boolean"}, # 9
+    {"name": "description",           "type": "string"},  # 10
+    {"name": "tags",                  "type": "string"},  # 11
+    {"name": "primary_agent",         "type": "string"},  # 12
+    {"name": "last_sync",             "type": "string"},  # 13
+    {"name": "file_count",            "type": "integer"}, # 14
+    {"name": "total_size_kb",         "type": "number"},  # 15
+    {"name": "git_enabled",           "type": "boolean"}, # 16
+    {"name": "priority",              "type": "integer"}, # 17
+    {"name": "category",              "type": "string"},  # 18
+    {"name": "internal_notes",        "type": "string"},  # 19
+    {"name": "is_archived",           "type": "boolean"}, # 20
+    {"name": "is_reset_protected",    "type": "boolean"}, # 21
 ]
 
 # 2. MFDB Chunker v5 Entity (6 Fields)
@@ -78,8 +81,10 @@ SCHEMA_MODEL_REGISTRY = {
     "Format_Version": "104a",
     "Format_Creator": "Elton Boehnen",
     "Records_Type": ["AI_Model"],
+    # FIX PY4: Removed Record_Type_Parent field — it is only required as the
+    # discriminator in 104db schemas. Including it in a 104a schema forces every
+    # record to carry an unnecessary positional slot and creates validator confusion.
     "Fields": [
-        {"name": "Record_Type_Parent",    "type": "string"},
         {"name": "model_id",              "type": "string"},
         {"name": "display_name",          "type": "string"},
         {"name": "thinking_enabled",      "type": "boolean"},
@@ -87,9 +92,9 @@ SCHEMA_MODEL_REGISTRY = {
         {"name": "currently_active",      "type": "boolean"}
     ],
     "Values": [
-        ["AI_Model", "gemini-2.5-flash", "Gemini 2.5 Flash", False, True, True],
-        ["AI_Model", "gemini-2.0-flash-thinking-preview", "Gemini 2.0 Flash Thinking", True, False, False],
-        ["AI_Model", "gemini-3.1-pro-preview", "Gemini 3.1 Pro (Preview)", False, True, False]
+        ["gemini-2.5-flash", "Gemini 2.5 Flash", False, True, True],
+        ["gemini-2.0-flash-thinking-preview", "Gemini 2.0 Flash Thinking", True, False, False],
+        ["gemini-3.1-pro-preview", "Gemini 3.1 Pro (Preview)", False, True, False]
     ]
 }
 

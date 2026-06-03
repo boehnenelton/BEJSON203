@@ -28,7 +28,9 @@ def resolve_path(path_str: str) -> str:
     home = os.getenv("HOME", default_home)
     
     # INTERNAL_STORAGE often points to /storage/emulated/0 on Android
-    internal_storage = os.getenv("INTERNAL_STORAGE", "/storage/emulated/0")
+    # REMEDIATED: Use BEJSON_STORAGE_ROOT to avoid hardcoded absolute paths (Phase 1)
+    storage_root = os.getenv("BEJSON_STORAGE_ROOT", "/storage/emulated/0")
+    internal_storage = os.getenv("INTERNAL_STORAGE", storage_root)
     
     # SC_ROOT is typically within INTERNAL_STORAGE
     default_sc_root = os.path.join(internal_storage, "Brain-Container/BEJSON_Core")

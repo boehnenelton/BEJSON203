@@ -128,6 +128,8 @@ def extract_data(data):
 
     return project_name, files
 
+from lib_bejson_path_guard import bejson_safe_join
+
 def save_files(proj, files, cfg):
     base_dir = cfg.get("output_path") or DEFAULT_OUT
     if not os.path.isdir(base_dir):
@@ -153,10 +155,13 @@ def save_files(proj, files, cfg):
         target = os.path.join(base_dir, ts + "_" + proj)
 
     try:
+        # Phase 2: Resolve and Guard target path
+        target = os.path.abspath(target)
         os.makedirs(target, exist_ok=True)
 
         for f in files:
-            fpath = os.path.join(target, f["name"])
+            # Phase 2: Assert boundary prefixes via safe_join
+            fpath = bejson_safe_join(target, f["name"])
             _atomic_write_text(fpath, f["content"])
 
         # Build report

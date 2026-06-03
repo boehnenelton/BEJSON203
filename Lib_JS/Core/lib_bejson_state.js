@@ -4,7 +4,7 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "JS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
  * Date:         2026-05-18
@@ -36,6 +36,9 @@ class BEJSONState {
 
         this._listeners = new Map();
         this._historyIndex = -1;
+        // FM3: Cache field indices at construction time — _syncToBEJSON is called on
+        // every mutation; computing these via findIndex on every call is wasteful.
+        this._fieldIdx = this._buildFieldIdx();
         this._activeEffect = null;
         this._dependencyGraph = new Map(); // path -> Set of effects
         this._effectDeps = new Map();      // effect -> Set of paths
@@ -95,12 +98,23 @@ class BEJSONState {
         }
     }
 
+    _buildFieldIdx() {
+        // Pre-compute all field indices used by _syncToBEJSON and _saveHistory (FM3)
+        const fields = this.bejson.Fields;
+        return {
+            rtp:      fields.findIndex(f => f.name === "Record_Type_Parent"),
+            key:      fields.findIndex(f => f.name === "key"),
+            value:    fields.findIndex(f => f.name === "value"),
+            timestamp:fields.findIndex(f => f.name === "timestamp"),
+            snapshot: fields.findIndex(f => f.name === "snapshot"),
+        };
+    }
+
     _syncToBEJSON() {
         const fields = this.bejson.Fields;
         const fieldCount = fields.length;
-        const rtpIdx = fields.findIndex(f => f.name === "Record_Type_Parent");
-        const keyIdx = fields.findIndex(f => f.name === "key");
-        const valIdx = fields.findIndex(f => f.name === "value");
+        // FIX FM3: use cached indices instead of findIndex on every call
+        const { rtp: rtpIdx, key: keyIdx, value: valIdx } = this._fieldIdx;
 
         // Clear StateNodes
         this.bejson.Values = this.bejson.Values.filter(r => r[0] !== "StateNode");
@@ -118,9 +132,8 @@ class BEJSONState {
     _saveHistory() {
         const fields = this.bejson.Fields;
         const fieldCount = fields.length;
-        const rtpIdx = fields.findIndex(f => f.name === "Record_Type_Parent");
-        const tsIdx = fields.findIndex(f => f.name === "timestamp");
-        const snIdx = fields.findIndex(f => f.name === "snapshot");
+        // FIX FM3: use cached indices
+        const { rtp: rtpIdx, timestamp: tsIdx, snapshot: snIdx } = this._fieldIdx;
 
         const snapshot = JSON.stringify(this.state);
         const row = new Array(fieldCount).fill(null);
@@ -177,10 +190,15 @@ class BEJSONState {
     }
 
     undo() {
+        // FIX FM2: previously used hardcoded positional index [4] for the snapshot field.
+        // This silently returns garbage if a field is ever inserted before snapshot.
+        // Now resolved dynamically via the field map.
         const historyRows = this.bejson.Values.filter(r => r[0] === "History");
         if (this._historyIndex <= 0) return false;
+        const snIdx = this.bejson.Fields.findIndex(f => f.name === "snapshot");
+        if (snIdx === -1) return false;
         this._historyIndex--;
-        this._restore(JSON.parse(historyRows[this._historyIndex][4]));
+        this._restore(JSON.parse(historyRows[this._historyIndex][snIdx]));
         return true;
     }
 

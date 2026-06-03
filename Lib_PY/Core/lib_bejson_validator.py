@@ -4,7 +4,7 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.0.2 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-05-18
@@ -17,23 +17,23 @@ from pathlib import Path
 from typing import Any, List, Optional, Set, Union
 
 try:
-    from lib_bejson_errors import *
-except ImportError:
-    # Fallback if registry is missing
-    E_INVALID_JSON = 1
-    E_MISSING_MANDATORY_KEY = 2
-    E_INVALID_FORMAT = 3
-    E_INVALID_VERSION = 4
-    E_INVALID_RECORDS_TYPE = 5
-    E_INVALID_FIELDS = 6
-    E_INVALID_VALUES = 7
-    E_TYPE_MISMATCH = 8
-    E_RECORD_LENGTH_MISMATCH = 9
-    E_RESERVED_KEY_COLLISION = 10
-    E_INVALID_RECORD_TYPE_PARENT = 11
-    E_NULL_VIOLATION = 12
-    E_FILE_NOT_FOUND = 13
-    E_PERMISSION_DENIED = 14
+    from lib_bejson_errors import (
+        E_INVALID_JSON,
+        E_MISSING_MANDATORY_KEY,
+        E_INVALID_FORMAT,
+        E_INVALID_VERSION,
+        E_INVALID_RECORDS_TYPE,
+        E_INVALID_FIELDS,
+        E_TYPE_MISMATCH,
+        E_RECORD_LENGTH_MISMATCH,
+        E_RESERVED_KEY_COLLISION,
+        E_INVALID_RECORD_TYPE_PARENT,
+        E_FILE_NOT_FOUND
+    )
+except ImportError as e:
+    import logging
+    logging.critical(f"[VALIDATOR] FATAL: Error registry unreachable: {e}")
+    raise SystemExit(1)
 
 VALID_VERSIONS = {"104", "104a", "104db"}
 MANDATORY_KEYS = ("Format", "Format_Version", "Format_Creator", "Records_Type", "Fields", "Values")
@@ -130,8 +130,10 @@ def bejson_validator_check_values(doc, version, fields_count):
                  raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected string", E_TYPE_MISMATCH)
             elif ftype == "integer" and (not isinstance(val, int) or isinstance(val, bool)):
                  raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected integer", E_TYPE_MISMATCH)
-            elif ftype == "number" and not isinstance(val, (int, float)):
-                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected number", E_TYPE_MISMATCH)
+            elif ftype == "number" and (not isinstance(val, (int, float)) or isinstance(val, bool)):
+                 # FIX PY2: bool is a subclass of int in Python, so True/False pass isinstance(int,float).
+                 # Explicitly exclude bool — BEJSON "number" means a numeric value, not a boolean.
+                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected number, got bool", E_TYPE_MISMATCH)
             elif ftype == "boolean" and not isinstance(val, bool):
                  raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected boolean", E_TYPE_MISMATCH)
             elif ftype == "array" and not isinstance(val, list):

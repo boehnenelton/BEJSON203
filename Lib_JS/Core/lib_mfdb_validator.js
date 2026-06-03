@@ -4,7 +4,7 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "JS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
  * Date:         2026-05-18
@@ -68,7 +68,17 @@ function _mHasWarnings()            { return _mWarnings.length > 0; }
 // ---------------------------------------------------------------------------
 
 
+// FIX JS5: require('fs') and require('path') are Node.js-only. In browser environments
+// these helpers are non-functional. Guard all calls with a Node check so that importing
+// this module in a browser context does not throw immediately on function definition.
+function _isNode() {
+  return typeof process !== 'undefined' && process.versions && !!process.versions.node;
+}
+
 function _loadJson(filePath) {
+  if (!_isNode()) {
+    throw new MFDBValidationError('_loadJson is only available in Node.js environments', E_MFDB_ENTITY_NOT_FOUND);
+  }
   const fs = require('fs');
   return JSON.parse(fs.readFileSync(filePath, 'utf8'));
 }
@@ -81,12 +91,16 @@ function _rowsAsDicts(doc) {
 
 
 function _resolveEntityPath(manifestPath, filePathRel) {
+  if (!_isNode()) {
+    throw new MFDBValidationError('_resolveEntityPath is only available in Node.js environments', E_MFDB_ENTITY_NOT_FOUND);
+  }
   const path = require('path');
   return path.resolve(path.dirname(manifestPath), filePathRel);
 }
 
 
 function _fileExists(filePath) {
+  if (!_isNode()) return false;  // In browser: assume non-existent, caller handles
   const fs = require('fs');
   return fs.existsSync(filePath);
 }
@@ -129,6 +143,10 @@ function mfdb_validator_validate_archive(archivePath) {
 
 function mfdb_validator_validate_manifest(manifestPath) {
   _mReset();
+  if (!_isNode()) {
+    _mAddError('mfdb_validator_validate_manifest requires a Node.js environment', 'Environment');
+    return false;
+  }
 
   if (!_fileExists(manifestPath)) {
     _mAddError(`Manifest file not found: ${manifestPath}`, 'File System');

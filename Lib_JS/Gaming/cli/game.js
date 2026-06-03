@@ -4,7 +4,7 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "JS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
  * Date:         2026-05-18
@@ -12,7 +12,7 @@
  */
 
 import { CoreEngine, ChunkManager } from './lib_bejson_engine_core';
-import SwitchRenderer from './lib_bejson_engine_renderer';
+import SwitchRenderer from '../lib_bejson_renderer';  // FIX JS9: was './lib_bejson_engine_renderer' (wrong name and path)
 import SwitchPhysics from './lib_bejson_physics';
 import SwitchInput from './lib_bejson_input';
 
@@ -148,7 +148,14 @@ export class VanillaGame {
             const playerRef = this.actors.find(a => a.type === 'player');
             if (playerRef) this.player = playerRef; else { this.player = parsed.player; if (this.player) this.actors.push(this.player); }
             this.level = parsed.level; this.stateStatus = 'PLAYING';
-        } catch (e) {}
+        } catch (e) {
+            // FIX JS10: was silent (catch (e) {}). Surface the error via console and the
+            // emit system so the UI can display a 'Load failed' message to the user.
+            console.error('[game.js] deserialize failed:', e);
+            if (typeof this.emit === 'function') {
+                this.emit('error', { type: 'deserialize', message: String(e) });
+            }
+        }
     }
 
     loop(time) {

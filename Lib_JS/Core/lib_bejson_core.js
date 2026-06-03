@@ -4,7 +4,7 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "JS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
  * Date:         2026-05-18
@@ -62,6 +62,19 @@ class BEJSONEngine {
     }
 }
 
+// --- Internal Key Cache for current session/document operation ---
+let _keyCache = null;
+
+async function _getOrDeriveKey(password, salt) {
+    const saltB64 = CryptoUtils.ab2base64(salt);
+    if (_keyCache && _keyCache.password === password && _keyCache.salt === saltB64) {
+        return _keyCache.key;
+    }
+    const key = await CryptoUtils.deriveKey(password, salt);
+    _keyCache = { password, salt: saltB64, key };
+    return key;
+}
+
 const CryptoUtils = {
     async deriveKey(password, salt) {
         const enc = new TextEncoder();
@@ -78,12 +91,13 @@ const CryptoUtils = {
     ab2base64(buf) { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); },
     base642ab(base64) { const b = atob(base64); return new Uint8Array(b.length).map((_, i) => b.charCodeAt(i)); },
 
-    async encryptRecord(doc, recordIndex, password) {
+    async encryptRecord(doc, recordIndex, password, providedSalt = null) {
         if (recordIndex < 0 || recordIndex >= doc.Values.length) throw new BEJSONCoreError("Index out of bounds", E_CORE_INDEX_OUT_OF_BOUNDS);
         
         const record = doc.Values[recordIndex];
-        const salt = crypto.getRandomValues(new Uint8Array(16));
-        const key = await this.deriveKey(password, salt);
+        // REUSE salt if provided, otherwise generate. Reusing salt allows key caching.
+        const salt = providedSalt || crypto.getRandomValues(new Uint8Array(16));
+        const key = await _getOrDeriveKey(password, salt);
         const saltB64 = this.ab2base64(salt);
         
         const newRecord = [...record];
@@ -148,7 +162,7 @@ const CryptoUtils = {
                 const salt = this.base642ab(saltB64);
                 const iv = this.base642ab(ivB64);
                 const ct = this.base642ab(ctB64);
-                const key = await this.deriveKey(password, salt);
+                const key = await _getOrDeriveKey(password, salt);
                 
                 const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct);
                 newRecord[i] = JSON.parse(new TextDecoder().decode(decrypted));
@@ -178,6 +192,56 @@ function bejson_core_get_stats(doc) {
     return { records: doc.Values.length, fields: doc.Fields ? doc.Fields.length : 0 };
 }
 
+// Global Field Map Cache
+const _FIELD_MAP_CACHE = new Map();
+
+/**
+ * Returns a mapping of field name to index.
+ * Utilizes both in-document caching and a global cache for performance.
+ */
+function bejson_core_get_field_map(doc) {
+    if (!doc || !doc.Fields) return {};
+
+    // High-performance in-document cache check
+    if (doc._bejson_field_map) return doc._bejson_field_map;
+
+    const fieldNames = doc.Fields.map(f => f.name);
+    const cacheKey = (doc.Format_Version || '104') + ':' + fieldNames.join(',');
+
+    let fieldMap;
+    if (_FIELD_MAP_CACHE.has(cacheKey)) {
+        fieldMap = _FIELD_MAP_CACHE.get(cacheKey);
+    } else {
+        fieldMap = {};
+        doc.Fields.forEach((f, i) => { fieldMap[f.name] = i; });
+        _FIELD_MAP_CACHE.set(cacheKey, fieldMap);
+    }
+
+    // Inject into document for subsequent O(1) lookups
+    try { doc._bejson_field_map = fieldMap; } catch(e) {}
+
+    return fieldMap;
+}
+/**
+ * Returns the positional index of a field name using the cache.
+ * Returns -1 on miss (consistent with JS/PY; TS core throws — see audit FM4).
+ */
+function bejson_core_get_field_index(doc, fieldName) {
+    const fieldMap = bejson_core_get_field_map(doc);
+    const idx = fieldMap[fieldName];
+    return (idx !== undefined) ? idx : -1;
+}
+
+/**
+ * Clears the field map cache.
+ * Call this if a document's Fields array has been mutated in-place after a
+ * cache entry was built — otherwise stale indices will be returned indefinitely.
+ * FIX FM1: TS already exposed this; now JS matches. (GOOD2 in audit)
+ */
+function bejson_core_clear_field_map_cache() {
+    _FIELD_MAP_CACHE.clear();
+}
+
 const CoreExports = {
     BEJSONCoreError,
     BEJSONEngine,
@@ -185,6 +249,9 @@ const CoreExports = {
     bejson_core_is_valid,
     bejson_core_get_version,
     bejson_core_get_stats,
+    bejson_core_get_field_map,
+    bejson_core_get_field_index,
+    bejson_core_clear_field_map_cache,
     // Error codes
     E_CORE_INVALID_VERSION, E_CORE_INVALID_OPERATION, E_CORE_INDEX_OUT_OF_BOUNDS,
     E_CORE_FIELD_NOT_FOUND, E_CORE_TYPE_CONVERSION_FAILED, E_CORE_BACKUP_FAILED,
