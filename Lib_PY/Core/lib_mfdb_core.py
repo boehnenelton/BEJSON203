@@ -648,7 +648,12 @@ def mfdb_core_add_entity_record(
     """Append a record to an entity file."""
     entity_path = _get_entity_path(manifest_path, entity_name)
     doc         = bejson_core_load_file(entity_path)
-    doc         = bejson_core_add_record(doc, values)
+    if not doc:
+        raise BEJSONCoreError(f"Failed to load entity file: {entity_path}")
+    
+    if not bejson_core_add_record(doc, values):
+        raise BEJSONCoreError(f"Failed to add record to {entity_name}")
+        
     _write_entity_doc(doc, entity_path)
     if sync_count:
         _update_manifest_record_count(manifest_path, entity_name, len(doc["Values"]))
@@ -664,7 +669,12 @@ def mfdb_core_remove_entity_record(
     """Remove a record at record_index from an entity file."""
     entity_path = _get_entity_path(manifest_path, entity_name)
     doc         = bejson_core_load_file(entity_path)
-    doc         = bejson_core_remove_record(doc, record_index)
+    if not doc:
+        raise BEJSONCoreError(f"Failed to load entity file: {entity_path}")
+
+    if not bejson_core_remove_record(doc, record_index):
+        raise BEJSONCoreError(f"Failed to remove record {record_index} from {entity_name}")
+
     _write_entity_doc(doc, entity_path)
     if sync_count:
         _update_manifest_record_count(manifest_path, entity_name, len(doc["Values"]))
@@ -681,7 +691,12 @@ def mfdb_core_update_entity_record(
     """Update a single named field in a specific record of an entity file."""
     entity_path = _get_entity_path(manifest_path, entity_name)
     doc         = bejson_core_load_file(entity_path)
-    doc         = bejson_core_update_field(doc, record_index, field_name, new_value)
+    if not doc:
+        raise BEJSONCoreError(f"Failed to load entity file: {entity_path}")
+
+    if not bejson_core_update_field(doc, record_index, field_name, new_value):
+        raise BEJSONCoreError(f"Failed to update field '{field_name}' in {entity_name}")
+
     _write_entity_doc(doc, entity_path)
     return doc
 

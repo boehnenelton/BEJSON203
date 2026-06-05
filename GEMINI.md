@@ -1,12 +1,21 @@
-# You may use field name mapping and state based indexing in the new library functions going forward do not break the current field index positions of any libraries, maintain the indexing position as a fallback for the time being. 
+# Project Instructions: BEJSON Production Mirror (SLAVE)
+**Relational ID:** gcli-lib-mirror-mandate-001
 
-# Do not hardcode any paths, in the libraries use ~/env_file.py, env_file.sh or env_file.json, If no environment variable exists for the path you need to create it.
+## ⚠ MASTER/SLAVE FEDERATION MANDATE
+This directory is a **VERIFIED SLAVE MIRROR** of the authoritative Termux library source.
 
+### AUTHORITATIVE SOURCE
+- **Path**: `~/libraries`
+- **Role**: All development, refinement, and testing MUST occur at this path.
 
+### MIRROR STATUS
+- **Path**: `/storage/emulated/0/Admin/libraries`
+- **Role**: Read-only production target for cross-platform interoperability.
+- **Automation**: Managed by `library-mirror-service.py`.
 
+### MANDATORY BEHAVIOR
+1. **Never Edit Directly**: Any changes made directly to the Admin Mirror will be **OVERWRITTEN** by the next synchronization cycle.
+2. **Atomic Synchronization**: Updates to the Admin Mirror are pushed only after a task is logged as "COMPLETED" in the Termux environment.
 
-- We have how did the ability to use key based lookups within the BEJSON infrastructure. , you may integrate FIELD MAP INDEXING options going forward slowly into the libraries but you are not to break the array based indexing yet. 
-
-- As you update the libraries to use the new field mapping, leave the previous index based fallbacks in place for the time being so that it can fall back on the array base and next without breaking. Do not break any current index positions of fields in place currently. 
-
-- There will come a time when we will move out of the array based indexing but for now we are going to leave it in place as we into great slowly the new field mapping into the libraries.
+---
+*Refer to the Project Root GEMINI.md for the Field Map Migration Plan.*

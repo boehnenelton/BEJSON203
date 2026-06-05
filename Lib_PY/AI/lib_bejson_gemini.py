@@ -4,12 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.2.0 OFFICIAL
+Version:      2.1.1 OFFICIAL (SDK Migration)
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-03
+Date:         2026-06-02
 Description:  Integration wrapper for Google Gemini API using the official google-genai SDK.
-RELATIONAL_ID: de2626-gemini-hardened-003
+REMEDIATED:   Migrated from 'requests' to 'google-genai' SDK; supports key rotation.
 """
 
 import os
@@ -37,7 +37,6 @@ if LIB_DIR not in sys.path: sys.path.insert(0, LIB_DIR)
 CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
 
-# LOUD FAILURE: Core dependencies must exist
 try:
     from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
     from lib_bejson_schema import SCHEMA_MODEL_REGISTRY
@@ -57,11 +56,10 @@ class GeminiKeyRegistry:
     def _create_default(self):
         try:
             os.makedirs(self.file_path.parent, exist_ok=True)
-            # SECURITY: Remove placeholder "YOUR_KEY_HERE" from default template
             default_keys = {
                 "Format": "BEJSON", "Format_Version": "104", "Records_Type": ["ApiKey"],
                 "Fields": [{"name": "key", "type": "string"}],
-                "Values": []
+                "Values": [["YOUR_KEY_HERE"]]
             }
             bejson_core_atomic_write(str(self.file_path), default_keys)
         except Exception as e: logging.warning(f"[GeminiLib] Key default fail: {e}")
@@ -75,8 +73,7 @@ class GeminiKeyRegistry:
             data = bejson_core_load_file(str(self.file_path))
             idx = bejson_core_get_field_index(data, "key")
             if idx != -1:
-                # SECURITY: Reject placeholders
-                registry_keys = [row[idx] for row in data["Values"] if row[idx] and "YOUR_" not in str(row[idx]) and "KEY_HERE" not in str(row[idx])]
+                registry_keys = [row[idx] for row in data["Values"] if "YOUR_KEY" not in str(row[idx])]
                 self.keys.extend(registry_keys)
         except Exception:
             # Fallback to env keys if file load fails
@@ -130,9 +127,7 @@ class GeminiAPI:
         self.keys = key_registry
         self.models = model_registry
         if genai is None:
-            # LOUD FAILURE: SDK must exist for API operations
-            logging.critical("[GeminiLib] google-genai SDK not installed. Please run 'pip install google-genai'.")
-            raise RuntimeError("google-genai SDK not installed.")
+            logging.error("[GeminiLib] google-genai SDK not installed. Please run 'pip install google-genai'.")
 
     def generate(self, prompt: str, model_id: str = None, **config) -> str:
         if genai is None:
@@ -166,11 +161,6 @@ class GeminiAPI:
             )
             return response.text
         except Exception as e:
-            # SECURITY: Prevent key leakage in logs (though Client init is usually the risk)
-            # The SDK might include the key in error details
-            error_str = str(e)
-            import re
-            redacted_error = re.sub(r'[A-Za-z0-9_\-]{30,}', '[REDACTED]', error_str)
-            logging.error(f"[GeminiLib] Generation failed: {redacted_error}")
-            raise Exception(f"Gemini API Error: {redacted_error}")
+            logging.error(f"[GeminiLib] Generation failed: {e}")
+            raise Exception(f"Gemini API Error: {e}")
 

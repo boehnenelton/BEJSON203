@@ -4,12 +4,11 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.2.0 OFFICIAL
+Version:      2.0.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-03
+Date:         2026-05-18
 Description:  Interface for Google Generative AI (GenAI) models.
-RELATIONAL_ID: de2626-genai-hardened-002
 """
 
 import os
@@ -17,7 +16,6 @@ import json
 import time
 import random
 import sys
-import logging
 from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional
 
@@ -30,12 +28,10 @@ CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 
-# LOUD FAILURE: Environment dependency must exist
 try:
     from lib_bejson_env import resolve_path
 except ImportError:
-    print("CRITICAL FAILURE: lib_bejson_env not found. System halting.")
-    sys.exit(1)
+    def resolve_path(p): return p
 
 # ANSI Status Colors
 C_RED = "\033[91m"
@@ -112,7 +108,7 @@ class GenAIClient:
         self.km = key_manager or GenAIKeyManager()
         self.status_callback: Optional[Callable[[str, str], None]] = None
         
-        # LOUD FAILURE: SDK must exist
+        # Try to import SDK
         try:
             from google import genai
             from google.genai import types
@@ -121,17 +117,6 @@ class GenAIClient:
             self.sdk_available = True
         except ImportError:
             self.sdk_available = False
-            logging.critical("CRITICAL: google-genai SDK not installed.")
-            # We don't exit here to allow instantiation for metadata checks, 
-            # but API methods will throw errors.
-
-    def _redact_error(self, error_msg: str) -> str:
-        """Surgical redaction to prevent key leakage in logs."""
-        # Simple heuristic: remove anything that looks like an API key (alphanumeric, long)
-        import re
-        # This is a basic catch-all for common key patterns in error messages
-        redacted = re.sub(r'[A-Za-z0-9_\-]{30,}', '[REDACTED]', error_msg)
-        return redacted
 
     def set_status_callback(self, callback: Callable[[str, str], None]):
         """Set a custom callback for status updates. (state, message)"""
@@ -218,10 +203,8 @@ class GenAIClient:
                 return response.text
 
             except Exception as e:
-                # SECURITY: Redact error to prevent key leakage
-                last_error = self._redact_error(str(e))
-                self.update_status("error", f"KEY FAILED: {last_error[:40]}...")
-                logging.error(f"[GenAILib] Attempt {i+1} failed: {last_error}")
+                last_error = str(e)
+                self.update_status("error", f"KEY FAILED: {last_error[:50]}...")
                 time.sleep(1) # Brief pause before next key
                 continue
 

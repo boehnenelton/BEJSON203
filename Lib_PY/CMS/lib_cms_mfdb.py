@@ -238,6 +238,50 @@ class MFDB_CMS_Manager:
                     if key in content_data: MFDBCore.mfdb_core_update_entity_record(self.content_manifest, "PageContent", i, key, content_data[key])
                 break
 
+    def delete_page(self, page_uuid: str):
+        # 1. Remove from Page entity
+        pages = MFDBCore.mfdb_core_load_entity(self.content_manifest, "Page")
+        for i, p in enumerate(pages):
+            if p.get("page_uuid") == page_uuid:
+                MFDBCore.mfdb_core_remove_entity_record(self.content_manifest, "Page", i)
+                break
+        
+        # 2. Remove from PageContent entity
+        contents = MFDBCore.mfdb_core_load_entity(self.content_manifest, "PageContent")
+        for i, c in enumerate(contents):
+            if c.get("page_uuid_fk") == page_uuid:
+                MFDBCore.mfdb_core_remove_entity_record(self.content_manifest, "PageContent", i)
+                break
+        self.log_change("Page", "DELETE", page_uuid)
+
+    def delete_category(self, slug: str):
+        recs = MFDBCore.mfdb_core_load_entity(self.content_manifest, "Category")
+        for i, r in enumerate(recs):
+            if r.get("slug") == slug:
+                MFDBCore.mfdb_core_remove_entity_record(self.content_manifest, "Category", i)
+                break
+        self.log_change("Category", "DELETE", slug)
+
+    def delete_ad(self, ad_uuid: str):
+        recs = self.get_ads()
+        for i, r in enumerate(recs):
+            if r.get("ad_uuid") == ad_uuid:
+                MFDBCore.mfdb_core_remove_entity_record(self.global_manifest, "AdUnit", i)
+                self.log_change("AdUnit", "DELETE", ad_uuid)
+                break
+
+    def update_ad(self, ad_uuid: str, name: str, img: str, link: str, zone: str, active: bool = True):
+        recs = self.get_ads()
+        for i, r in enumerate(recs):
+            if r["ad_uuid"] == ad_uuid:
+                MFDBCore.mfdb_core_update_entity_record(self.global_manifest, "AdUnit", i, "name", name)
+                MFDBCore.mfdb_core_update_entity_record(self.global_manifest, "AdUnit", i, "image_url", img)
+                MFDBCore.mfdb_core_update_entity_record(self.global_manifest, "AdUnit", i, "link_url", link)
+                MFDBCore.mfdb_core_update_entity_record(self.global_manifest, "AdUnit", i, "zone", zone)
+                MFDBCore.mfdb_core_update_entity_record(self.global_manifest, "AdUnit", i, "active", active)
+                self.log_change("AdUnit", "UPDATE", ad_uuid)
+                break
+
     def delete_app(self, app_uuid: str):
         recs = MFDBCore.mfdb_core_load_entity(self.content_manifest, "StandaloneApp")
         for i, r in enumerate(recs):
@@ -245,3 +289,55 @@ class MFDB_CMS_Manager:
                 MFDBCore.mfdb_core_remove_entity_record(self.content_manifest, "StandaloneApp", i)
                 self.log_change("StandaloneApp", "DELETE", app_uuid)
                 break
+
+    # -----------------------------------------------------------------------
+    # Read helpers — not yet in upstream lib; required by Flask routes
+    # -----------------------------------------------------------------------
+
+    def get_ads(self) -> List[Dict]:
+        return MFDBCore.mfdb_core_load_entity(self.global_manifest, "AdUnit")
+
+    def get_nav_links(self) -> List[Dict]:
+        return MFDBCore.mfdb_core_load_entity(self.global_manifest, "NavLink")
+
+    def get_assets(self) -> List[Dict]:
+        return MFDBCore.mfdb_core_load_entity(self.global_manifest, "MediaAsset")
+
+    def get_asset_by_hash(self, file_hash: str) -> Optional[Dict]:
+        return next((a for a in self.get_assets() if a["file_hash"] == file_hash), None)
+
+    def get_file_hash(self, data: bytes) -> str:
+        import hashlib
+        return hashlib.sha256(data).hexdigest()
+
+    def get_apps(self) -> List[Dict]:
+        return MFDBCore.mfdb_core_load_entity(self.content_manifest, "StandaloneApp")
+
+    def get_pages_in_category(self, category_slug: str) -> List[Dict]:
+        return [p for p in MFDBCore.mfdb_core_load_entity(self.content_manifest, "Page")
+                if p.get("category_fk") == category_slug]
+
+    def get_apps_in_category(self, category_slug: str) -> List[Dict]:
+        return [a for a in self.get_apps() if a.get("category_fk") == category_slug]
+
+    def get_full_page_data(self, page_uuid: str) -> Optional[Dict]:
+        pages = MFDBCore.mfdb_core_load_entity(self.content_manifest, "Page")
+        page = next((p for p in pages if p.get("page_uuid") == page_uuid), None)
+        if not page:
+            return None
+        contents = MFDBCore.mfdb_core_load_entity(self.content_manifest, "PageContent")
+        content = next((c for c in contents if c.get("page_uuid_fk") == page_uuid), {})
+        return {**page, **content}
+
+    def create_app(self, name: str, description: str, category: str,
+                   featured_img: str, entry_file: str):
+        import uuid as _uuid
+        from datetime import datetime, timezone as _tz
+        app_uuid   = str(_uuid.uuid4())
+        slug       = name.lower().replace(" ", "-")
+        created_at = datetime.now(_tz.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        MFDBCore.mfdb_core_add_entity_record(
+            self.content_manifest, "StandaloneApp",
+            [app_uuid, name, slug, description, category, featured_img, entry_file, created_at]
+        )
+        self.log_change("StandaloneApp", "ADD", app_uuid)
