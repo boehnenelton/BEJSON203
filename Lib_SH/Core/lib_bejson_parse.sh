@@ -39,10 +39,23 @@ bejson_parse_json() {
         return 1
     fi
 
+    # Optimal jq-driven extraction: handles markdown fences and fallback to first '{'
     local clean
-    clean=$(echo "$text" | awk 'BEGIN { f=0 } /```json/ { f=1; next } /```/ && f { exit } f { print }')
-    if [[ -z "$clean" ]] || ! echo "$clean" | jq '.' >/dev/null 2>&1; then
-        clean=$(echo "$text" | tr '\n' '\f' | sed 's/^[^{]*//; s/}[^}]*$/}/' | tr '\f' '\n')
+    clean=$(echo "$text" | jq -Rr '
+        # 1. Attempt to extract from markdown code blocks first
+        if contains("```json") then
+            split("```json")[1] | split("```")[0]
+        elif contains("```") then
+            split("```")[1] | split("```")[0]
+        else
+            # 2. Fallback: find the first { and last }
+            capture("(?<s>\\{.*\\})"; "s") | .s
+        end
+    ' 2>/dev/null)
+
+    # If extraction failed, try raw text (in case it is already bare JSON)
+    if [[ -z "$clean" || "$clean" == "null" ]]; then
+        clean="$text"
     fi
 
     if echo "$clean" | jq '.' > /dev/null 2>&1; then

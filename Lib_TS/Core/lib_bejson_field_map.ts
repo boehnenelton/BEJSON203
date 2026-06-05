@@ -4,10 +4,10 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      3.0.0 OFFICIAL
+ * Version:      2.1.0 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-05-29
+ * Date:         2026-06-02
  * Description:  TypeScript implementation of the Field Map Cache.
  */
 

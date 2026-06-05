@@ -4,12 +4,13 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.3 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-05-21
+ * Date:         2026-06-05
  * Description:  Low-level primitive operations for BEJSON document manipulation.
  * REMEDIATED:   Removed regex parser crutch and optimized cryptographic bottlenecks.
+ * ALIGNED:      v2.0.3 parity with JS core families; internal metadata stripping (Audit Finding 13).
  */
 
 import {
@@ -65,7 +66,14 @@ export function serialize(doc: BEJSONDocument, indent: number = 2): string {
     );
   }
   try {
-    return JSON.stringify(doc, null, indent || undefined);
+    // RE-ALIGNED: Strip internal metadata keys (starting with _) before serialization
+    const cleanDoc: Record<string, any> = {};
+    for (const key in doc) {
+      if (Object.prototype.hasOwnProperty.call(doc, key) && !key.startsWith("_")) {
+        cleanDoc[key] = doc[key];
+      }
+    }
+    return JSON.stringify(cleanDoc, null, indent || undefined);
   } catch (e) {
     throw new BEJSONCoreError(
       BEJSON_CORE_CODES.SERIALIZATION_ERROR,

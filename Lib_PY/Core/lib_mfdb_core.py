@@ -51,7 +51,7 @@ try:
         E_MFDB_CORE_MANIFEST_NOT_FOUND,
         E_MFDB_CORE_ENTITY_NOT_FOUND,
         E_MFDB_CORE_WRITE_FAILED,
-        E_MFDB_CORE_CREATE_FAILED,
+        E_MFDB_CORE_LOCK_FAILED,
         E_MFDB_CORE_INVALID_OPERATION,
         E_MFDB_CORE_INDEX_OUT_OF_BOUNDS,
         E_MFDB_CORE_JOIN_FAILED,
@@ -860,7 +860,7 @@ def mfdb_core_create_database(
 def mfdb_core_resolve_path(path_str: str) -> str:
     """
     Hardening: Resolve system placeholders in paths using lib_bejson_env.
-    Supports: {INTERNAL_STORAGE}, {SC_ROOT}, {PROJECTS_MGMT}, {ADMIN_LAYER}, 
+    Supports: {INTERNAL_STORAGE}, {ADMIN_ROOT}, {PROJECTS_ROOT}, 
              internal_storage, ~, and environment variables in ${VAR} format.
     """
     if not path_str:

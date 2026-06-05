@@ -4,11 +4,12 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.1.0 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-05-18
+ * Date:         2026-06-04
  * Description:  State-machine driven game engine utilizing BEJSON for entity state.
+ * REMEDIATED:   Verified against Field Map Migration Plan (Migration Phase 3.5).
  */
 
 // bejson_engine.ts

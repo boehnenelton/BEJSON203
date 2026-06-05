@@ -92,5 +92,5 @@ class SwitchInput {
     update() { this.justPressed = {}; }
 }
 
-Switch.Input = SwitchInput;
+BEJSON_Switch.Input = SwitchInput;
 export default SwitchInput;

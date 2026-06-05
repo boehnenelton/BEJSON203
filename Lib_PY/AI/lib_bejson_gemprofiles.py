@@ -4,12 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-21
+Date:         2026-06-04
 Description:  AI Profile generator for the BEJSON ecosystem.
-REMEDIATED:   Fixed BEJSON 104 specification violation (removed 104db discriminator).
+REMEDIATED:   Delegated field mapping to Core; implemented Safe Get fallbacks (Phase 4.2).
 """
 
 import json
@@ -24,7 +24,21 @@ CORE_PATH = os.path.join(os.path.dirname(LIB_PATH), "Core")
 if CORE_PATH not in sys.path:
     sys.path.append(CORE_PATH)
 
+from lib_bejson_core import bejson_core_get_field_index, bejson_core_get_field_map
 import lib_bejson_validator
+
+# --- Legacy Fallback Constants ---
+_PROFILES_LEGACY = {
+    "Name": 0, "Archetype": 1, "Persona": 2, "SystemInstruction": 3,
+    "ForbiddenTopics": 4, "Avatar_Type": 5, "Avatar_sourceUrl": 6,
+    "Avatar_Data": 7, "MaxResponseTokens": 8, "Creativity": 9,
+    "Tone": 10, "Formality": 11, "Verbosity": 12,
+    "EmotionalExpression_Enabled": 13, "EmotionalExpression_Intensity": 14,
+    "GoogleSearch_Enabled": 15, "CodeInterpreter_Enabled": 16,
+    "EphemeralMemory": 17, "CodeParsing_Mode": 18, "CodeParsing_Languages": 19,
+    "CodeParsing_StructureValidation": 20, "CodeParsing_VersionControl": 21,
+    "Thinking_Supported": 22
+}
 
 # REMEDIATED: Removed "Record_Type_Parent" which is reserved for 104db multi-entity files.
 PROFILE_FIELDS = [
@@ -130,25 +144,30 @@ def bejson_profiles_save(profile: Dict[str, Any], path: str):
         json.dump(profile, f, indent=2)
 
 def bejson_profiles_get_field_index(profile: Dict[str, Any], field_name: str) -> int:
-    """Returns the index of a field by name, or -1 if not found."""
-    fields = profile.get("Fields", [])
-    for i, f in enumerate(fields):
-        if f.get("name") == field_name:
-            return i
-    return -1
+    """
+    Returns the index of a field by name, or -1 if not found.
+    DEPRECATED: Delegates to bejson_core_get_field_index.
+    """
+    idx = bejson_core_get_field_index(profile, field_name)
+    if idx == -1:
+        # Safe Get Fallback
+        idx = _PROFILES_LEGACY.get(field_name, -1)
+    return idx
 
 def bejson_profiles_get_value(profile: Dict[str, Any], field_name: str, record_index: int = 0) -> Any:
     """Queries a specific field value from a profile record."""
     idx = bejson_profiles_get_field_index(profile, field_name)
-    if idx != -1 and len(profile.get("Values", [])) > record_index:
-        return profile["Values"][record_index][idx]
+    values = profile.get("Values", [])
+    if idx != -1 and record_index < len(values) and idx < len(values[record_index]):
+        return values[record_index][idx]
     return None
 
 def bejson_profiles_update_value(profile: Dict[str, Any], field_name: str, new_value: Any, record_index: int = 0) -> bool:
     """Updates a specific field value in a profile record. Returns True if successful."""
     idx = bejson_profiles_get_field_index(profile, field_name)
-    if idx != -1 and len(profile.get("Values", [])) > record_index:
-        profile["Values"][record_index][idx] = new_value
+    values = profile.get("Values", [])
+    if idx != -1 and record_index < len(values) and idx < len(values[record_index]):
+        values[record_index][idx] = new_value
         return True
     return False
 

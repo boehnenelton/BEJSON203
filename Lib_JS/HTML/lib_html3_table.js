@@ -4,19 +4,28 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "JS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL (Event Delegation)
- * Date:         2026-06-02
+ * Version:      2.1.0 OFFICIAL
+ * Date:         2026-06-04
  * Description:  Standardized table rendering engine for HTML3.
  *               Supports Multi-Column (Desktop) and Single-Column (Mobile) modes.
  *               Refactored for BEM, OKLCH, and Modular CSS Standards.
  * 
- * REMEDIATED:   Phase 4 Safe Event Delegation (XSS Protection).
+ * REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 5.5).
  */
 
 'use strict';
 
 (function() {
     const HTML3_Table = {
+        _buildFieldIdx: function(doc) {
+            var fields = doc.Fields || [];
+            var map = {};
+            for (var i = 0; i < fields.length; i++) {
+                map[fields[i].name] = i;
+            }
+            return map;
+        },
+
         render: function(doc, options) {
             options = options || {};
             var recordType    = options.recordType    !== undefined ? options.recordType    : doc.Records_Type[0];
@@ -34,17 +43,17 @@
                 ? rawCallback
                 : 'app.setViewField';
 
-            // FIX H1: resolve field indices via the cache once per render() call
-            var fieldMap = (window.BEJSON && window.BEJSON.bejson_core_get_field_map)
-                ? window.BEJSON.bejson_core_get_field_map(doc)
-                : null;
+            // --- Field Map Indexing (Migration Phase 5.5) ---
+            // Internal Registry Pattern: check for cached map before recomputing
+            var fieldMap = doc._bejson_field_map || (doc._bejson_field_map = HTML3_Table._buildFieldIdx(doc));
 
-            var _getIdx = function(name) {
-                if (fieldMap && fieldMap[name] !== undefined) return fieldMap[name];
-                return doc.Fields.findIndex(function(f) { return f.name === name; });
+            var _getIdx = function(name, legacyIdx) {
+                if (fieldMap[name] !== undefined) return fieldMap[name];
+                return (legacyIdx !== undefined) ? legacyIdx : -1;
             };
 
-            var rtpIdx = _getIdx('Record_Type_Parent');
+            // Legacy Fallbacks
+            var rtpIdx = _getIdx('Record_Type_Parent', 0);
 
             var fields = doc.Fields.map(function(f, i) { return Object.assign({}, f, { orgIdx: i }); });
 

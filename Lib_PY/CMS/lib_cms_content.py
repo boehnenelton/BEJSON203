@@ -4,11 +4,12 @@ Family:       CMS
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-04
 Description:  Content handler and transformer for the CMS engine.
+REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 8.1).
 """
 
 import os
@@ -24,6 +25,20 @@ if LIB_DIR not in sys.path:
     sys.path.append(LIB_DIR)
 
 import lib_bejson_core as BEJSONCore
+
+# --- Legacy Fallback Constants ---
+_CMS_CONTENT_LEGACY = {
+    "PageRecord": {
+        "record_type_parent": 0, "page_uuid": 1, "page_title": 2, "page_slug": 3,
+        "category_ref": 4, "item_type": 5, "created_at": 6, "author_ref": 7, "featured_img": 8
+    },
+    "Content": {
+        "record_type_parent": 0, "html_body": 3, "markdown_body": 4
+    },
+    "PageMeta": {
+        "record_type_parent": 0, "meta_title": 1, "meta_description": 2
+    }
+}
 
 def _slugify(text: str) -> str:
     text = text.lower()
@@ -47,17 +62,22 @@ def _cms_content_init_page_file(file_path: str, title: str, html_body: str = "")
     
     doc = BEJSONCore.bejson_core_create_104db(record_types, fields, [])
     
+    # Map for creation (standardized creation pattern)
+    fm = {f["name"]: i for i, f in enumerate(fields)}
+    f_count = len(fields)
+    
     # Add Meta record
-    meta_row = ["PageMeta", title, ""]
-    # Pad to match field count
-    meta_row.extend([None] * (len(fields) - len(meta_row)))
+    meta_row = [None] * f_count
+    meta_row[fm["Record_Type_Parent"]] = "PageMeta"
+    meta_row[fm["meta_title"]]         = title
+    meta_row[fm["meta_description"]]   = ""
     doc = BEJSONCore.bejson_core_add_record(doc, meta_row)
     
     # Add Content record
-    # Record_Type_Parent [0], meta_title [1], meta_description [2], html_body [3], markdown_body [4]
-    content_row = ["Content", None, None, html_body, ""]
-    # Pad to match field count
-    content_row.extend([None] * (len(fields) - len(content_row)))
+    content_row = [None] * f_count
+    content_row[fm["Record_Type_Parent"]] = "Content"
+    content_row[fm["html_body"]]          = html_body
+    content_row[fm["markdown_body"]]      = ""
     
     doc = BEJSONCore.bejson_core_add_record(doc, content_row)
     BEJSONCore.bejson_core_atomic_write(file_path, doc)
@@ -69,11 +89,15 @@ def cms_content_get_page_body(pages_dir: str, page_uuid: str) -> str:
         return ""
     
     doc = BEJSONCore.bejson_core_load_file(file_path)
-    hb_idx = BEJSONCore.bejson_core_get_field_index(doc, "html_body")
-    records = BEJSONCore.bejson_core_get_records_by_type(doc, "Content")
+    fi = BEJSONCore.bejson_core_get_field_map(doc)
+    
+    rtp_idx = fi.get("Record_Type_Parent", 0)
+    hb_idx  = fi.get("html_body", _CMS_CONTENT_LEGACY["Content"]["html_body"])
+    
+    records = [v for v in doc["Values"] if len(v) > rtp_idx and v[rtp_idx] == "Content"]
     
     if records:
-        return records[0][hb_idx] or ""
+        return records[0][hb_idx] if hb_idx < len(records[0]) else ""
     return ""
 
 # ---------------------------------------------------------------------------
@@ -100,19 +124,23 @@ def cms_content_create_page(
     # 1. Update Master Index
     doc = BEJSONCore.bejson_core_load_file(master_db_path)
     
-    # Map fields
-    fields_map = {f['name']: i for i, f in enumerate(doc["Fields"])}
+    # Optimized Field Mapping + Internal Registry Injection
+    fi = BEJSONCore.bejson_core_get_field_map(doc)
+    doc["_bejson_field_map"] = fi # Inject for re-use
     
+    def _idx(name):
+        return fi.get(name, _CMS_CONTENT_LEGACY["PageRecord"].get(name.lower(), -1))
+
     new_row = [None] * len(doc["Fields"])
-    new_row[fields_map["Record_Type_Parent"]] = "PageRecord"
-    new_row[fields_map["page_uuid"]] = page_uuid
-    new_row[fields_map["page_title"]] = title
-    new_row[fields_map["page_slug"]] = page_slug
-    new_row[fields_map["category_ref"]] = category_ref
-    new_row[fields_map["item_type"]] = "page"
-    new_row[fields_map["created_at"]] = today
-    new_row[fields_map["author_ref"]] = author_ref
-    new_row[fields_map["featured_img"]] = featured_img
+    new_row[_idx("Record_Type_Parent")] = "PageRecord"
+    new_row[_idx("page_uuid")]          = page_uuid
+    new_row[_idx("page_title")]         = title
+    new_row[_idx("page_slug")]          = page_slug
+    new_row[_idx("category_ref")]       = category_ref
+    new_row[_idx("item_type")]          = "page"
+    new_row[_idx("created_at")]         = today
+    new_row[_idx("author_ref")]         = author_ref
+    new_row[_idx("featured_img")]       = featured_img
     
     doc = BEJSONCore.bejson_core_add_record(doc, new_row)
     BEJSONCore.bejson_core_atomic_write(master_db_path, doc)
@@ -138,19 +166,25 @@ def cms_content_update_page(
     master_updates = {k: v for k, v in updates.items() if k in ["title", "category_ref", "author_ref", "featured_img"]}
     if master_updates:
         doc = BEJSONCore.bejson_core_load_file(master_db_path)
-        t_idx = 0
-        u_idx = BEJSONCore.bejson_core_get_field_index(doc, "page_uuid")
+        fi = BEJSONCore.bejson_core_get_field_map(doc)
+        
+        rtp_idx   = fi.get("Record_Type_Parent", 0)
+        uuid_idx  = fi.get("page_uuid", _CMS_CONTENT_LEGACY["PageRecord"]["page_uuid"])
+        title_idx = fi.get("page_title", _CMS_CONTENT_LEGACY["PageRecord"]["page_title"])
+        slug_idx  = fi.get("page_slug", _CMS_CONTENT_LEGACY["PageRecord"]["page_slug"])
         
         found = False
-        for i, row in enumerate(doc["Values"]):
-            if row[t_idx] == "PageRecord" and row[u_idx] == page_uuid:
+        for row in doc["Values"]:
+            if len(row) > uuid_idx and row[rtp_idx] == "PageRecord" and row[uuid_idx] == page_uuid:
                 for k, v in master_updates.items():
                     # Handle title -> page_title mapping
-                    f_key = "page_title" if k == "title" else k
                     if k == "title":
-                        row[BEJSONCore.bejson_core_get_field_index(doc, "page_slug")] = _slugify(v)
-                    
-                    row[BEJSONCore.bejson_core_get_field_index(doc, f_key)] = v
+                        row[title_idx] = v
+                        row[slug_idx]  = _slugify(v)
+                    else:
+                        idx = fi.get(k, _CMS_CONTENT_LEGACY["PageRecord"].get(k, -1))
+                        if idx != -1 and idx < len(row):
+                            row[idx] = v
                 found = True
                 break
         if found:
@@ -162,18 +196,20 @@ def cms_content_update_page(
         page_file = os.path.join(pages_dir, f"{page_uuid}.json")
         if os.path.exists(page_file):
             pdoc = BEJSONCore.bejson_core_load_file(page_file)
-            pt_idx = 0
+            pfi = BEJSONCore.bejson_core_get_field_map(pdoc)
+            
+            rtp_idx = pfi.get("Record_Type_Parent", 0)
             
             if html_body is not None:
-                hb_idx = BEJSONCore.bejson_core_get_field_index(pdoc, "html_body")
+                hb_idx = pfi.get("html_body", _CMS_CONTENT_LEGACY["Content"]["html_body"])
                 for row in pdoc["Values"]:
-                    if row[pt_idx] == "Content":
+                    if len(row) > hb_idx and row[rtp_idx] == "Content":
                         row[hb_idx] = html_body
                         
             if "title" in updates:
-                mt_idx = BEJSONCore.bejson_core_get_field_index(pdoc, "meta_title")
+                mt_idx = pfi.get("meta_title", _CMS_CONTENT_LEGACY["PageMeta"]["meta_title"])
                 for row in pdoc["Values"]:
-                    if row[pt_idx] == "PageMeta":
+                    if len(row) > mt_idx and row[rtp_idx] == "PageMeta":
                         row[mt_idx] = updates["title"]
                         
             BEJSONCore.bejson_core_atomic_write(page_file, pdoc)
@@ -182,13 +218,15 @@ def cms_content_delete_page(master_db_path: str, pages_dir: str, page_uuid: str)
     """Delete page from master index and remove its content file."""
     # 1. Master Index
     doc = BEJSONCore.bejson_core_load_file(master_db_path)
-    t_idx = 0
-    u_idx = BEJSONCore.bejson_core_get_field_index(doc, "page_uuid")
+    fi = BEJSONCore.bejson_core_get_field_map(doc)
+    
+    rtp_idx  = fi.get("Record_Type_Parent", 0)
+    uuid_idx = fi.get("page_uuid", _CMS_CONTENT_LEGACY["PageRecord"]["page_uuid"])
     
     new_values = []
     found = False
     for row in doc["Values"]:
-        if row[t_idx] == "PageRecord" and row[u_idx] == page_uuid:
+        if len(row) > uuid_idx and row[rtp_idx] == "PageRecord" and row[uuid_idx] == page_uuid:
             found = True
             continue
         new_values.append(row)
@@ -208,12 +246,13 @@ def cms_content_list_pages(master_db_path: str) -> List[Dict]:
     """List all pages from master index as a list of dictionaries."""
     doc = BEJSONCore.bejson_core_load_file(master_db_path)
     records = BEJSONCore.bejson_core_get_records_by_type(doc, "PageRecord")
-    fields = BEJSONCore.bejson_core_get_fields(doc)
+    fields = doc.get("Fields", [])
     
     results = []
     for row in records:
         item = {}
         for i, f in enumerate(fields):
-            item[f['name']] = row[i]
+            if i < len(row):
+                item[f['name']] = row[i]
         results.append(item)
     return results

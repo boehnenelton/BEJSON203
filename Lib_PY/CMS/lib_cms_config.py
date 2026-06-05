@@ -13,6 +13,7 @@ Description:  Configuration manager for CMS-specific settings.
 
 import os
 import sys
+import copy
 from typing import Any, Dict, Optional
 
 # Ensure local directory is in path for relative imports
@@ -21,6 +22,14 @@ if LIB_DIR not in sys.path:
     sys.path.append(LIB_DIR)
 
 import lib_bejson_core as BEJSONCore
+
+# --- Legacy Fallback Constants ---
+_CMS_CONFIG_LEGACY = {
+    "SiteConfig": {
+        "config_key": 1,
+        "config_value": 2
+    }
+}
 
 def cms_config_init_master(db_path: str, site_title: str = "My BEJSON Site") -> Dict:
     """
@@ -52,9 +61,6 @@ def cms_config_init_master(db_path: str, site_title: str = "My BEJSON Site") -> 
         {"name": "featured_img", "type": "string", "Record_Type_Parent": "PageRecord"},
     ]
     
-    # Common fields for Nav, Social, Ads, etc. can be added here or later.
-    # For now, let's stick to the core blog requirements.
-
     doc = BEJSONCore.bejson_core_create_104db(record_types, fields, [])
     
     # Add default config records
@@ -70,7 +76,7 @@ def cms_config_init_master(db_path: str, site_title: str = "My BEJSON Site") -> 
     for row in defaults:
         # Pad with None to match field count
         padded_row = row + [None] * (field_count - len(row))
-        doc = BEJSONCore.bejson_core_add_record(doc, padded_row)
+        BEJSONCore.bejson_core_add_record(doc, padded_row)
         
     BEJSONCore.bejson_core_atomic_write(db_path, doc)
     return doc
@@ -80,14 +86,19 @@ def cms_config_get_all(db_path: str) -> Dict[str, str]:
     Retrieve all site configuration key-value pairs.
     """
     doc = BEJSONCore.bejson_core_load_file(db_path)
-    records = BEJSONCore.bejson_core_get_records_by_type(doc, "SiteConfig")
+    if not doc: return {}
+    
+    records = BEJSONCore.bejson_core_filter_rows(doc, "Record_Type_Parent", "SiteConfig")
+    
+    # Optimized Field Mapping
+    fi = BEJSONCore.bejson_core_get_field_map(doc)
+    k_idx = fi.get("config_key", _CMS_CONFIG_LEGACY["SiteConfig"]["config_key"])
+    v_idx = fi.get("config_value", _CMS_CONFIG_LEGACY["SiteConfig"]["config_value"])
     
     config = {}
-    k_idx = BEJSONCore.bejson_core_get_field_index(doc, "config_key")
-    v_idx = BEJSONCore.bejson_core_get_field_index(doc, "config_value")
-    
     for row in records:
-        config[row[k_idx]] = row[v_idx]
+        if len(row) > max(k_idx, v_idx):
+            config[row[k_idx]] = row[v_idx]
     return config
 
 def cms_config_set(db_path: str, key: str, value: str) -> None:
@@ -95,10 +106,15 @@ def cms_config_set(db_path: str, key: str, value: str) -> None:
     Set or update a configuration value.
     """
     doc = BEJSONCore.bejson_core_load_file(db_path)
-    records = doc["Values"]
+    if not doc: return
+
+    # Work on a copy to ensure memory consistency on write failure (Finding 20)
+    doc_copy = copy.deepcopy(doc)
+    records = doc_copy["Values"]
     
-    k_idx = BEJSONCore.bejson_core_get_field_index(doc, "config_key")
-    v_idx = BEJSONCore.bejson_core_get_field_index(doc, "config_value")
+    fi = BEJSONCore.bejson_core_get_field_map(doc_copy)
+    k_idx = fi.get("config_key", _CMS_CONFIG_LEGACY["SiteConfig"]["config_key"])
+    v_idx = fi.get("config_value", _CMS_CONFIG_LEGACY["SiteConfig"]["config_value"])
     t_idx = 0 # Record_Type_Parent is always first in 104db per convention
     
     found = False
@@ -110,14 +126,14 @@ def cms_config_set(db_path: str, key: str, value: str) -> None:
             
     if not found:
         # Add new config record
-        field_count = len(doc["Fields"])
+        field_count = len(doc_copy["Fields"])
         new_row = [None] * field_count
         new_row[t_idx] = "SiteConfig"
         new_row[k_idx] = key
         new_row[v_idx] = value
-        doc = BEJSONCore.bejson_core_add_record(doc, new_row)
+        BEJSONCore.bejson_core_add_record(doc_copy, new_row)
         
-    BEJSONCore.bejson_core_atomic_write(db_path, doc)
+    BEJSONCore.bejson_core_atomic_write(db_path, doc_copy)
 
 def cms_config_get(db_path: str, key: str, default: Optional[str] = None) -> Optional[str]:
     """

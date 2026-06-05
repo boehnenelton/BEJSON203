@@ -92,6 +92,17 @@ class MFDB_CMS_Manager:
         MFDBCore.MFDBArchive.commit(self.content_db_root, self.content_archive)
         self.clear_changes()
 
+    def _create_record(self, entity_schema: List[Dict], rtp: str, values_map: Dict) -> List:
+        """Helper to create a positional record from a named values map."""
+        fm = {f["name"]: i for i, f in enumerate(entity_schema)}
+        row = [None] * len(entity_schema)
+        # 104db discriminator handling
+        if "Record_Type_Parent" in fm:
+            row[fm["Record_Type_Parent"]] = rtp
+        for k, v in values_map.items():
+            if k in fm: row[fm[k]] = v
+        return row
+
     def factory_reset(self):
         dirs_to_wipe = [self.workspace_root, self.assets_dir, self.apps_dir, self.www_root]
         for d in dirs_to_wipe:
@@ -117,7 +128,11 @@ class MFDB_CMS_Manager:
             self.add_global_config("site_title", "boehnenelton2024")
             self.add_global_config("site_tagline", "Premium Dark Theme Templates")
             self.add_global_config("base_url", "https://boehnenelton2024.pages.dev")
-            MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "SocialLink", ["GitHub", "https://github.com/boehnenelton", "github"])
+            
+            # Dynamic Creation
+            soc_schema = next(e["fields"] for e in global_entities if e["name"] == "SocialLink")
+            MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "SocialLink", 
+                self._create_record(soc_schema, "SocialLink", {"platform": "GitHub", "url": "https://github.com/boehnenelton", "icon": "github"}))
 
         # 2. CONTENT DATABASE
         if not os.path.exists(self.content_manifest):
@@ -131,7 +146,10 @@ class MFDB_CMS_Manager:
             self.add_category("Uncategorized", "uncategorized", "General posts", "blog")
 
     def add_global_config(self, key: str, value: str, desc: str = ""):
-        MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "SiteConfig", [key, value, desc])
+        # Schema lookup for dynamic creation
+        schema = [{"name": "config_key", "type": "string"}, {"name": "config_value", "type": "string"}, {"name": "description", "type": "string"}]
+        row = self._create_record(schema, "SiteConfig", {"config_key": key, "config_value": value, "description": desc})
+        MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "SiteConfig", row)
         self.log_change("SiteConfig", "ADD", key)
 
     def get_global_configs(self) -> Dict[str, str]:

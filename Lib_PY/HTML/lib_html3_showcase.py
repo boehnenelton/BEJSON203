@@ -4,18 +4,36 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.0.0 OFFICIAL
+Version:      3.1.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-29
+Date:         2026-06-04
 Description:  BECSS-compliant showcase components and grids.
+REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 5.1).
 """
 
 import html as html_mod
+import os
+import sys
 
-VERSION = "3.0.0"
+# --- Sibling Resolution ---
+LIB_DIR = os.path.dirname(os.path.abspath(__file__))
+CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
+if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
+
+try:
+    from lib_bejson_core import bejson_core_get_field_map
+except ImportError:
+    # Transition fallback for environments where Core is missing
+    def bejson_core_get_field_map(doc):
+        return {f["name"]: i for i, f in enumerate(doc.get("Fields", [])) if isinstance(f, dict) and "name" in f}
+
+VERSION = "3.1.0"
 SCRIPT_NAME = "lib_html3_showcase.py"
 RELATIONAL_ID = "88804025-c258-4f77-8406-badb4fe6b21b"
+
+# --- Legacy Fallback Constants ---
+_BENTO_LEGACY = {"label": 0, "value": 1, "weight": 2}
 
 def html_bento_grid(bejson_doc):
     """
@@ -31,12 +49,13 @@ def html_bento_grid(bejson_doc):
     if not isinstance(fields, list) or not isinstance(values, list):
         return ""
 
-    # Map field indices
-    fi = {f["name"]: i for i, f in enumerate(fields) if isinstance(f, dict) and "name" in f}
+    # Map field indices with standardized Core utility + Injection
+    fi = bejson_core_get_field_map(bejson_doc)
     
     def safe_get(r, key, default=""):
-        idx = fi.get(key)
-        if idx is not None and idx < len(r):
+        # Resolve with Safe Get fallback
+        idx = fi.get(key, _BENTO_LEGACY.get(key, -1))
+        if idx != -1 and idx < len(r):
             val = r[idx]
             return val if val is not None else default
         return default

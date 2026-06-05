@@ -762,7 +762,7 @@
       "/data/data/com.termux/files/home/libraries/Lib_PY/System/lib_be_project_service.py",
       "Background service for project lifecycle and dependency management.",
       [
-        "get_bec_root",
+        "get_admin_root",
         "_create_project_record",
         "validate_record",
         "_load_db",
@@ -800,7 +800,7 @@
         "__init__",
         "acquire",
         "release",
-        "get_bec_root",
+        "get_admin_root",
         "save_state",
         "load_state",
         "load_all_state"

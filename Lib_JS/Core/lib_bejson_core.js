@@ -4,12 +4,13 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "JS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.2 OFFICIAL
- * MFDB Version: 1.31
- * Format_Creator: Elton Boehnen
- * Date:         2026-05-18
- * Description:  Low-level primitive operations for BEJSON document manipulation.
- */
+ Version:      2.0.3 OFFICIAL
+             MFDB Version: 1.31
+ Format_Creator: Elton Boehnen
+ Date:         2026-06-05
+ Description:  Low-level primitive operations for BEJSON document manipulation.
+ REMEDIATED:   Internal metadata stripping in serialization (Audit Finding 13).
+  */
 'use strict';
 
 const BEJSON_ERRORS = (typeof require !== 'undefined') 
@@ -242,6 +243,22 @@ function bejson_core_clear_field_map_cache() {
     _FIELD_MAP_CACHE.clear();
 }
 
+/**
+ * Serializes a BEJSON document to a string, stripping internal metadata keys
+ * (those starting with '_') to prevent leakage into persisted files.
+ * @param {Object} doc - The BEJSON document to serialize.
+ * @param {number} indent - Indentation spaces.
+ * @returns {string} The JSON string.
+ */
+function bejson_core_serialize(doc, indent = 2) {
+    if (!doc) return "";
+    const cleanDoc = {};
+    Object.keys(doc).forEach(key => {
+        if (!key.startsWith("_")) cleanDoc[key] = doc[key];
+    });
+    return JSON.stringify(cleanDoc, null, indent);
+}
+
 const CoreExports = {
     BEJSONCoreError,
     BEJSONEngine,
@@ -252,6 +269,7 @@ const CoreExports = {
     bejson_core_get_field_map,
     bejson_core_get_field_index,
     bejson_core_clear_field_map_cache,
+    bejson_core_serialize,
     // Error codes
     E_CORE_INVALID_VERSION, E_CORE_INVALID_OPERATION, E_CORE_INDEX_OUT_OF_BOUNDS,
     E_CORE_FIELD_NOT_FOUND, E_CORE_TYPE_CONVERSION_FAILED, E_CORE_BACKUP_FAILED,

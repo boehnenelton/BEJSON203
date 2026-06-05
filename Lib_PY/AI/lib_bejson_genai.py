@@ -4,11 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-04
 Description:  Interface for Google Generative AI (GenAI) models.
+REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 4.3).
 """
 
 import os
@@ -30,8 +31,11 @@ if CORE_DIR not in sys.path:
 
 try:
     from lib_bejson_env import resolve_path
+    from lib_bejson_core import bejson_core_get_field_map
 except ImportError:
     def resolve_path(p): return p
+    def bejson_core_get_field_map(doc):
+        return {f["name"]: i for i, f in enumerate(doc.get("Fields", []))}
 
 # ANSI Status Colors
 C_RED = "\033[91m"
@@ -71,18 +75,13 @@ class GenAIKeyManager:
             with open(self.key_file, 'r') as f:
                 doc = json.load(f)
                 
-                # Identify 'key' field index
-                fields = doc.get("Fields", [])
-                key_idx = -1
-                for i, field in enumerate(fields):
-                    if field.get("name") == "key":
-                        key_idx = i
-                        break
+                # Identify 'key' field index using Field Map standard
+                fm = bejson_core_get_field_map(doc)
+                key_idx = fm.get("key", 0) # Legacy fallback to index 0
                 
-                if key_idx != -1:
-                    # Extract keys from Values
-                    registry_keys = [row[key_idx] for row in doc.get("Values", []) if len(row) > key_idx and row[key_idx] and "YOUR_KEY" not in str(row[key_idx])]
-                    self.keys.extend(registry_keys)
+                # Extract keys from Values
+                registry_keys = [row[key_idx] for row in doc.get("Values", []) if len(row) > key_idx and row[key_idx] and "YOUR_KEY" not in str(row[key_idx])]
+                self.keys.extend(registry_keys)
                     
             # Randomize order for true round-robin
             random.shuffle(self.keys)

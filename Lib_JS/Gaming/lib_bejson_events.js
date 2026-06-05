@@ -16,7 +16,7 @@ window.Core = window.Core || {};
 class SwitchEvents {
     constructor(stateManager) {
         this.state = stateManager;
-        this.events = Switch.BEJSON.create104("Events", [
+        this.events = BEJSON_Switch.BEJSON.create104("Events", [
             { name: "id", type: "string" },
             { name: "type", type: "string" },
             { name: "x", type: "number" },
@@ -49,5 +49,5 @@ class SwitchEvents {
     }
 }
 
-Switch.Events = SwitchEvents;
+BEJSON_Switch.Events = SwitchEvents;
 export default SwitchEvents;

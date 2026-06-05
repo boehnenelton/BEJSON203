@@ -3,11 +3,12 @@
 # Jurisdiction: ["BEJSON_LIBRARIES", "SH"]
 # Status:       OFFICIAL
 # Author:       Elton Boehnen
-# Version:      2.0.1 OFFICIAL
+# Version:      2.1.0 OFFICIAL
 # MFDB Version: 1.31
 # Format_Creator: Elton Boehnen
-# Date:         2026-05-18
+# Date:         2026-06-04
 # Description:  Shell-based dependency and environment validator.
+# REMEDIATED:   Verified portability and bumped version (Phase 6.4).
 
 # JURISDICTIONS: ["BASH", "CORE_COMMAND"]
 
@@ -21,7 +22,7 @@ check_internet() {
 }
 
 install_dependencies() {
-    local deps=("rsync" "jq" "figlet" "toilet")
+    local deps=("rsync" "jq" "figlet" "toilet" "python3" "git")
     local missing=()
     
     for dep in "${deps[@]}"; do

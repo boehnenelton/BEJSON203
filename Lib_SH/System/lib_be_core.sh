@@ -3,33 +3,38 @@
 # Jurisdiction: ["BEJSON_LIBRARIES", "SH"]
 # Status:       OFFICIAL
 # Author:       Elton Boehnen
-# Version:      2.0.1 OFFICIAL
+# Version:      2.2.0 OFFICIAL
 # MFDB Version: 1.31
 # Format_Creator: Elton Boehnen
-# Date:         2026-05-18
+# Date:         2026-06-04
 # Description:  BE-specific core system abstractions and utility wrappers.
 
-# Get the root path of BECore dynamically
+# Get the root path of the Admin workspace dynamically
 bec_core_get_root() {
-    if [[ -n "${BEC_ROOT:-}" ]]; then
-        echo "$BEC_ROOT"
+    if [[ -n "${ADMIN_ROOT:-}" ]]; then
+        echo "$ADMIN_ROOT"
         return 0
     fi
-    # REMEDIATED: Use BEJSON_STORAGE_ROOT to avoid hardcoded absolute paths (Phase 1)
-    local default_storage="${BEJSON_STORAGE_ROOT:-/storage/emulated/0}"
-    local root_file="${SC_ROOT:-$default_storage/Brain-Container/BEJSON_Core}/Data/state/BEC_ROOT.txt"
+    # REMEDIATED: Removed hardcoded Brain-Container and legacy SC_ROOT (Phase 6.5)
+    local storage_root="${BEJSON_STORAGE_ROOT:-}"
+    if [[ -z "$storage_root" ]]; then
+        echo "ERROR: BEJSON_STORAGE_ROOT is not set." >&2
+        return 1
+    fi
+    
+    # Resolve Admin Root
+    local root_file="${storage_root}/Admin/data/state/ADMIN_ROOT.txt"
     if [[ -f "$root_file" ]]; then
         cat "$root_file"
     else
-        # Fallback if state not yet initialized
-        echo "${SC_ROOT:-$default_storage/Brain-Container/BEJSON_Core}"
+        echo "${storage_root}/Admin"
     fi
 }
 
-# Export BEC_ROOT if not set
+# Export ADMIN_ROOT if not set
 bec_core_source_env() {
-    if [[ -z "$BEC_ROOT" ]]; then
-        export BEC_ROOT=$(bec_core_get_root)
+    if [[ -z "${ADMIN_ROOT:-}" ]]; then
+        export ADMIN_ROOT=$(bec_core_get_root)
     fi
 }
 

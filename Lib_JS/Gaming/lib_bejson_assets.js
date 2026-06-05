@@ -15,7 +15,7 @@ window.Core = window.Core || {};
 
 class SwitchAssets {
     constructor(name = "AssetRegistry") {
-        this.bejson = Switch.BEJSON.create104a(name, [
+        this.bejson = BEJSON_Switch.BEJSON.create104a(name, [
             { name: "id", type: "string" },
             { name: "type", type: "string" },
             { name: "path", type: "string" },
@@ -45,5 +45,5 @@ class SwitchAssets {
     get(id) { return this.cache.get(id); }
 }
 
-Switch.Assets = SwitchAssets;
+BEJSON_Switch.Assets = SwitchAssets;
 export default SwitchAssets;

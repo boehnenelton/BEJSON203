@@ -16,6 +16,7 @@ This directory is a **VERIFIED SLAVE MIRROR** of the authoritative Termux librar
 ### MANDATORY BEHAVIOR
 1. **Never Edit Directly**: Any changes made directly to the Admin Mirror will be **OVERWRITTEN** by the next synchronization cycle.
 2. **Atomic Synchronization**: Updates to the Admin Mirror are pushed only after a task is logged as "COMPLETED" in the Termux environment.
+3. **Environment-Driven Resolution**: All internal library references and schema lookups MUST utilize the `BEJSON_LIB_ROOT` environment variable. Hardcoded absolute paths are strictly prohibited.
 
 ---
 *Refer to the Project Root GEMINI.md for the Field Map Migration Plan.*

@@ -17,7 +17,7 @@ class SwitchUIScreens {
     constructor(renderer) {
         this.renderer = renderer;
         this.activeScreen = null;
-        this.screens = Switch.BEJSON.create104("UIScreens", [
+        this.screens = BEJSON_Switch.BEJSON.create104("UIScreens", [
             { name: "id", type: "string" },
             { name: "title", type: "string" },
             { name: "options", type: "array" }
@@ -78,5 +78,5 @@ class SwitchUIScreens {
     }
 }
 
-Switch.UIScreens = SwitchUIScreens;
+BEJSON_Switch.UIScreens = SwitchUIScreens;
 export default SwitchUIScreens;

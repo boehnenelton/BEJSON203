@@ -4,11 +4,13 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-05
 Description:  Environment and path resolution utility for the BEJSON ecosystem.
+REMEDIATED:   Purged 'Brain-Container' and 'SC_ROOT'; implemented Admin/Lib roots (Phase 6.5).
+REMEDIATED:   Removed hardcoded /storage/emulated/0 fallback (Audit Finding 10).
 """
 
 import os
@@ -17,32 +19,36 @@ import sys
 def resolve_path(path_str: str) -> str:
     """
     Resolves system placeholders and absolute paths to environment-relative paths.
-    Prioritizes environment variables (SC_ROOT, INTERNAL_STORAGE, etc).
+    Prioritizes environment variables (ADMIN_ROOT, BEJSON_LIB_ROOT, etc).
     """
     if not path_str:
         return path_str
     
     # Define standard roots with defaults
-    # Use os.path.expanduser("~") for a more portable home default
-    default_home = os.path.expanduser("~")
-    home = os.getenv("HOME", default_home)
+    home = os.environ.get("HOME", os.path.expanduser("~"))
     
-    # INTERNAL_STORAGE often points to /storage/emulated/0 on Android
-    # REMEDIATED: Use BEJSON_STORAGE_ROOT to avoid hardcoded absolute paths (Phase 1)
-    storage_root = os.getenv("BEJSON_STORAGE_ROOT", "/storage/emulated/0")
-    internal_storage = os.getenv("INTERNAL_STORAGE", storage_root)
+    # Storage and Admin Roots
+    # RE-ALIGNED: Fallback to HOME if storage root is unset to avoid hardcodes.
+    storage_root = os.environ.get("BEJSON_STORAGE_ROOT", home)
+    admin_root   = os.environ.get("ADMIN_ROOT", os.path.join(storage_root, "Admin"))
     
-    # SC_ROOT is typically within INTERNAL_STORAGE
-    default_sc_root = os.path.join(internal_storage, "Brain-Container/BEJSON_Core")
-    sc_root = os.getenv("SC_ROOT", default_sc_root)
+    # Library Root Resolution (Admin/libraries fallback to ~/libraries)
+    lib_root = os.environ.get("BEJSON_LIB_ROOT")
+    if not lib_root:
+        candidate_admin = os.path.join(admin_root, "libraries")
+        candidate_home  = os.path.join(home, "libraries")
+        lib_root = candidate_admin if os.path.exists(candidate_admin) else candidate_home
     
     mappings = {
-        "{SC_ROOT}": sc_root,
-        "{INTERNAL_STORAGE}": internal_storage,
+        "{BEJSON_LIB_ROOT}": lib_root,
+        "{ADMIN_ROOT}": admin_root,
+        "{INTERNAL_STORAGE}": storage_root,
         "{HOME}": home,
+        # Legacy placeholder mapping
+        "{SC_ROOT}": admin_root,
+        "{BEC_ROOT}": admin_root,
         # Legacy absolute paths to be replaced
-        "/storage/emulated/0": internal_storage,
-        "/Data/Data/com.termux/files/home": home,
+        "/storage/emulated/0": storage_root,
         "/data/data/com.termux/files/home": home
     }
     
@@ -56,7 +62,7 @@ def resolve_path(path_str: str) -> str:
     
     # Handle home expansion
     resolved = os.path.expanduser(resolved)
-    # Handle environment variables in path (e.g. $SC_ROOT)
+    # Handle environment variables in path (e.g. $VAR)
     resolved = os.path.expandvars(resolved)
     
     return os.path.normpath(resolved)

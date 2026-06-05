@@ -4,12 +4,13 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.2 OFFICIAL
+Version:      2.0.3 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-02
+Date:         2026-06-05
 Description:  Low-level atomic operations and data structure management.
 REMEDIATED:   Implemented ResilientPIDLock (Policy Sec. 48).
+REMEDIATED:   Internal metadata stripping in atomic write (Audit Finding 13).
 """
 
 import json
@@ -100,10 +101,13 @@ def bejson_core_atomic_write(path: str, data: dict) -> bool:
     target_dir = os.path.dirname(os.path.abspath(path))
     os.makedirs(target_dir, exist_ok=True)
 
+    # RE-ALIGNED: Strip internal metadata keys (starting with _) before write
+    clean_data = {k: v for k, v in data.items() if not k.startswith("_")}
+
     fd, tmp_path = tempfile.mkstemp(dir=target_dir, suffix=".tmp")
     try:
         with os.fdopen(fd, 'w', encoding='utf-8') as f:
-            json.dump(data, f, indent=2)
+            json.dump(clean_data, f, indent=2)
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp_path, path)

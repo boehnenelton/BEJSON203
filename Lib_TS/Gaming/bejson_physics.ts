@@ -4,15 +4,19 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.1.0 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-05-18
+ * Date:         2026-06-04
  * Description:  2D/3D physics calculation engine for BEJSON-based simulations.
+ * REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Migration Phase 3.1).
  */
 
-// bejson_physics.ts
-import { BEJSONDocument, createEmpty104 } from "./index";
+import { BEJSONDocument, createEmpty104, bejson_core_get_field_map } from "../index";
+
+const PHYSICS_LEGACY = {
+  id: 0, x: 1, y: 2, w: 3, h: 4, vx: 5, vy: 6, isStatic: 7, mass: 8
+} as const;
 
 export class BEJSONPhysics {
   public gravity: { x: number; y: number };
@@ -33,27 +37,6 @@ export class BEJSONPhysics {
     ]);
   }
 
-    if (!b) return;
-    (b[5] as number) += ix;
-    (b[6] as number) += iy;
-  }
-
-    if (!b) return;
-
-    const oldX = b[1] as number;
-    (b[1] as number) += dx;
-    if (this._checkStaticCollisions(b, staticColliders)) {
-        (b[1] as number) = oldX;
-    }
-
-    const oldY = b[2] as number;
-    (b[2] as number) += dy;
-    if (this._checkStaticCollisions(b, staticColliders)) {
-        (b[2] as number) = oldY;
-    }
-  }
-
-
   addBody(id: string, x: number, y: number, w: number, h: number, options: any = {}) {
     this.bodies.Values.push([
       id, x, y, w, h, 
@@ -64,63 +47,75 @@ export class BEJSONPhysics {
   }
 
   applyImpulse(id: string, ix: number, iy: number) {
-    const b = this.bodies.Values.find(v => v[0] === id);
+    const fm = bejson_core_get_field_map(this.bodies);
+    const idIdx = fm["id"] ?? PHYSICS_LEGACY.id;
+    const vxIdx = fm["vx"] ?? PHYSICS_LEGACY.vx;
+    const vyIdx = fm["vy"] ?? PHYSICS_LEGACY.vy;
+    const massIdx = fm["mass"] ?? PHYSICS_LEGACY.mass;
+
+    const b = this.bodies.Values.find(v => v[idIdx] === id);
     if (!b) return;
-    const mass = (b[8] as number) || 1;
-    (b[5] as number) += ix / mass;
-    (b[6] as number) += iy / mass;
+    const mass = (b[massIdx] as number) || 1;
+    (b[vxIdx] as number) += ix / mass;
+    (b[vyIdx] as number) += iy / mass;
   }
 
   moveBody(id: string, dx: number, dy: number, staticColliders: any[] = []) {
-    const b = this.bodies.Values.find(v => v[0] === id);
+    const fm = bejson_core_get_field_map(this.bodies);
+    const idIdx = fm["id"] ?? PHYSICS_LEGACY.id;
+    const xIdx = fm["x"] ?? PHYSICS_LEGACY.x;
+    const yIdx = fm["y"] ?? PHYSICS_LEGACY.y;
+
+    const b = this.bodies.Values.find(v => v[idIdx] === id);
     if (!b) return;
 
-    const oldX = b[1] as number;
-    (b[1] as number) += dx;
+    const oldX = b[xIdx] as number;
+    (b[xIdx] as number) += dx;
     if (this._checkStaticCollisions(b, staticColliders)) {
-        (b[1] as number) = oldX;
+        (b[xIdx] as number) = oldX;
     }
 
-    const oldY = b[2] as number;
-    (b[2] as number) += dy;
+    const oldY = b[yIdx] as number;
+    (b[yIdx] as number) += dy;
     if (this._checkStaticCollisions(b, staticColliders)) {
-        (b[2] as number) = oldY;
+        (b[yIdx] as number) = oldY;
     }
   }
 
-
   step(dt: number, staticColliders: any[] = []) {
+    const fm = bejson_core_get_field_map(this.bodies);
+    const xIdx = fm["x"] ?? PHYSICS_LEGACY.x;
+    const yIdx = fm["y"] ?? PHYSICS_LEGACY.y;
+    const vxIdx = fm["vx"] ?? PHYSICS_LEGACY.vx;
+    const vyIdx = fm["vy"] ?? PHYSICS_LEGACY.vy;
+    const isStaticIdx = fm["isStatic"] ?? PHYSICS_LEGACY.isStatic;
+
     const values = this.bodies.Values;
-    // 1. Integrate & Resolve Static
     for (let i = 0; i < values.length; i++) {
       const b = values[i];
-      if (b[7]) continue; // isStatic
+      if (b[isStaticIdx]) continue;
 
-      (b[5] as number) += this.gravity.x * dt; // vx
-      (b[6] as number) += this.gravity.y * dt; // vy
+      (b[vxIdx] as number) += this.gravity.x * dt;
+      (b[vyIdx] as number) += this.gravity.y * dt;
       
-      // Friction (Standardized 0.9)
-      (b[5] as number) *= 0.9;
-      (b[6] as number) *= 0.9;
+      (b[vxIdx] as number) *= 0.9;
+      (b[vyIdx] as number) *= 0.9;
 
-      // X Axis
-      const oldX = b[1] as number;
-      (b[1] as number) += (b[5] as number) * dt;
+      const oldX = b[xIdx] as number;
+      (b[xIdx] as number) += (b[vxIdx] as number) * dt;
       if (this._checkStaticCollisions(b, staticColliders)) {
-          (b[1] as number) = oldX;
-          (b[5] as number) = 0;
+          (b[xIdx] as number) = oldX;
+          (b[vxIdx] as number) = 0;
       }
 
-      // Y Axis
-      const oldY = b[2] as number;
-      (b[2] as number) += (b[6] as number) * dt;
+      const oldY = b[yIdx] as number;
+      (b[yIdx] as number) += (b[vyIdx] as number) * dt;
       if (this._checkStaticCollisions(b, staticColliders)) {
-          (b[2] as number) = oldY;
-          (b[6] as number) = 0;
+          (b[yIdx] as number) = oldY;
+          (b[vyIdx] as number) = 0;
       }
     }
 
-    // 2. Resolve Dynamic (Simple Swap)
     for (let i = 0; i < values.length; i++) {
       const bA = values[i];
       for (let j = i + 1; j < values.length; j++) {
@@ -133,14 +128,20 @@ export class BEJSONPhysics {
   }
 
   private _checkStaticCollisions(b: any[], colliders: any[]) {
+    const fm = bejson_core_get_field_map(this.bodies);
+    const xIdx = fm["x"] ?? PHYSICS_LEGACY.x;
+    const yIdx = fm["y"] ?? PHYSICS_LEGACY.y;
+    const wIdx = fm["w"] ?? PHYSICS_LEGACY.w;
+    const hIdx = fm["h"] ?? PHYSICS_LEGACY.h;
+
     for (const c of colliders) {
       const cx = Array.isArray(c) ? c[0] : c.x;
       const cy = Array.isArray(c) ? c[1] : c.y;
       const cw = Array.isArray(c) ? c[2] : (c.w || c.width);
       const ch = Array.isArray(c) ? c[3] : (c.h || c.height);
 
-      if ((b[1] as number) < cx + cw && (b[1] as number) + (b[3] as number) > cx && 
-          (b[2] as number) < cy + ch && (b[2] as number) + (b[4] as number) > cy) {
+      if ((b[xIdx] as number) < cx + cw && (b[xIdx] as number) + (b[wIdx] as number) > cx && 
+          (b[yIdx] as number) < cy + ch && (b[yIdx] as number) + (b[hIdx] as number) > cy) {
         return true;
       }
     }
@@ -148,40 +149,51 @@ export class BEJSONPhysics {
   }
 
   private _checkAABB(a: any[], b: any[]) {
-    return ((a[1] as number) < (b[1] as number) + (b[3] as number) && 
-            (a[1] as number) + (a[3] as number) > (b[1] as number) && 
-            (a[2] as number) < (b[2] as number) + (b[4] as number) && 
-            (a[2] as number) + (a[4] as number) > (b[2] as number));
+    const fm = bejson_core_get_field_map(this.bodies);
+    const xIdx = fm["x"] ?? PHYSICS_LEGACY.x;
+    const yIdx = fm["y"] ?? PHYSICS_LEGACY.y;
+    const wIdx = fm["w"] ?? PHYSICS_LEGACY.w;
+    const hIdx = fm["h"] ?? PHYSICS_LEGACY.h;
+
+    return ((a[xIdx] as number) < (b[xIdx] as number) + (b[wIdx] as number) && 
+            (a[xIdx] as number) + (a[wIdx] as number) > (b[xIdx] as number) && 
+            (a[yIdx] as number) < (b[yIdx] as number) + (b[hIdx] as number) && 
+            (a[yIdx] as number) + (a[hIdx] as number) > (b[yIdx] as number));
   }
 
   private _resolveCollision(a: any[], b: any[]) {
-    if (a[7] && b[7]) return; // both static
+    const fm = bejson_core_get_field_map(this.bodies);
+    const vxIdx = fm["vx"] ?? PHYSICS_LEGACY.vx;
+    const vyIdx = fm["vy"] ?? PHYSICS_LEGACY.vy;
+    const isStaticIdx = fm["isStatic"] ?? PHYSICS_LEGACY.isStatic;
+    const massIdx = fm["mass"] ?? PHYSICS_LEGACY.mass;
+
+    if (a[isStaticIdx] && b[isStaticIdx]) return;
     
-    const m1 = (a[8] as number) || 1;
-    const m2 = (b[8] as number) || 1;
+    const m1 = (a[massIdx] as number) || 1;
+    const m2 = (b[massIdx] as number) || 1;
     const totalMass = m1 + m2;
 
-    const v1x = a[5] as number;
-    const v1y = a[6] as number;
-    const v2x = b[5] as number;
-    const v2y = b[6] as number;
+    const v1x = a[vxIdx] as number;
+    const v1y = a[vyIdx] as number;
+    const v2x = b[vxIdx] as number;
+    const v2y = b[vyIdx] as number;
 
-    if (a[7]) { // a is static
-        (b[5] as number) = -v2x; 
-        (b[6] as number) = -v2y;
+    if (a[isStaticIdx]) {
+        (b[vxIdx] as number) = -v2x; 
+        (b[vyIdx] as number) = -v2y;
         return;
     }
-    if (b[7]) { // b is static
-        (a[5] as number) = -v1x; 
-        (a[6] as number) = -v1y;
+    if (b[isStaticIdx]) {
+        (a[vxIdx] as number) = -v1x; 
+        (a[vyIdx] as number) = -v1y;
         return;
     }
 
-    // Elastic collision formula for 1D applied to each axis
-    (a[5] as number) = ((v1x * (m1 - m2)) + (2 * m2 * v2x)) / totalMass;
-    (b[5] as number) = ((v2x * (m2 - m1)) + (2 * m1 * v1x)) / totalMass;
+    (a[vxIdx] as number) = ((v1x * (m1 - m2)) + (2 * m2 * v2x)) / totalMass;
+    (b[vxIdx] as number) = ((v2x * (m2 - m1)) + (2 * m1 * v1x)) / totalMass;
 
-    (a[6] as number) = ((v1y * (m1 - m2)) + (2 * m2 * v2y)) / totalMass;
-    (b[6] as number) = ((v2y * (m2 - m1)) + (2 * m1 * v1y)) / totalMass;
+    (a[vyIdx] as number) = ((v1y * (m1 - m2)) + (2 * m2 * v2y)) / totalMass;
+    (b[vyIdx] as number) = ((v2y * (m2 - m1)) + (2 * m1 * v1y)) / totalMass;
   }
 }

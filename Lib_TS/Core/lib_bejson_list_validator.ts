@@ -1,13 +1,108 @@
-import { bejson_validator_validate_string } from "./bejson_validators";
-import { BEJSONDocument } from "./bejson_types";
+/**
+ * Library:      lib_bejson_list_validator.ts
+ * Family:       Core
+ * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
+ * Status:       OFFICIAL
+ * Author:       Elton Boehnen
+ * Version:      1.0.1 OFFICIAL
+ * Description:  TS implementation of the Hierarchical List Validator.
+ */
 
-export const validateList = (json: string) => {
-  const baseResult = bejson_validator_validate_string(json);
-  if (!baseResult) return { valid: false, errors: ["Base validation failed"] };
+import { validateDocument } from "./lib_bejson_validators";
+import { BEJSONDocument, ValidationResult, BEJSON_VALIDATION_CODES as E } from "./lib_bejson_types";
 
-  const doc: BEJSONDocument = JSON.parse(json);
-  if (doc.Format_Version !== "104a") return { valid: false, errors: ["Must be 104a"] };
+/**
+ * Validates a Hierarchical List (BEJSON 104a with id and parent_id fields).
+ * Ensures no orphans exist and structure follows positional integrity.
+ */
+export function validateList(jsonString: string): ValidationResult {
+  const result = validateDocument(JSON.parse(jsonString));
+  if (!result.valid) return result;
 
-  // Hierarchy logic matches JS implementation
-  return { valid: true, errors: [] };
-};
+  const doc: BEJSONDocument = JSON.parse(jsonString);
+  if (doc.Format_Version !== "104a") {
+    result.valid = false;
+    result.errors.push({
+      code: E.VERSION_CONSTRAINT,
+      message: "Hierarchical List must be BEJSON 104a."
+    });
+    return result;
+  }
+
+  const idIdx = doc.Fields.findIndex(f => f.name === "id");
+  const pidIdx = doc.Fields.findIndex(f => f.name === "parent_id");
+
+  if (idIdx === -1 || pidIdx === -1) {
+    result.valid = false;
+    result.errors.push({
+      code: E.MISSING_MANDATORY_KEY,
+      message: "Hierarchical List requires 'id' and 'parent_id' fields."
+    });
+    return result;
+  }
+
+  const ids = new Set<any>();
+  const parentRefs = new Map<any, any>();
+
+  for (let i = 0; i < doc.Values.length; i++) {
+    const row = doc.Values[i];
+    const id = row[idIdx];
+    const pid = row[pidIdx];
+
+    if (id === null || id === undefined) {
+      result.valid = false;
+      result.errors.push({
+        code: E.VALUE_TYPE_MISMATCH,
+        message: `Row ${i} has null or undefined id.`,
+        recordIndex: i
+      });
+      continue;
+    }
+
+    if (ids.has(id)) {
+      result.valid = false;
+      result.errors.push({
+        code: E.DUPLICATE_FIELD_NAME, // Using duplicate field name code for duplicate IDs
+        message: `Duplicate ID detected: ${id}`,
+        recordIndex: i
+      });
+    }
+    ids.add(id);
+
+    if (pid !== null && pid !== undefined && pid !== "") {
+      parentRefs.set(id, pid);
+    }
+  }
+
+  // Orphan Detection
+  for (const [uid, pid] of parentRefs.entries()) {
+    if (!ids.has(pid)) {
+      result.valid = false;
+      result.errors.push({
+        code: E.MFDB_FK_UNRESOLVED,
+        message: `Orphan detected: Record ${uid} references non-existent parent ${pid}.`
+      });
+    }
+  }
+
+  // Cycle Detection (Bonus for TS implementation)
+  for (const startId of parentRefs.keys()) {
+    let currentId = startId;
+    const visited = new Set([currentId]);
+    while (parentRefs.has(currentId)) {
+      currentId = parentRefs.get(currentId);
+      if (visited.has(currentId)) {
+        result.valid = false;
+        result.errors.push({
+          code: E.VERSION_CONSTRAINT,
+          message: `Cycle detected in hierarchy involving ID: ${currentId}`
+        });
+        break;
+      }
+      visited.add(currentId);
+    }
+  }
+
+  return result;
+}
+

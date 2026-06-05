@@ -4,14 +4,20 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.1.0 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-05-18
+ * Date:         2026-06-04
  * Description:  Graphics rendering abstraction for BEJSON-based visuals.
+ * REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Migration Phase 3.4).
  */
 
-// bejson_renderer.ts
+import { BEJSONDocument, bejson_core_get_field_map } from "../index";
+
+const RENDERER_LEGACY = {
+  data: 1
+} as const;
+
 export class BEJSONRenderer {
   public canvas: HTMLCanvasElement | null;
   public ctx: CanvasRenderingContext2D | null;
@@ -100,9 +106,21 @@ export class BEJSONRenderer {
     const startRow = Math.max(0, Math.floor(this.camera.y / tileSize));
     const endRow = Math.min(grid.height, Math.ceil((this.camera.y + height) / tileSize));
 
+    let tileData: number[] = [];
+    if (grid.Values && grid.Fields) {
+      const doc = grid as BEJSONDocument;
+      const fm = (doc as any)._bejson_field_map || ((doc as any)._bejson_field_map = bejson_core_get_field_map(doc));
+      const dataIdx = fm["data"] ?? RENDERER_LEGACY.data;
+      tileData = doc.Values[0][dataIdx] as number[];
+    } else {
+      tileData = grid.data;
+    }
+
+    if (!tileData) return;
+
     for (let r = startRow; r < endRow; r++) {
       for (let c = startCol; c < endCol; c++) {
-        const tile = grid.data[r * grid.width + c];
+        const tile = tileData[r * grid.width + c];
         if (tile === 0) continue;
         
         const sx = (tile % 16) * tileSize;

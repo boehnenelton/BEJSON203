@@ -31,9 +31,20 @@ def bejson_safe_join(base_dir: str, *paths: str) -> str:
 def resolve_storage_path(path: str) -> str:
     """
     Standardized resolve_path utility for environment abstraction (Phase 1).
-    Prioritizes $BEJSON_STORAGE_ROOT over hardcoded /storage/emulated/0/.
+    Prioritizes $BEJSON_STORAGE_ROOT.
     """
-    storage_root = os.environ.get("BEJSON_STORAGE_ROOT", "/storage/emulated/0")
+    storage_root = os.environ.get("BEJSON_STORAGE_ROOT")
+    if not storage_root:
+        # Fallback to local home if storage root is unknown
+        storage_root = os.path.expanduser("~")
+        
+    if not path:
+        return storage_root
+
+    # Standardize absolute paths from legacy hardcoding (if encountered)
     if path.startswith("/storage/emulated/0"):
         return path.replace("/storage/emulated/0", storage_root)
+        
     return path
+
+VERSION = "1.1.0"

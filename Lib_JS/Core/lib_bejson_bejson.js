@@ -21,8 +21,9 @@
 'use strict';
 
 (function () {
-    window.Core  = window.Core  || {};
-    window.BEJSON_Switch = window.BEJSON_Switch || {};  // FIX JS1: declare before use
+    window.Core = window.Core || {};
+    window.BEJSON_Switch = window.BEJSON_Switch || {};
+    const BEJSON_Switch = window.BEJSON_Switch;
 
     const BEJSON = {
         version: "1.0",

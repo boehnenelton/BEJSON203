@@ -4,11 +4,12 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-04
 Description:  Flat-file persistence layer for BEJSON datasets.
+REMEDIATED:   Purged 'SC_ROOT'; implemented {ADMIN_ROOT} standard (Phase 6.5).
 """
 
 import os
@@ -17,7 +18,8 @@ import datetime
 
 class BEJSONBackend:
     def __init__(self, root_path=None):
-        self.root = root_path or "{SC_ROOT}"
+        # REMEDIATED: Use {ADMIN_ROOT} standard (Phase 6.5)
+        self.root = root_path or "{ADMIN_ROOT}"
 
     def _load_json(self, path):
         if not os.path.exists(path): return None

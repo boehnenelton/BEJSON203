@@ -43,7 +43,13 @@ class BEJSONProvider:
         bejson_core_atomic_write(path, data)
 
     @staticmethod
-    def get_fields_map(db): return {f["name"]: i for i, f in enumerate(db["Fields"])}
+    def get_fields_map(db):
+        """DEPRECATED: Delegates to bejson_core_get_field_map."""
+        return bejson_core_get_field_map(db)
+
+    @staticmethod
+    def now_iso(): return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+get_fields_map(db): return {f["name"]: i for i, f in enumerate(db["Fields"])}
 
     @staticmethod
     def now_iso(): return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")

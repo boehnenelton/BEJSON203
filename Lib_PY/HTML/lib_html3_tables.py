@@ -4,19 +4,19 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.0.1 OFFICIAL
+Version:      3.1.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-29
+Date:         2026-06-04
 Description:  BECSS-compliant tabular data visualization engine with search and pagination.
-              Enhanced with Type Hints and Doctests.
+              REMEDIATED: Implemented Field Map Indexing with Safe Get fallbacks (Phase 5.2).
 """
 
 import json
 import uuid
 from typing import Dict, Optional, Any
 
-VERSION = "3.0.0"
+VERSION = "3.1.0"
 SCRIPT_NAME = "lib_html3_tables.py"
 RELATIONAL_ID = "8f3e2d1c-4b5a-4e8a-9d6c-3f4b5a6c7d8e"
 ES5_SAFE = True
@@ -66,11 +66,20 @@ COMPONENT_TEMPLATE = """
         var pageSize = 20;
         var currentPage = 1;
         var currentSort = {{ column: null, direction: 'asc' }};
-        // FIX H2: Build a field-name to index map once on init.
-        var fieldIndexMap = {{}};
-        for (var _fi = 0; _fi < bejson.Fields.length; _fi++) {{
-            fieldIndexMap[bejson.Fields[_fi].name] = _fi;
+        
+        // --- Field Map Indexing (Migration Phase 5.2) ---
+        function _buildFieldIdx(doc) {{
+            var fields = doc.Fields || [];
+            var map = {{}};
+            for (var i = 0; i < fields.length; i++) {{
+                map[fields[i].name] = i;
+            }}
+            return map;
         }}
+        
+        // Internal Registry Pattern: O(1) re-resolution
+        var fieldIndexMap = bejson._bejson_field_map || (bejson._bejson_field_map = _buildFieldIdx(bejson));
+        
         var searchTerm = "";
         var isSchemaView = false;
         

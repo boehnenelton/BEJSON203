@@ -16,6 +16,7 @@ export * from "./Core/lib_bejson_types";
 
 // Core operations (parse, serialize, record CRUD)
 export * from "./Core/lib_bejson_core";
+export * from "./Core/lib_bejson_field_map";
 
 // BEJSON validators (104, 104a, 104db)
 export {

@@ -4,11 +4,12 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.0.2 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-05
 Description:  API server implementation for BEJSON data distribution.
+REMEDIATED:   Migrated SimpleLock to ResilientPIDLock (Finding 04).
 """
 import os
 import socket
@@ -18,36 +19,38 @@ import sys
 import json
 import time
 import shutil
+from pathlib import Path
 from datetime import datetime
+
+# --- Sibling Path Resolution ---
+LIB_DIR = os.path.dirname(os.path.abspath(__file__))
+CORE_DIR = os.path.dirname(LIB_DIR) # Core/
+if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
+
 try:
-    import fcntl
+    from lib_bejson_core import ResilientPIDLock, bejson_core_atomic_write
 except ImportError:
-    fcntl = None
-
-class SimpleLock:
-    """Portable file lock using directory creation (atomic on most FS)."""
-    def __init__(self, lock_path):
-        self.lock_dir = lock_path + ".lockdir"
-        self.is_locked = False
-
-    def acquire(self, timeout=10):
-        start_time = time.time()
-        while time.time() - start_time < timeout:
-            try:
-                os.mkdir(self.lock_dir)
-                self.is_locked = True
-                return True
-            except FileExistsError:
-                time.sleep(0.1)
-        return False
-
-    def release(self):
-        if self.is_locked:
-            try:
-                os.rmdir(self.lock_dir)
-            except OSError:
-                pass
-            self.is_locked = False
+    # Fallback to a simplified ResilientPIDLock
+    class ResilientPIDLock:
+        def __init__(self, target_path, timeout_seconds=10):
+            self.target = Path(target_path)
+            self.lock_dir = Path(f"{target_path}.lockdir")
+            self.timeout = timeout_seconds
+        def acquire(self):
+            start = time.time()
+            while time.time() - start < self.timeout:
+                try: os.mkdir(self.lock_dir); return True
+                except FileExistsError: time.sleep(0.1)
+            return False
+        def release(self):
+            try: os.rmdir(self.lock_dir)
+            except OSError: pass
+        def __enter__(self):
+            if not self.acquire(): raise OSError(53, "Lock timeout")
+            return self
+        def __exit__(self, *_): self.release()
+    def bejson_core_atomic_write(p, d):
+        with open(p, 'w') as f: json.dump(d, f, indent=2)
 
 def copy_to_clipboard(text):
     """Portable clipboard copy."""
@@ -87,7 +90,7 @@ def get_random_available_port(start=5001, end=5020):
 
 try:
     from lib_bejson_env import resolve_path
-from lib_bejson_core import bejson_core_atomic_write
+    from lib_bejson_core import bejson_core_atomic_write
 except ImportError:
     def resolve_path(p): return p.replace("{HOME}", os.path.expanduser("~"))
 
@@ -95,50 +98,40 @@ def register_server(name, port):
     reg_path = resolve_path("{HOME}/Registry/Environment_Registry.bejson.json")
     if not os.path.exists(reg_path): return
     
-    lock = SimpleLock(reg_path)
-    if not lock.acquire():
-        print(f" [ServerLib] Timeout acquiring lock for {reg_path}")
-        return
-
-    try:
-        with open(reg_path, 'r') as f:
-            data = json.load(f)
-        
-        data['Values'] = [v for v in data['Values'] if not (v[0] == 'Running_Server' and v[3] == name)]
-        now = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-        url = f"http://localhost:{port}"
-        record = ['Running_Server', now, 'ServerLib', name, url, None, None, str(port), 'ONLINE', 'Global']
-        data['Values'].append(record)
-        
-        # Atomic write via library standard
-        bejson_core_atomic_write(reg_path, data)
-        
-        print(f" [ServerLib] REGISTERED: {name} on {url}")
-    except Exception as e:
-        print(f" [ServerLib] Registration Error: {e}")
-    finally:
-        lock.release()
+    with ResilientPIDLock(reg_path, timeout_seconds=10):
+        try:
+            with open(reg_path, 'r') as f:
+                data = json.load(f)
+            
+            data['Values'] = [v for v in data['Values'] if not (v[0] == 'Running_Server' and v[3] == name)]
+            now = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
+            url = f"http://localhost:{port}"
+            record = ['Running_Server', now, 'ServerLib', name, url, None, None, str(port), 'ONLINE', 'Global']
+            data['Values'].append(record)
+            
+            # Atomic write via library standard
+            bejson_core_atomic_write(reg_path, data)
+            
+            print(f" [ServerLib] REGISTERED: {name} on {url}")
+        except Exception as e:
+            print(f" [ServerLib] Registration Error: {e}")
 
 def unregister_server(name):
     reg_path = resolve_path("{HOME}/Registry/Environment_Registry.bejson.json")
     if not os.path.exists(reg_path): return
     
-    lock = SimpleLock(reg_path)
-    if not lock.acquire(): return
-
-    try:
-        with open(reg_path, 'r') as f:
-            data = json.load(f)
-        
-        data['Values'] = [v for v in data['Values'] if not (v[0] == 'Running_Server' and v[3] == name)]
-        
-        bejson_core_atomic_write(reg_path, data)
-        
-        print(f" [ServerLib] UNREGISTERED: {name}")
-    except Exception as e:
-        print(f" [ServerLib] Unregistration Error: {e}")
-    finally:
-        lock.release()
+    with ResilientPIDLock(reg_path, timeout_seconds=10):
+        try:
+            with open(reg_path, 'r') as f:
+                data = json.load(f)
+            
+            data['Values'] = [v for v in data['Values'] if not (v[0] == 'Running_Server' and v[3] == name)]
+            
+            bejson_core_atomic_write(reg_path, data)
+            
+            print(f" [ServerLib] UNREGISTERED: {name}")
+        except Exception as e:
+            print(f" [ServerLib] Unregistration Error: {e}")
 
 def start_flask_server_random(app_path, name=None, debug=False, host='127.0.0.1'):
     """Starts a Flask server on a random port. Default host is 127.0.0.1 for security."""

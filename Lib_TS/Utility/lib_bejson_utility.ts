@@ -4,15 +4,17 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.1.0 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-05-18
+ * Date:         2026-06-04
  * Description:  General-purpose helper functions for the BEJSON ecosystem.
+ * REMEDIATED:   Implemented Field Map Indexing; fixed fkIdx ReferenceError (Phase 7.1).
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { bejson_core_get_field_map } from "../index";
 
 export interface BEJSONField {
     name: string;
@@ -32,6 +34,13 @@ export interface BEJSONDocument {
 
 const DEFAULT_EXTENSIONS = [".py", ".js", ".ts", ".html", ".css", ".md", ".json", ".sh", ".txt", ".bejson"];
 const DEFAULT_EXCLUDES = [".git", "__pycache__", "node_modules", "lib", "output", ".mfdb_lock"];
+
+// --- Legacy Fallback Constants (Phase 7.1.1) ---
+const CHUNK_LEGACY = {
+    Record_Type_Parent: 0, id: 1, timestamp: 2, project_name: 3,
+    current_version: 4, version_label: 5, version_notes: 6, changes: 7,
+    file_path: 8, content: 9, snapshot_id_fk: 10
+} as const;
 
 const CHUNK_SCHEMA: BEJSONField[] = [
     { name: "Record_Type_Parent", type: "string" },
@@ -94,9 +103,14 @@ export function bejson_utility_snapshot_project(
     const now = new Date().toISOString();
     const snapshotId = `SNAP-${Date.now()}`;
     
+    // Optimized Field Mapping
+    const fm = bejson_core_get_field_map(dbDoc);
+    const rtpIdx = fm["Record_Type_Parent"] ?? CHUNK_LEGACY.Record_Type_Parent;
+    const curVerIdx = fm["current_version"] ?? CHUNK_LEGACY.current_version;
+
     // Update current version in Project record
     dbDoc.Values.forEach(row => {
-        if (row[0] === "Project") row[4] = versionLabel;
+        if (row[rtpIdx] === "Project") row[curVerIdx] = versionLabel;
     });
 
     // Add Snapshot record (11 fields)
@@ -124,16 +138,20 @@ export function bejson_utility_restore_version(
     versionLabel: string, 
     outputDir: string
 ): number {
-    const fields = dbDoc.Fields.map(f => f.name);
-    const snapIdIdx = fields.indexOf("id");
-    const vlabelIdx = fields.indexOf("version_label");
-    const fpathIdx = fields.indexOf("file_path");
-    const contIdx = fields.indexOf("content");
-    const fkIdx = fields.indexOf("snapshot_id_fk");
+    // Migration Phase 7.1.2: Dynamic resolution with Safe Get
+    const fm = bejson_core_get_field_map(dbDoc);
+    const rtpIdx     = fm["Record_Type_Parent"] ?? CHUNK_LEGACY.Record_Type_Parent;
+    const snapIdIdx  = fm["id"]                 ?? CHUNK_LEGACY.id;
+    const vlabelIdx  = fm["version_label"]      ?? CHUNK_LEGACY.version_label;
+    const fpathIdx   = fm["file_path"]          ?? CHUNK_LEGACY.file_path;
+    const contIdx    = fm["content"]            ?? CHUNK_LEGACY.content;
+    const fkIdx      = fm["snapshot_id_fk"]     ?? CHUNK_LEGACY.snapshot_id_fk;
 
     let snapshotId: string | null = null;
     dbDoc.Values.forEach(row => {
-        if (row[0] === "Snapshot" && row[vlabelIdx] === versionLabel) snapshotId = row[snapIdIdx];
+        if (row[rtpIdx] === "Snapshot" && row[vlabelIdx] === versionLabel) {
+            snapshotId = row[snapIdIdx];
+        }
     });
 
     if (!snapshotId) throw new Error(`Version '${versionLabel}' not found.`);
@@ -142,7 +160,8 @@ export function bejson_utility_restore_version(
     let count = 0;
 
     dbDoc.Values.forEach(row => {
-        if (row[0] === "File" && row[fk_idx] === snapshotId) {
+        // FIX Phase 7.1.3: Reference fkIdx (not fk_idx)
+        if (row[rtpIdx] === "File" && row[fkIdx] === snapshotId) {
             const relPath = row[fpathIdx];
             const content = row[contIdx];
             if (relPath) {

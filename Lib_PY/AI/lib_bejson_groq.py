@@ -33,11 +33,21 @@ try:
     from lib_bejson_env import resolve_path as resolve_system_path
 except ImportError:
     def resolve_system_path(path_str):
-        # Even the fallback should avoid hardcoded absolute paths if possible
-        internal_storage = os.environ.get("INTERNAL_STORAGE", os.path.expanduser("~"))
-        sc_root = os.environ.get("SC_ROOT", os.path.join(internal_storage, "Brain-Container/BEJSON_Core"))
-        resolved = path_str.replace("{SC_ROOT}", sc_root)
-        return os.path.expanduser(resolved)
+        # REMEDIATED: Removed hardcoded Brain-Container fallback (Phase 6.5)
+        # Priority: 1. ADMIN_ROOT env, 2. BEJSON_STORAGE_ROOT/Admin, 3. Home fallback
+        storage_root = os.environ.get("BEJSON_STORAGE_ROOT")
+        admin_root   = os.environ.get("ADMIN_ROOT")
+        home         = os.path.expanduser("~")
+        
+        if not admin_root and storage_root:
+            admin_root = os.path.join(storage_root, "Admin")
+            
+        root = admin_root or home
+            
+        resolved = path_str.replace("{ADMIN_ROOT}", root)
+        resolved = resolved.replace("{SC_ROOT}", root) # Support legacy placeholder
+        resolved = resolved.replace("{HOME}", home)
+        return os.path.normpath(resolved)
 
 # --- SCHEMAS INFERRED VIA LIB_BEJSON_SCHEMA ---
 GROQ_PROFILE_SCHEMA = {
@@ -75,16 +85,23 @@ if LIB_DIR not in sys.path:
     sys.path.insert(0, LIB_DIR)
 
 try:
-    from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
+    from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_get_field_map, bejson_core_atomic_write
 except ImportError:
+    # TRANSITION STUB — remove only after confirming Core is always importable in all runtime environments.
     def bejson_core_load_file(p):
         with open(p, 'r') as f: return json.load(f)
     def bejson_core_get_field_index(d, n):
         for i, f in enumerate(d.get("Fields", [])):
             if f["name"] == n: return i
         return -1
+    def bejson_core_get_field_map(d):
+        return {f["name"]: i for i, f in enumerate(d.get("Fields", []))}
     def bejson_core_atomic_write(p, d):
         with open(p, 'w') as f: json.dump(d, f, indent=2)
+
+# --- Legacy Fallback Constants ---
+_GROQ_MODEL_LEGACY   = {"model_name": 0, "model_id": 1, "currently_active": 2}
+_GROQ_PROFILE_LEGACY = {"SystemInstruction": 4} # Note: Groq profile schema varies, using safe fallback
 
 # --- Registry Managers ---
 class GroqKeyRegistry:
@@ -125,9 +142,10 @@ class GroqModelRegistry:
     def load(self):
         try:
             data = bejson_core_load_file(str(self.file_path))
-            fields = [f["name"] for f in data["Fields"]]
-            id_idx = fields.index("model_id")
-            active_idx = fields.index("currently_active")
+            fi = bejson_core_get_field_map(data)
+            
+            id_idx = fi.get("model_id", _GROQ_MODEL_LEGACY["model_id"])
+            active_idx = fi.get("currently_active", _GROQ_MODEL_LEGACY["currently_active"])
             
             self.models = []
             for row in data["Values"]:
@@ -137,8 +155,8 @@ class GroqModelRegistry:
                     self.active_model_id = row[id_idx]
         except Exception as e:
             logging.warning(f"[GroqLib] Failed to load model registry {self.file_path}, using defaults: {e}")
-            for row in SCHEMA_MODEL_REGISTRY["Values"]:
-                self.models.append({"id": row[1]})
+            # Fallback to llama3
+            self.models = [{"id": "llama-3.3-70b-versatile"}]
 
     def get_model_info(self, model_id: Optional[str] = None) -> Dict[str, Any]:
         target_id = model_id or self.active_model_id
@@ -162,14 +180,15 @@ class GroqProfile:
     def load(self):
         try:
             data = bejson_core_load_file(str(self.file_path))
-            fields = [f["name"] for f in data["Fields"]]
-            instr_idx = fields.index("SystemInstruction")
+            fi = bejson_core_get_field_map(data)
+            
+            instr_idx = fi.get("SystemInstruction", _GROQ_PROFILE_LEGACY["SystemInstruction"])
             self.instruction = data["Values"][0][instr_idx]
             self.config = {f["name"]: data["Values"][0][i] for i, f in enumerate(data["Fields"])}
         except Exception as e:
             logging.warning(f"[GroqLib] Failed to load profile {self.file_path}, using defaults: {e}")
-            self.instruction = SCHEMA_AI_PROFILE["Values"][0][4]
-            self.config = {f["name"]: SCHEMA_AI_PROFILE["Values"][0][i] for i, f in enumerate(SCHEMA_AI_PROFILE["Fields"])}
+            self.instruction = ""
+            self.config = {}
 
 # --- Unified Prompter Engine ---
 class GroqStandardPrompter:
@@ -221,8 +240,10 @@ class GroqStandardPrompter:
 
 # --- Global Standard Paths ---
 STD_KEY_PATH = resolve_system_path("{HOME}/.env/groq_keys.bejson")
-STD_MODEL_PATH = resolve_system_path("{SC_ROOT}/Schemas/groq_model_registry.104a.bejson")
-STD_PROFILE_PATH = resolve_system_path("{SC_ROOT}/Schemas/groq_standard_profile.bejson")
+STD_MODEL_PATH = resolve_system_path("{ADMIN_ROOT}/data/schemas/groq_model_registry.104a.bejson")
+STD_PROFILE_PATH = resolve_system_path("{ADMIN_ROOT}/data/schemas/groq_standard_profile.bejson")
+
+VERSION = "2.1.2"
 
 def get_standard_prompter():
     return GroqStandardPrompter(STD_KEY_PATH, STD_MODEL_PATH, STD_PROFILE_PATH)

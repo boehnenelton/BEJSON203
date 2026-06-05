@@ -17,7 +17,7 @@ class SwitchRenderer {
     constructor(canvasId) {
         this.canvas = document.getElementById(canvasId);
         if (!this.canvas) {
-            console.error("Switch.Renderer: Canvas #" + canvasId + " not found.");
+            console.error("BEJSON_Switch.Renderer: Canvas #" + canvasId + " not found.");
             return;
         }
         this.ctx = this.canvas.getContext('2d');
@@ -134,5 +134,5 @@ class SwitchRenderer {
     }
 }
 
-Switch.Renderer = SwitchRenderer;
+BEJSON_Switch.Renderer = SwitchRenderer;
 export default SwitchRenderer;

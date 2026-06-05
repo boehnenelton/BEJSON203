@@ -4,10 +4,10 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.1 OFFICIAL (Unified Schema Registry)
+Version:      2.1.2 OFFICIAL (Unified Schema Registry)
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-22
+Date:         2026-06-05
 Description:  Unified registry for authoritative BEJSON schemas.
 """
 
@@ -74,27 +74,25 @@ SCHEMA_MFDB_MANIFEST_v5 = [
     {"name": "tags",           "type": "string"},
 ]
 
-# 4. AI Model Registry v2.0.1 (Fixed Model Drift)
+# 4. AI Model Registry v2.1.2 (Positional Integrity Fix)
 # Defaulted to Gemini 2.5 Flash as per audit recommendation.
+# RE-ALIGNED: Reverted to legacy indices to maintain backward compatibility.
 SCHEMA_MODEL_REGISTRY = {
     "Format": "BEJSON",
     "Format_Version": "104a",
     "Format_Creator": "Elton Boehnen",
     "Records_Type": ["AI_Model"],
-    # FIX PY4: Removed Record_Type_Parent field — it is only required as the
-    # discriminator in 104db schemas. Including it in a 104a schema forces every
-    # record to carry an unnecessary positional slot and creates validator confusion.
     "Fields": [
-        {"name": "model_id",              "type": "string"},
-        {"name": "display_name",          "type": "string"},
-        {"name": "thinking_enabled",      "type": "boolean"},
-        {"name": "google_search_enabled", "type": "boolean"},
-        {"name": "currently_active",      "type": "boolean"}
+        {"name": "display_name",          "type": "string"},  # 0
+        {"name": "model_id",              "type": "string"},  # 1
+        {"name": "currently_active",      "type": "boolean"}, # 2
+        {"name": "thinking_enabled",      "type": "boolean"}, # 3
+        {"name": "google_search_enabled", "type": "boolean"}  # 4
     ],
     "Values": [
-        ["gemini-2.5-flash", "Gemini 2.5 Flash", False, True, True],
-        ["gemini-2.0-flash-thinking-preview", "Gemini 2.0 Flash Thinking", True, False, False],
-        ["gemini-3.1-pro-preview", "Gemini 3.1 Pro (Preview)", False, True, False]
+        ["Gemini 2.5 Flash", "gemini-2.5-flash", True, False, True],
+        ["Gemini 2.0 Flash Thinking", "gemini-2.0-flash-thinking-preview", False, True, False],
+        ["Gemini 3.1 Pro (Preview)", "gemini-3.1-pro-preview", False, False, True]
     ]
 }
 

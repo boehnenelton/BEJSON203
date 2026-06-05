@@ -4,10 +4,10 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.2 OFFICIAL
+ * Version:      2.0.3 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-06-02
+ * Date:         2026-06-05
  * Description:  Type definitions and interface contracts for TypeScript libraries.
  * 
  * NOTE: Error codes are mirrored across SH, JS, PY, and TS registries.
@@ -259,7 +259,7 @@ export const MFDB_CORE_CODES = {
   
   WRITE_FAILED: 52,
   
-  CREATE_FAILED: 53,
+  LOCK_FAILED: 53,
   
   INVALID_OPERATION: 54,
   

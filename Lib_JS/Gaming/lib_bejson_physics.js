@@ -17,7 +17,7 @@ class SwitchPhysics {
     constructor(options = {}) {
         this.gravity = options.gravity || { x: 0, y: 0 }; // Default to top-down (no gravity)
         this.friction = options.friction || 0.9;
-        this.bodies = Switch.BEJSON.create104("PhysicsWorld", [
+        this.bodies = BEJSON_Switch.BEJSON.create104("PhysicsWorld", [
             { name: "id", type: "string" },
             { name: "x", type: "number" },
             { name: "y", type: "number" },
@@ -167,5 +167,5 @@ class SwitchPhysics {
     }
 }
 
-Switch.Physics = SwitchPhysics;
+BEJSON_Switch.Physics = SwitchPhysics;
 export default SwitchPhysics;

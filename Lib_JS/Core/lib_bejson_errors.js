@@ -3,7 +3,7 @@
  * Family:       Core
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.1 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * Description:  Unified error registry for BEJSON ecosystem.
  */
 
@@ -54,7 +54,7 @@ const BEJSON_ERRORS = {
     E_MFDB_CORE_MANIFEST_NOT_FOUND: 50,
     E_MFDB_CORE_ENTITY_NOT_FOUND: 51,
     E_MFDB_CORE_WRITE_FAILED: 52,
-    E_MFDB_CORE_CREATE_FAILED: 53,
+    E_MFDB_CORE_LOCK_FAILED: 53,
     E_MFDB_CORE_INVALID_OPERATION: 54,
     E_MFDB_CORE_INDEX_OUT_OF_BOUNDS: 55,
     E_MFDB_CORE_JOIN_FAILED: 56,

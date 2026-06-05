@@ -4,12 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.1 OFFICIAL (SDK Migration)
+Version:      2.1.2 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-02
+Date:         2026-06-04
 Description:  Integration wrapper for Google Gemini API using the official google-genai SDK.
-REMEDIATED:   Migrated from 'requests' to 'google-genai' SDK; supports key rotation.
+REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 4.1).
 """
 
 import os
@@ -38,11 +38,25 @@ CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
 
 try:
-    from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_atomic_write
+    from lib_bejson_core import (
+        bejson_core_load_file, 
+        bejson_core_get_field_index, 
+        bejson_core_get_field_map,
+        bejson_core_atomic_write
+    )
     from lib_bejson_schema import SCHEMA_MODEL_REGISTRY
 except ImportError as e:
     print(f"Gemini Lib Error: Missing core dependencies. {e}")
     sys.exit(1)
+
+# --- Legacy Fallback Constants ---
+_GEMINI_MODEL_LEGACY = {
+    "model_name": 0, 
+    "model_id": 1, 
+    "currently_active": 2,
+    "thinking_enabled": 3, 
+    "google_search_enabled": 4
+}
 
 # --- Registry Managers ---
 
@@ -98,17 +112,19 @@ class GeminiModelRegistry:
     def load(self):
         try:
             data = bejson_core_load_file(str(self.file_path))
-            fields = [f["name"] for f in data["Fields"]]
-            id_idx, act_idx = fields.index("model_id"), fields.index("currently_active")
-            think_idx = fields.index("thinking_enabled") if "thinking_enabled" in fields else -1
-            search_idx = fields.index("google_search_enabled") if "google_search_enabled" in fields else -1
+            fi = bejson_core_get_field_map(data)
+            
+            id_idx     = fi.get("model_id",              _GEMINI_MODEL_LEGACY["model_id"])
+            act_idx    = fi.get("currently_active",      _GEMINI_MODEL_LEGACY["currently_active"])
+            think_idx  = fi.get("thinking_enabled",      _GEMINI_MODEL_LEGACY["thinking_enabled"])
+            search_idx = fi.get("google_search_enabled", _GEMINI_MODEL_LEGACY["google_search_enabled"])
             
             self.models = []
             for row in data["Values"]:
                 m_info = {
                     "id": row[id_idx],
-                    "thinking": row[think_idx] if think_idx != -1 else False,
-                    "search": row[search_idx] if search_idx != -1 else False
+                    "thinking": row[think_idx] if think_idx != -1 and think_idx < len(row) else False,
+                    "search": row[search_idx] if search_idx != -1 and search_idx < len(row) else False
                 }
                 self.models.append(m_info)
                 if row[act_idx] is True: self.active_model_id = row[id_idx]

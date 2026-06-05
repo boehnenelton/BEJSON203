@@ -21,13 +21,25 @@ HOME = os.environ.get("HOME", os.path.expanduser("~"))
 try:
     from lib_bejson_env import resolve_path
 except ImportError:
-    def resolve_path(p): return p.replace("{HOME}", HOME).replace("{SC_ROOT}", os.environ.get("SC_ROOT", HOME))
+    def resolve_path(path_str):
+        # REMEDIATED: Removed hardcoded Brain-Container fallback (Phase 6.5)
+        storage_root = os.environ.get("BEJSON_STORAGE_ROOT")
+        admin_root   = os.environ.get("ADMIN_ROOT")
+        home         = os.path.expanduser("~")
+        if not admin_root and storage_root:
+            admin_root = os.path.join(storage_root, "Admin")
+        root = admin_root or home
+        resolved = path_str.replace("{ADMIN_ROOT}", root)
+        resolved = resolved.replace("{SC_ROOT}", root)
+        resolved = resolved.replace("{HOME}", home)
+        return os.path.normpath(resolved)
 
-SC_ROOT = resolve_path("{SC_ROOT}")
-BRAIN_MANIFEST = os.path.join(SC_ROOT, "104a.mfdb.bejson")
+VERSION = "2.1.0"
+ADMIN_ROOT = resolve_path("{ADMIN_ROOT}")
+BRAIN_MANIFEST = os.path.join(ADMIN_ROOT, "data/registry/104a.mfdb.bejson")
 
 # Ensure Core is in path
-CORE_DIR = os.path.join(SC_ROOT, "Core")
+CORE_DIR = os.path.join(ADMIN_ROOT, "libraries/Lib_PY/Core")
 if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 

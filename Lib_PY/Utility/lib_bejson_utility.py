@@ -4,12 +4,12 @@ Family:       Utility
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.2.1 OFFICIAL
+Version:      2.3.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-21
+Date:         2026-06-04
 Description:  Cross-compatible chunking utilities for CLI_CHUNKER and MFDB_V5.
-              Follows strict best practices: Standard JSON module only, NO REGEX.
+REMEDIATED:   Implemented Field Map Indexing with dynamic record creation (Phase 7.3).
 """
 
 import os
@@ -28,7 +28,11 @@ if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 
 try:
-    import lib_bejson_core as BEJSONCore
+    from lib_bejson_core import (
+        bejson_core_atomic_write,
+        bejson_core_get_field_map,
+        bejson_core_create_104db
+    )
 except ImportError:
     print(f"Error: Core sibling not found at {CORE_DIR}")
     sys.exit(1)
@@ -39,6 +43,13 @@ except ImportError:
 
 DEFAULT_EXTENSIONS = [".py", ".js", ".ts", ".html", ".css", ".md", ".json", ".sh", ".txt", ".bejson", ".tsx", ".jsx"]
 DEFAULT_EXCLUDES = [".git", "__pycache__", "node_modules", "lib", "output", ".mfdb_lock", "dist", "build"]
+
+# --- Legacy Fallback Constants (Phase 7.3.2) ---
+_UTILITY_PY_LEGACY = {
+    "ProjectMeta": {"project_name": 1, "version": 2, "root_path": 3},
+    "FileContent": {"file_path": 4, "file_name": 5, "content": 6, "is_binary": 7},
+    "MFDB_Entity": {"version": 0, "file_path": 1, "file_name": 2, "content": 3, "is_binary": 4, "is_base64": 5}
+}
 
 # Text Chunk Separators (Standardized)
 SEP_START = "--- FILE: "
@@ -66,74 +77,13 @@ SCHEMA_MFDB_ENTITY = [
     {"name": "is_base64", "type": "boolean"},
 ]
 
-# Official MFDB_V5 Manifest Schema (BEJSON 104a)
-SCHEMA_MFDB_MANIFEST = [
-    {"name": "entity_name",    "type": "string"},
-    {"name": "file_path",      "type": "string"},
-    {"name": "description",    "type": "string"},
-    {"name": "record_count",   "type": "integer"},
-    {"name": "schema_version", "type": "string"},
-    {"name": "primary_key",    "type": "string"},
-    {"name": "changelog",      "type": "string"},
-    {"name": "chunked_at",     "type": "string"},
-    {"name": "tags",           "type": "string"},
-]
-
 # ---------------------------------------------------------------------------
-# Data Sanitization (Best Practices - No Regex)
+# Helpers
 # ---------------------------------------------------------------------------
 
-def bejson_utility_sanitize_name(name: str) -> str:
-    """Sanitizes names for filesystem safety without using regex."""
-    invalid = '<>:"/\\|?*'
-    sanitized = name
-    for char in invalid:
-        sanitized = sanitized.replace(char, '_')
-    return sanitized
-
-def bejson_utility_slugify(text: str) -> str:
-    """Creates a simple lowercase alphanumeric slug without regex."""
-    slug = ""
-    for char in text.lower():
-        if char.isalnum():
-            slug += char
-        elif char in " -_":
-            slug += "_"
-    return slug
-
-# ---------------------------------------------------------------------------
-# Core Detection & Encoding
-# ---------------------------------------------------------------------------
-
-def bejson_utility_is_binary(file_path: Union[str, Path]) -> bool:
-    """Detection logic matching official chunker tools."""
-    try:
-        with open(file_path, 'tr', encoding='utf-8') as f:
-            f.read(1024)
-            return False
-    except (UnicodeDecodeError, PermissionError):
-        return True
-
-def bejson_utility_encode_file(file_path: Union[str, Path], use_base64: bool = False) -> tuple:
-    """
-    Reads file content and returns (content, is_binary, is_base64).
-    Matches MFDB v5 lossless binary logic.
-    """
-    is_bin = bejson_utility_is_binary(file_path)
-    if not is_bin:
-        try:
-            return Path(file_path).read_text(encoding="utf-8"), False, False
-        except Exception:
-            return "", True, False
-    
-    if use_base64:
-        try:
-            raw = Path(file_path).read_bytes()
-            return base64.b64encode(raw).decode('utf-8'), True, True
-        except Exception:
-            return "", True, True
-    
-    return "", True, False
+def _create_row_template(fields: List[Dict], rtp: str = None) -> Dict[str, int]:
+    """Internal helper to build a field map for record creation."""
+    return {f["name"]: i for i, f in enumerate(fields) if rtp is None or f.get("Record_Type_Parent") == rtp or f.get("name") == "Record_Type_Parent"}
 
 # ---------------------------------------------------------------------------
 # Cross-Format Generators
@@ -144,8 +94,17 @@ def bejson_utility_create_cli_chunk(target_dir: str, project_name: str, version:
     target_path = Path(target_dir).resolve()
     values = []
     
+    # Dynamic Field Mapping for Creation (Phase 7.3.4)
+    fm = {f["name"]: i for i, f in enumerate(SCHEMA_CLI_CHUNKER)}
+    f_count = len(SCHEMA_CLI_CHUNKER)
+
     # Meta record
-    values.append(["ProjectMeta", project_name, version, str(target_path), None, None, None, None])
+    meta_row = [None] * f_count
+    meta_row[fm["Record_Type_Parent"]] = "ProjectMeta"
+    meta_row[fm["project_name"]]       = project_name
+    meta_row[fm["version"]]            = version
+    meta_row[fm["root_path"]]          = str(target_path)
+    values.append(meta_row)
     
     for root, dirs, files in os.walk(target_path):
         dirs[:] = [d for d in dirs if d not in DEFAULT_EXCLUDES]
@@ -155,10 +114,17 @@ def bejson_utility_create_cli_chunk(target_dir: str, project_name: str, version:
                 try:
                     rel_path = f_path.relative_to(target_path)
                     content, binary, _ = bejson_utility_encode_file(f_path, use_base64=False)
-                    values.append(["FileContent", None, None, None, str(rel_path), file, content, binary])
+                    
+                    file_row = [None] * f_count
+                    file_row[fm["Record_Type_Parent"]] = "FileContent"
+                    file_row[fm["file_path"]]          = str(rel_path)
+                    file_row[fm["file_name"]]          = file
+                    file_row[fm["content"]]            = content
+                    file_row[fm["is_binary"]]          = binary
+                    values.append(file_row)
                 except Exception: continue
                 
-    return BEJSONCore.bejson_core_create_104db(["ProjectMeta", "FileContent"], SCHEMA_CLI_CHUNKER, values)
+    return bejson_core_create_104db(["ProjectMeta", "FileContent"], SCHEMA_CLI_CHUNKER, values)
 
 def bejson_utility_create_mfdb_version(target_dir: str, version: str, use_base64: bool = True) -> list:
     """
@@ -166,6 +132,9 @@ def bejson_utility_create_mfdb_version(target_dir: str, version: str, use_base64
     """
     target_path = Path(target_dir).resolve()
     rows = []
+    
+    fm = {f["name"]: i for i, f in enumerate(SCHEMA_MFDB_ENTITY)}
+    f_count = len(SCHEMA_MFDB_ENTITY)
     
     for root, dirs, files in os.walk(target_path):
         dirs[:] = [d for d in dirs if d not in DEFAULT_EXCLUDES]
@@ -175,7 +144,15 @@ def bejson_utility_create_mfdb_version(target_dir: str, version: str, use_base64
                 try:
                     rel_path = f_path.relative_to(target_path)
                     content, binary, b64 = bejson_utility_encode_file(f_path, use_base64=use_base64)
-                    rows.append([version, str(rel_path), file, content, binary, b64])
+                    
+                    row = [None] * f_count
+                    row[fm["version"]]   = version
+                    row[fm["file_path"]] = str(rel_path)
+                    row[fm["file_name"]] = file
+                    row[fm["content"]]   = content
+                    row[fm["is_binary"]] = binary
+                    row[fm["is_base64"]] = b64
+                    rows.append(row)
                 except Exception: continue
                 
     return rows

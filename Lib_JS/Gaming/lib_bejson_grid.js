@@ -17,7 +17,7 @@ class SwitchGrid {
     constructor(name, width, height) {
         this.width = width;
         this.height = height;
-        this.bejson = Switch.BEJSON.create104(name, [
+        this.bejson = BEJSON_Switch.BEJSON.create104(name, [
             { name: "layer_name", type: "string" },
             { name: "data", type: "array" }
         ], []);
@@ -41,5 +41,5 @@ class SwitchGrid {
     }
 }
 
-Switch.Grid = SwitchGrid;
+BEJSON_Switch.Grid = SwitchGrid;
 export default SwitchGrid;

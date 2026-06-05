@@ -84,13 +84,15 @@ def cms_taxonomy_delete_category(db_path: str, slug: str) -> bool:
     Delete a category by slug.
     """
     doc = BEJSONCore.bejson_core_load_file(db_path)
-    t_idx = 0
-    slug_idx = BEJSONCore.bejson_core_get_field_index(doc, "category_slug")
+    fi = BEJSONCore.bejson_core_get_field_map(doc)
+    
+    t_idx = fi.get("Record_Type_Parent", 0)
+    slug_idx = fi.get("category_slug", _CMS_TAXONOMY_LEGACY["Category"]["category_slug"])
     
     new_values = []
     found = False
     for row in doc["Values"]:
-        if row[t_idx] == "Category" and row[slug_idx] == slug:
+        if len(row) > slug_idx and row[t_idx] == "Category" and row[slug_idx] == slug:
             found = True
             continue
         new_values.append(row)
