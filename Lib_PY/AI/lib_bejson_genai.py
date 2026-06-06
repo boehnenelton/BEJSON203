@@ -4,12 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.0 OFFICIAL
+Version:      2.1.3 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-04
+Date:         2026-06-05
 Description:  Interface for Google Generative AI (GenAI) models.
-REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 4.3).
+REMEDIATED:   Purged transition stubs for Core and Env (Phase 1).
 """
 
 import os
@@ -29,13 +29,8 @@ CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 
-try:
-    from lib_bejson_env import resolve_path
-    from lib_bejson_core import bejson_core_get_field_map
-except ImportError:
-    def resolve_path(p): return p
-    def bejson_core_get_field_map(doc):
-        return {f["name"]: i for i, f in enumerate(doc.get("Fields", []))}
+from lib_bejson_env import resolve_path
+from lib_bejson_core import bejson_core_get_field_map
 
 # ANSI Status Colors
 C_RED = "\033[91m"

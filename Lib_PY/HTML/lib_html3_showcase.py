@@ -4,12 +4,12 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.1.0 OFFICIAL
+Version:      3.1.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-04
+Date:         2026-06-05
 Description:  BECSS-compliant showcase components and grids.
-REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 5.1).
+REMEDIATED:   Purged transition stubs for Core (Phase 1).
 """
 
 import html as html_mod
@@ -21,14 +21,9 @@ LIB_DIR = os.path.dirname(os.path.abspath(__file__))
 CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
 
-try:
-    from lib_bejson_core import bejson_core_get_field_map
-except ImportError:
-    # Transition fallback for environments where Core is missing
-    def bejson_core_get_field_map(doc):
-        return {f["name"]: i for i, f in enumerate(doc.get("Fields", [])) if isinstance(f, dict) and "name" in f}
+from lib_bejson_core import bejson_core_get_field_map
 
-VERSION = "3.1.0"
+VERSION = "3.1.1"
 SCRIPT_NAME = "lib_html3_showcase.py"
 RELATIONAL_ID = "88804025-c258-4f77-8406-badb4fe6b21b"
 

@@ -4,11 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-05
 Description:  High-level API for querying the Workspace Brain MFDB and policy nodes.
+REMEDIATED:   Purged transition stubs for Core and Env (Phase 1).
 """
 
 import os
@@ -18,21 +19,7 @@ from typing import Any, Callable, Dict, List, Optional
 
 # Resolve paths
 HOME = os.environ.get("HOME", os.path.expanduser("~"))
-try:
-    from lib_bejson_env import resolve_path
-except ImportError:
-    def resolve_path(path_str):
-        # REMEDIATED: Removed hardcoded Brain-Container fallback (Phase 6.5)
-        storage_root = os.environ.get("BEJSON_STORAGE_ROOT")
-        admin_root   = os.environ.get("ADMIN_ROOT")
-        home         = os.path.expanduser("~")
-        if not admin_root and storage_root:
-            admin_root = os.path.join(storage_root, "Admin")
-        root = admin_root or home
-        resolved = path_str.replace("{ADMIN_ROOT}", root)
-        resolved = resolved.replace("{SC_ROOT}", root)
-        resolved = resolved.replace("{HOME}", home)
-        return os.path.normpath(resolved)
+from lib_bejson_env import resolve_path
 
 VERSION = "2.1.0"
 ADMIN_ROOT = resolve_path("{ADMIN_ROOT}")
@@ -43,19 +30,12 @@ CORE_DIR = os.path.join(ADMIN_ROOT, "libraries/Lib_PY/Core")
 if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 
-try:
-    from lib_mfdb_core import (
-        mfdb_core_load_entity,
-        mfdb_core_add_entity_record,
-        mfdb_core_update_entity_record,
-        mfdb_core_remove_entity_record
-    )
-except ImportError:
-    # Minimal stubs if core is missing
-    def mfdb_core_load_entity(m, e): return []
-    def mfdb_core_add_entity_record(m, e, v): pass
-    def mfdb_core_update_entity_record(m, e, i, f, v): pass
-    def mfdb_core_remove_entity_record(m, e, i): pass
+from lib_mfdb_core import (
+    mfdb_core_load_entity,
+    mfdb_core_add_entity_record,
+    mfdb_core_update_entity_record,
+    mfdb_core_remove_entity_record
+)
 
 def brain_load_entity(entity_name: str) -> List[Dict[str, Any]]:
     """Loads all records for a specific entity from the Brain MFDB."""

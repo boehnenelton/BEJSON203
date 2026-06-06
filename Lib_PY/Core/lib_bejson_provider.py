@@ -4,23 +4,18 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-05
 Description:  Data provider interface for abstracted BEJSON storage access.
+REMEDIATED:   Purged transition stubs for Core (Phase 1).
 """
 
 import os
 import json
 import datetime
-try:
-    from lib_bejson_core import bejson_core_atomic_write
-except ImportError:
-    def bejson_core_atomic_write(p, d):
-        tmp = p + ".tmp"
-        with open(tmp, 'w') as f: json.dump(d, f, indent=2)
-        os.replace(tmp, p)
+from lib_bejson_core import bejson_core_atomic_write, bejson_core_get_field_map
 
 class BEJSONProvider:
     @staticmethod
@@ -46,10 +41,6 @@ class BEJSONProvider:
     def get_fields_map(db):
         """DEPRECATED: Delegates to bejson_core_get_field_map."""
         return bejson_core_get_field_map(db)
-
-    @staticmethod
-    def now_iso(): return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
-get_fields_map(db): return {f["name"]: i for i, f in enumerate(db["Fields"])}
 
     @staticmethod
     def now_iso(): return datetime.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")

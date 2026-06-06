@@ -4,12 +4,12 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.0 OFFICIAL
+Version:      2.1.1 OFFICIAL
               MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-04
+Date:         2026-06-05
 Description:  Authoritative List / Tree / Sidebar renderer for BEJSON 104 documents.
-REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 5.3).
+REMEDIATED:   Purged transition stubs for Core (Phase 1).
 RELATIONAL_ID: a1b2c3d4-e5f6-7890-ab12-cd34ef567890
 """
 
@@ -20,18 +20,14 @@ import sys
 from typing import Any, Dict, List, Optional
 
 SCRIPT_NAME    = "lib_html3_list_renderer.py"
-SCRIPT_VERSION = "2.1.0"
+SCRIPT_VERSION = "2.1.1"
 RELATIONAL_ID  = "a1b2c3d4-e5f6-7890-ab12-cd34ef567890"
 
 LIB_DIR = os.path.dirname(os.path.abspath(__file__))
 if LIB_DIR not in sys.path:
     sys.path.append(LIB_DIR)
 
-try:
-    import lib_bejson_core as BEJSONCore
-    _HAS_CORE = True
-except ImportError:
-    _HAS_CORE = False
+import lib_bejson_core as BEJSONCore
 
 # --- Legacy Fallback Constants ---
 _LIST_LEGACY = {
@@ -49,15 +45,12 @@ _LIST_LEGACY = {
 def _get_field_map(doc: dict) -> Dict[str, int]:
     """
     Returns {field_name_lower: index} for the Fields array.
-    Uses bejson_core_get_field_map when available (cached); falls back to
-    manual construction. Keys are lowercased for case-insensitive lookup.
+    Uses bejson_core_get_field_map (cached). Keys are lowercased for
+    case-insensitive lookup.
     """
-    if _HAS_CORE:
-        raw = BEJSONCore.bejson_core_get_field_map(doc)
-        # Note: list_renderer historically uses lowercase keys internally
-        return {k.lower(): v for k, v in raw.items()}
-    fields = doc.get("Fields", [])
-    return {f["name"].lower(): i for i, f in enumerate(fields) if isinstance(f, dict) and "name" in f}
+    raw = BEJSONCore.bejson_core_get_field_map(doc)
+    # Note: list_renderer historically uses lowercase keys internally
+    return {k.lower(): v for k, v in raw.items()}
 
 
 def _resolve_field(f_map: Dict[str, int], *candidates) -> int:

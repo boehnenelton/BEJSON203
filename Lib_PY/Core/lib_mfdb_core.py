@@ -866,15 +866,5 @@ def mfdb_core_resolve_path(path_str: str) -> str:
     if not path_str:
         return path_str
     
-    try:
-        from lib_bejson_env import resolve_path
-        return resolve_path(path_str)
-    except ImportError:
-        # Minimal fallback without hardcoded absolute strings
-        # Defaults are handled inside resolve_path if imported, 
-        # otherwise we just expand ~ and vars
-        resolved = str(path_str)
-        # Expansion only
-        resolved = os.path.expanduser(resolved)
-        resolved = os.path.expandvars(resolved)
-        return os.path.normpath(resolved)
+    from lib_bejson_env import resolve_path
+    return resolve_path(path_str)

@@ -4,17 +4,19 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.1.0 OFFICIAL
+Version:      3.1.2 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-04
+Date:         2026-06-05
 Description:  Auto-rendering pipeline for BEJSON documents into HTML3 components.
-REMEDIATED:   Implemented Field Map Indexing with Safe Get fallbacks (Phase 5.4).
+REMEDIATED:   Purged transition stubs for Core (Phase 1).
+REMEDIATED:   Removed _HEURISTIC_LEGACY; standardized to key/value mapping (Phase 2).
 """
 
 import html as html_mod
 import os
 import sys
+import logging
 from .lib_html3_body import html_card, html_stats_bar, html_description_list
 from .lib_html3_tables import html_table
 from .lib_html3_charts import html_chart
@@ -26,21 +28,11 @@ LIB_DIR = os.path.dirname(os.path.abspath(__file__))
 CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
 
-try:
-    from lib_bejson_core import bejson_core_get_field_map
-except ImportError:
-    def bejson_core_get_field_map(doc):
-        return {f["name"]: i for i, f in enumerate(doc.get("Fields", []))}
+from lib_bejson_core import bejson_core_get_field_map
 
-VERSION = "3.1.0"
+VERSION = "3.1.2"
 SCRIPT_NAME = "lib_html3_bejson_renderer.py"
 RELATIONAL_ID = "d4e5f6g7-1h2i-3j4k-5l6m-7n8o9p0q1r2s"
-
-# --- Legacy Fallback Constants ---
-_HEURISTIC_LEGACY = {
-    "setting_name": 0, "key": 0,
-    "setting_value": 1, "value": 1
-}
 
 def render_bejson(doc, title=None, hint=None):
     """
@@ -84,12 +76,22 @@ def render_bejson(doc, title=None, hint=None):
         if hint == "stats":
             # Convert values to stats_list format
             stats = []
-            # Optimized Field Mapping
+            # Optimized Field Mapping (Phase 2: Standardized)
             fi = bejson_core_get_field_map(doc)
-            
-            label_idx = fi.get("setting_name", fi.get("key", _HEURISTIC_LEGACY["key"]))
-            val_idx   = fi.get("setting_value", fi.get("value", _HEURISTIC_LEGACY["value"]))
-            
+
+            # Priority 1: standard key/value
+            # Priority 2: label/value (Bento compat)
+            label_idx = fi.get("key", fi.get("label", -1))
+            val_idx   = fi.get("value", -1)
+
+            # Fail-safe: exactly 2 fields
+            if label_idx == -1 or val_idx == -1:
+                if len(doc.get("Fields", [])) == 2:
+                    label_idx, val_idx = 0, 1
+                else:
+                    logging.warning(f"[Renderer] Missing standard fields for 'stats' hint in {title}")
+                    return html_table(doc)
+
             for row in doc["Values"]:
                 label = row[label_idx] if label_idx < len(row) else "Unknown"
                 value = row[val_idx] if val_idx < len(row) else ""

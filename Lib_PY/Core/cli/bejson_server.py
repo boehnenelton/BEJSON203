@@ -4,12 +4,12 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.2 OFFICIAL
+Version:      2.1.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-06-05
 Description:  API server implementation for BEJSON data distribution.
-REMEDIATED:   Migrated SimpleLock to ResilientPIDLock (Finding 04).
+REMEDIATED:   Purged transition stubs for Core (Phase 1).
 """
 import os
 import socket
@@ -27,30 +27,7 @@ LIB_DIR = os.path.dirname(os.path.abspath(__file__))
 CORE_DIR = os.path.dirname(LIB_DIR) # Core/
 if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
 
-try:
-    from lib_bejson_core import ResilientPIDLock, bejson_core_atomic_write
-except ImportError:
-    # Fallback to a simplified ResilientPIDLock
-    class ResilientPIDLock:
-        def __init__(self, target_path, timeout_seconds=10):
-            self.target = Path(target_path)
-            self.lock_dir = Path(f"{target_path}.lockdir")
-            self.timeout = timeout_seconds
-        def acquire(self):
-            start = time.time()
-            while time.time() - start < self.timeout:
-                try: os.mkdir(self.lock_dir); return True
-                except FileExistsError: time.sleep(0.1)
-            return False
-        def release(self):
-            try: os.rmdir(self.lock_dir)
-            except OSError: pass
-        def __enter__(self):
-            if not self.acquire(): raise OSError(53, "Lock timeout")
-            return self
-        def __exit__(self, *_): self.release()
-    def bejson_core_atomic_write(p, d):
-        with open(p, 'w') as f: json.dump(d, f, indent=2)
+from lib_bejson_core import ResilientPIDLock, bejson_core_atomic_write
 
 def copy_to_clipboard(text):
     """Portable clipboard copy."""
@@ -88,11 +65,7 @@ def get_random_available_port(start=5001, end=5020):
             return port
     return None
 
-try:
-    from lib_bejson_env import resolve_path
-    from lib_bejson_core import bejson_core_atomic_write
-except ImportError:
-    def resolve_path(p): return p.replace("{HOME}", os.path.expanduser("~"))
+from lib_bejson_env import resolve_path
 
 def register_server(name, port):
     reg_path = resolve_path("{HOME}/Registry/Environment_Registry.bejson.json")

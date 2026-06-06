@@ -4,13 +4,12 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.2 OFFICIAL
+Version:      2.1.3 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-06-05
 Description:  BE-specific core system abstractions and utility wrappers.
-REMEDIATED:   Purged 'BEC_ROOT' and 'Brain-Container'; standardized to ADMIN_ROOT (Phase 6.5).
-REMEDIATED:   Migrated SimpleLock to ResilientPIDLock (Finding 04).
+REMEDIATED:   Purged transition stubs for Core (Phase 1).
 """
 
 import os
@@ -23,28 +22,7 @@ LIB_DIR = os.path.dirname(os.path.abspath(__file__))
 CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path: sys.path.insert(0, CORE_DIR)
 
-try:
-    from lib_bejson_core import ResilientPIDLock
-except ImportError:
-    # Fallback to a simplified ResilientPIDLock if core is unreachable
-    class ResilientPIDLock:
-        def __init__(self, target_path, timeout_seconds=10):
-            self.target = Path(target_path)
-            self.lock_dir = Path(f"{target_path}.lockdir")
-            self.timeout = timeout_seconds
-        def acquire(self):
-            start = time.time()
-            while time.time() - start < self.timeout:
-                try: os.mkdir(self.lock_dir); return True
-                except FileExistsError: time.sleep(0.1)
-            return False
-        def release(self):
-            try: os.rmdir(self.lock_dir)
-            except OSError: pass
-        def __enter__(self):
-            if not self.acquire(): raise OSError(53, "Lock timeout")
-            return self
-        def __exit__(self, *_): self.release()
+from lib_bejson_core import ResilientPIDLock
 
 _DEFAULT_ADMIN_ROOT = str(Path(__file__).resolve().parent.parent.parent)
 

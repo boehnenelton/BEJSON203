@@ -4,12 +4,12 @@ Family:       Utility
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.3.0 OFFICIAL
+Version:      2.3.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-04
+Date:         2026-06-05
 Description:  Cross-compatible chunking utilities for CLI_CHUNKER and MFDB_V5.
-REMEDIATED:   Implemented Field Map Indexing with dynamic record creation (Phase 7.3).
+REMEDIATED:   Purged transition stubs for Core (Phase 1).
 """
 
 import os
@@ -27,15 +27,11 @@ CORE_DIR = os.path.join(PARENT_LIB_DIR, "Core")
 if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 
-try:
-    from lib_bejson_core import (
-        bejson_core_atomic_write,
-        bejson_core_get_field_map,
-        bejson_core_create_104db
-    )
-except ImportError:
-    print(f"Error: Core sibling not found at {CORE_DIR}")
-    sys.exit(1)
+from lib_bejson_core import (
+    bejson_core_atomic_write,
+    bejson_core_get_field_map,
+    bejson_core_create_104db
+)
 
 # ---------------------------------------------------------------------------
 # Constants & Official Schemas

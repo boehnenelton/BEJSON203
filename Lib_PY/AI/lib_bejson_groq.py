@@ -4,11 +4,12 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.1.3 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-18
+Date:         2026-06-05
 Description:  Integration wrapper for Groq API services.
+REMEDIATED:   Purged transition stubs for Core and Env (Phase 1).
 """
 
 import os
@@ -29,25 +30,7 @@ CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
 if CORE_DIR not in sys.path:
     sys.path.append(CORE_DIR)
 
-try:
-    from lib_bejson_env import resolve_path as resolve_system_path
-except ImportError:
-    def resolve_system_path(path_str):
-        # REMEDIATED: Removed hardcoded Brain-Container fallback (Phase 6.5)
-        # Priority: 1. ADMIN_ROOT env, 2. BEJSON_STORAGE_ROOT/Admin, 3. Home fallback
-        storage_root = os.environ.get("BEJSON_STORAGE_ROOT")
-        admin_root   = os.environ.get("ADMIN_ROOT")
-        home         = os.path.expanduser("~")
-        
-        if not admin_root and storage_root:
-            admin_root = os.path.join(storage_root, "Admin")
-            
-        root = admin_root or home
-            
-        resolved = path_str.replace("{ADMIN_ROOT}", root)
-        resolved = resolved.replace("{SC_ROOT}", root) # Support legacy placeholder
-        resolved = resolved.replace("{HOME}", home)
-        return os.path.normpath(resolved)
+from lib_bejson_env import resolve_path as resolve_system_path
 
 # --- SCHEMAS INFERRED VIA LIB_BEJSON_SCHEMA ---
 GROQ_PROFILE_SCHEMA = {
@@ -84,20 +67,12 @@ LIB_DIR = os.environ.get("BEJSON_LIB_DIR", str(Path(__file__).resolve().parent))
 if LIB_DIR not in sys.path:
     sys.path.insert(0, LIB_DIR)
 
-try:
-    from lib_bejson_core import bejson_core_load_file, bejson_core_get_field_index, bejson_core_get_field_map, bejson_core_atomic_write
-except ImportError:
-    # TRANSITION STUB — remove only after confirming Core is always importable in all runtime environments.
-    def bejson_core_load_file(p):
-        with open(p, 'r') as f: return json.load(f)
-    def bejson_core_get_field_index(d, n):
-        for i, f in enumerate(d.get("Fields", [])):
-            if f["name"] == n: return i
-        return -1
-    def bejson_core_get_field_map(d):
-        return {f["name"]: i for i, f in enumerate(d.get("Fields", []))}
-    def bejson_core_atomic_write(p, d):
-        with open(p, 'w') as f: json.dump(d, f, indent=2)
+from lib_bejson_core import (
+    bejson_core_load_file, 
+    bejson_core_get_field_index, 
+    bejson_core_get_field_map, 
+    bejson_core_atomic_write
+)
 
 # --- Legacy Fallback Constants ---
 _GROQ_MODEL_LEGACY   = {"model_name": 0, "model_id": 1, "currently_active": 2}
