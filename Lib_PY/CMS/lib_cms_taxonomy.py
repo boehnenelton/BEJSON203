@@ -76,7 +76,7 @@ def cms_taxonomy_add_category(db_path: str, name: str, slug: Optional[str] = Non
     new_row[cat_name_idx] = name
     new_row[cat_slug_idx] = slug
     
-    doc = BEJSONCore.bejson_core_add_record(doc, new_row)
+    BEJSONCore.bejson_core_add_record(doc, new_row)
     BEJSONCore.bejson_core_atomic_write(db_path, doc)
 
 def cms_taxonomy_delete_category(db_path: str, slug: str) -> bool:
@@ -144,5 +144,5 @@ def cms_taxonomy_add_author(db_path: str, name: str, bio: str = "", image: str =
     new_row[bio_idx] = bio
     new_row[img_idx] = image
     
-    doc = BEJSONCore.bejson_core_add_record(doc, new_row)
+    BEJSONCore.bejson_core_add_record(doc, new_row)
     BEJSONCore.bejson_core_atomic_write(db_path, doc)
