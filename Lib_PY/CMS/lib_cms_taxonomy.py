@@ -38,9 +38,9 @@ def cms_taxonomy_get_categories(db_path: str) -> List[Dict]:
     List all categories from the master database.
     """
     doc = BEJSONCore.bejson_core_load_file(db_path)
-    records = BEJSONCore.bejson_core_get_records_by_type(doc, "Category")
+    if not doc: return []
+    records = BEJSONCore.bejson_core_filter_rows(doc, "Record_Type_Parent", "Category")
     
-    fields = BEJSONCore.bejson_core_get_fields(doc)
     cat_name_idx = BEJSONCore.bejson_core_get_field_index(doc, "category_name")
     cat_slug_idx = BEJSONCore.bejson_core_get_field_index(doc, "category_slug")
     
@@ -111,7 +111,8 @@ def cms_taxonomy_get_authors(db_path: str) -> List[Dict]:
     List all authors from the master database.
     """
     doc = BEJSONCore.bejson_core_load_file(db_path)
-    records = BEJSONCore.bejson_core_get_records_by_type(doc, "Author")
+    if not doc: return []
+    records = BEJSONCore.bejson_core_filter_rows(doc, "Record_Type_Parent", "Author")
     
     name_idx = BEJSONCore.bejson_core_get_field_index(doc, "author_name")
     bio_idx = BEJSONCore.bejson_core_get_field_index(doc, "author_bio")

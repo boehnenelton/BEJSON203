@@ -245,7 +245,8 @@ def cms_content_delete_page(master_db_path: str, pages_dir: str, page_uuid: str)
 def cms_content_list_pages(master_db_path: str) -> List[Dict]:
     """List all pages from master index as a list of dictionaries."""
     doc = BEJSONCore.bejson_core_load_file(master_db_path)
-    records = BEJSONCore.bejson_core_get_records_by_type(doc, "PageRecord")
+    if not doc: return []
+    records = BEJSONCore.bejson_core_filter_rows(doc, "Record_Type_Parent", "PageRecord")
     fields = doc.get("Fields", [])
     
     results = []

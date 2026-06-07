@@ -144,11 +144,13 @@ def _load_entity_doc(manifest_path: str, entity_name: str) -> dict:
 
 
 def _write_entity_doc(doc: dict, entity_path: str) -> None:
-    bejson_core_atomic_write(entity_path, doc)
+    if not bejson_core_atomic_write(entity_path, doc):
+        raise MFDBCoreError(f"Failed to write entity doc to {entity_path}", E_MFDB_CORE_WRITE_FAILED)
 
 
 def _write_manifest_doc(doc: dict, manifest_path: str) -> None:
-    bejson_core_atomic_write(manifest_path, doc)
+    if not bejson_core_atomic_write(manifest_path, doc):
+        raise MFDBCoreError(f"Failed to write manifest doc to {manifest_path}", E_MFDB_CORE_WRITE_FAILED)
 
 
 def _update_manifest_record_count(
@@ -556,7 +558,10 @@ def mfdb_core_load_manifest(manifest_path: str) -> list[dict]:
     Returns all manifest records as a list of field-name-keyed dicts.
     """
     mfdb_validator_validate_manifest(manifest_path)
-    return _get_manifest_entries(manifest_path)
+    doc = _load_json(manifest_path)
+    if not isinstance(doc, dict):
+        raise MFDBCoreError(f"Failed to load manifest: {manifest_path} (not a dict)", E_MFDB_CORE_MANIFEST_NOT_FOUND)
+    return _rows_as_dicts(doc)
 
 
 def mfdb_core_load_entity(manifest_path: str, entity_name: str) -> list[dict]:
@@ -565,6 +570,8 @@ def mfdb_core_load_entity(manifest_path: str, entity_name: str) -> list[dict]:
     Returns a list of field-name-keyed dicts (dense - no null-padding).
     """
     doc = _load_entity_doc(manifest_path, entity_name)
+    if not isinstance(doc, dict):
+        raise MFDBCoreError(f"Failed to load entity: {entity_name} (not a dict)", E_MFDB_CORE_ENTITY_NOT_FOUND)
     return _rows_as_dicts(doc)
 
 
@@ -797,7 +804,7 @@ def mfdb_core_create_database(
     db_description: str = "",
     schema_version: str = "1.0.0",
     author:         str = "Elton Boehnen",
-    mfdb_version:   str = "1.3.1",
+    mfdb_version:   str = "1.31",
     network_role: str = "Master",
 ) -> str:
     """Create a new MFDB from scratch."""

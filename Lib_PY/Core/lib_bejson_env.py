@@ -4,7 +4,7 @@ Family:       Core
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.1 OFFICIAL
+Version:      2.1.2 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-06-05
@@ -15,6 +15,27 @@ REMEDIATED:   Removed hardcoded /storage/emulated/0 fallback (Audit Finding 10).
 
 import os
 import sys
+from pathlib import Path
+
+def source_env(override_path: str = None) -> bool:
+    """
+    Mandatory Environment Sourcing (Section 54).
+    Priority: 1. override_path, 2. ENV_FILE_PATH, 3. Android Storage, 4. Home
+    """
+    env_path = override_path or os.environ.get("ENV_FILE_PATH")
+    search_paths = [
+        Path(env_path) if env_path else None,
+        Path("/storage/emulated/0/env_file.py"),
+        Path.home() / "env_file.py"
+    ]
+    for p in search_paths:
+        if p and p.exists():
+            try:
+                exec(p.read_text(), globals())
+                return True
+            except Exception:
+                continue
+    return False
 
 def resolve_path(path_str: str) -> str:
     """

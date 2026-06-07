@@ -4,7 +4,7 @@ Family:       AI
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.3 OFFICIAL
+Version:      2.1.4 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-06-05
@@ -23,11 +23,14 @@ from typing import Any, Callable, Dict, List, Optional
 # Add Lib directory to path for relative imports
 LIB_DIR = os.path.dirname(os.path.abspath(__file__))
 if LIB_DIR not in sys.path:
-    sys.path.append(LIB_DIR)
+    sys.path.insert(0, LIB_DIR)
 
-CORE_DIR = os.path.join(os.path.dirname(LIB_DIR), "Core")
-if CORE_DIR not in sys.path:
-    sys.path.append(CORE_DIR)
+# Resilient sibling resolution for nested MFDB structures
+parent_dir = os.path.dirname(LIB_DIR)
+for sibling in ["Core", "Env", "AI", "Utility"]:
+    sibling_path = os.path.join(parent_dir, sibling)
+    if os.path.exists(sibling_path) and sibling_path not in sys.path:
+        sys.path.append(sibling_path)
 
 from lib_bejson_env import resolve_path
 from lib_bejson_core import bejson_core_get_field_map
@@ -205,3 +208,20 @@ class GenAIClient:
         self.update_status("error", "ALL KEYS EXHAUSTED")
         return None
 
+# ─── COMPATIBILITY LAYER ───────────────────────────────────────────────────
+
+# Compatibility Aliases
+GeminiKeyRegistry = GenAIKeyManager
+GeminiModelRegistry = GenAIClient
+
+class GeminiStandardPrompter:
+    """Compatibility wrapper for legacy scripts (Phase 1)."""
+    def __init__(self, key_registry_path: str = None, model_registry_path: str = None, profile_path: str = None):
+        self.key_reg = GenAIKeyManager(key_registry_path or DEFAULT_KEY_FILE)
+        self.client = GenAIClient(self.key_reg)
+        self.model_registry_path = model_registry_path
+        self.profile_path = profile_path
+
+    def prompt(self, text: str, model: str = "gemini-3-flash-preview", system_instruction: str = None) -> Optional[str]:
+        """Wrapper for generate_content."""
+        return self.client.generate_content(text, model=model, system_instruction=system_instruction)
