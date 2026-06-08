@@ -66,7 +66,8 @@ class BEJSONEngine {
 // --- Internal Key Cache for current session/document operation ---
 let _keyCache = null;
 
-async function _getOrDeriveKey(password, salt) {
+async function _getOrDeriveKey(password, salt, providedKey = null) {
+    if (providedKey) return providedKey;
     const saltB64 = CryptoUtils.ab2base64(salt);
     if (_keyCache && _keyCache.password === password && _keyCache.salt === saltB64) {
         return _keyCache.key;
@@ -92,13 +93,13 @@ const CryptoUtils = {
     ab2base64(buf) { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); },
     base642ab(base64) { const b = atob(base64); return new Uint8Array(b.length).map((_, i) => b.charCodeAt(i)); },
 
-    async encryptRecord(doc, recordIndex, password, providedSalt = null) {
+    async encryptRecord(doc, recordIndex, password, providedSalt = null, providedKey = null) {
         if (recordIndex < 0 || recordIndex >= doc.Values.length) throw new BEJSONCoreError("Index out of bounds", E_CORE_INDEX_OUT_OF_BOUNDS);
         
         const record = doc.Values[recordIndex];
         // REUSE salt if provided, otherwise generate. Reusing salt allows key caching.
         const salt = providedSalt || crypto.getRandomValues(new Uint8Array(16));
-        const key = await _getOrDeriveKey(password, salt);
+        const key = await _getOrDeriveKey(password, salt, providedKey);
         const saltB64 = this.ab2base64(salt);
         
         const newRecord = [...record];

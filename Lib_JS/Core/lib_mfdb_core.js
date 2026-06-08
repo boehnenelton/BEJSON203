@@ -30,6 +30,17 @@ class MFDBArchive {
         
         const zip = await JSZip.loadAsync(zipFile);
         
+        // REMEDIATED: Secure ZIP validation (Audit Finding 2).
+        const utility = (typeof window !== 'undefined' && window.BEJSON_UTILITY) 
+            ? window.BEJSON_UTILITY 
+            : (typeof require !== 'undefined' ? require('./lib_bejson_secure_zip.js') : null);
+        
+        if (utility && utility.secure_zip_validate) {
+            // Note: Virtual mount doesn't use real paths, but we validate for consistency.
+            // dirHandle.name is used as the 'boundary'.
+            utility.secure_zip_validate({ getEntries: () => Object.keys(zip.files).map(k => ({ entryName: k })) }, dirHandle.name || "mount_root");
+        }
+        
         // Check for manifest
         if (!zip.file("104a.mfdb.bejson")) {
             throw new Error("Invalid MFDB Archive: 104a.mfdb.bejson missing at root.");

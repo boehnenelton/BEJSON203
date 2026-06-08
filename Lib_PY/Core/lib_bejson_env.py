@@ -64,14 +64,14 @@ def resolve_path(path_str: str) -> str:
         "{BEJSON_LIB_ROOT}": lib_root,
         "{ADMIN_ROOT}": admin_root,
         "{INTERNAL_STORAGE}": storage_root,
-        "{HOME}": home,
-        # Legacy placeholder mapping
-        "{SC_ROOT}": admin_root,
-        "{BEC_ROOT}": admin_root,
-        # Legacy absolute paths to be replaced
-        "/storage/emulated/0": storage_root,
-        "/data/data/com.termux/files/home": home
+        "{HOME}": home
     }
+    
+    # Legacy absolute paths to be replaced
+    # REMEDIATED: Only replace if storage_root is explicitly set to avoid "Vanishing Data" (Audit Finding 1).
+    if os.environ.get("BEJSON_STORAGE_ROOT"):
+        mappings["/storage/emulated/0"] = storage_root
+        mappings["/data/data/com.termux/files/home"] = home
     
     resolved = str(path_str)
     

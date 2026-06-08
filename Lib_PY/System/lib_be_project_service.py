@@ -100,7 +100,15 @@ class ProjectService:
     def _load_db():
         if not os.path.exists(DB_FILE): return None
         with open(DB_FILE, 'r') as f:
-            try: return json.load(f)
+            try: 
+                doc = json.load(f)
+                # REMEDIATED: Ensure all project records are padded to 22 fields (Audit Finding 5).
+                if doc and "Values" in doc:
+                    for i, row in enumerate(doc["Values"]):
+                        if len(row) < 22:
+                            padding = [None] * (22 - len(row))
+                            doc["Values"][i] = row + padding
+                return doc
             except json.JSONDecodeError: return None
 
     @staticmethod
@@ -125,7 +133,8 @@ class ProjectService:
         if project_type:
             projects = [v for v in projects if len(v) > type_idx and v[type_idx] == project_type]
         if not include_archived:
-            projects = [v for v in projects if len(v) > archived_idx and v[archived_idx] == False]
+            # REMEDIATED: Treat None as False for backward compatibility with padded records.
+            projects = [v for v in projects if len(v) > archived_idx and v[archived_idx] is not True]
         return projects
 
     @staticmethod

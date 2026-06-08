@@ -97,7 +97,6 @@ def bejson_core_load_file(path: str) -> Optional[dict]:
 
 def bejson_core_atomic_write(path: str, data: dict) -> bool:
     """Writes a BEJSON file atomically using a temp file and sync."""
-    path = resolve_path(path)
     target_dir = os.path.dirname(os.path.abspath(path))
     os.makedirs(target_dir, exist_ok=True)
 

@@ -221,30 +221,39 @@ COMPONENT_TEMPLATE = """
             countEl.textContent = 'FIELDS: ' + fields.length;
         }}
 
-        schemaToggleBtn.onclick = function() {{
-            isSchemaView = !isSchemaView;
-            schemaToggleBtn.textContent = isSchemaView ? "RECORDS" : "SCHEMA";
-            renderTable();
-        }};
-
-        // Event Delegation for Table Head (Sort)
-        theadEl.onclick = function(e) {{
-            var target = e.target.closest('[data-action="sort"]');
-            if (!target) return;
-            var field = target.dataset.field;
-            if (currentSort.column === field) currentSort.direction = (currentSort.direction === 'asc' ? 'desc' : 'asc');
-            else {{ currentSort.column = field; currentSort.direction = 'asc'; }}
-            renderTable();
-        }};
-
-        prevBtn.onclick = function() {{ if (currentPage > 1) {{ currentPage--; renderTable(); }} }};
-        nextBtn.onclick = function() {{ if (currentPage < Math.ceil(bejson.Values.length / pageSize)) {{ currentPage++; renderTable(); }} }};
-        
-        searchEl.oninput = function(e) {{
+        selectEl.addEventListener('change', function() {{ currentPage = 1; renderTable(); }});
+        searchEl.addEventListener('input', function(e) {{
             searchTerm = e.target.value;
             currentPage = 1;
             renderTable();
-        }};
+        }});
+
+        // --- Centralized Event Delegation (Phase 3: Secure Logic) ---
+        document.getElementById(cid).addEventListener('click', function(e) {{
+            var target = e.target;
+            
+            // 1. Sort Toggle
+            var sortBtn = target.closest('[data-action="sort"]');
+            if (sortBtn) {{
+                var field = sortBtn.dataset.field;
+                if (currentSort.column === field) currentSort.direction = (currentSort.direction === 'asc' ? 'desc' : 'asc');
+                else {{ currentSort.column = field; currentSort.direction = 'asc'; }}
+                renderTable();
+                return;
+            }}
+
+            // 2. Schema Toggle
+            if (target.id === cid + '_schema_toggle') {{
+                isSchemaView = !isSchemaView;
+                target.textContent = isSchemaView ? "RECORDS" : "SCHEMA";
+                renderTable();
+                return;
+            }}
+
+            // 3. Pagination
+            if (target.id === cid + '_prev' && currentPage > 1) {{ currentPage--; renderTable(); return; }}
+            if (target.id === cid + '_next' && currentPage < Math.ceil(bejson.Values.length / pageSize)) {{ currentPage++; renderTable(); return; }}
+        }});
 
         if (bejson.Records_Type) {{
             bejson.Records_Type.forEach(function(type) {{
@@ -256,7 +265,6 @@ COMPONENT_TEMPLATE = """
             var option = document.createElement('option'); option.value = "default"; option.textContent = "RECORDS"; selectEl.appendChild(option);
         }}
         
-        selectEl.onchange = function() {{ currentPage = 1; renderTable(); }}; 
         renderTable();
     }})();
     </script>

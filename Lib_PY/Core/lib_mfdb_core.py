@@ -19,6 +19,7 @@ import shutil
 import tempfile
 import zipfile
 import hashlib
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -236,7 +237,22 @@ class MFDBArchive:
         target_p.mkdir(parents=True, exist_ok=True)
 
         with zipfile.ZipFile(archive_path, 'r') as zip_ref:
-            zip_ref.extractall(target_dir)
+            # REMEDIATED: Secure extraction loop to mitigate Zip Slip (Audit Finding 2).
+            from lib_bejson_path_guard import bejson_safe_join
+            for member in zip_ref.namelist():
+                # Skip directories as safe_join/open will handle them
+                if member.endswith('/'): continue
+                
+                # Boundary check via safe_join
+                try:
+                    safe_path = bejson_safe_join(target_dir, member)
+                    # Ensure parent directory exists
+                    os.makedirs(os.path.dirname(safe_path), exist_ok=True)
+                    with zip_ref.open(member) as source, open(safe_path, "wb") as target:
+                        shutil.copyfileobj(source, target)
+                except ValueError as e:
+                    logging.error(f"[MFDB_CORE] Security Alert: {e}")
+                    raise MFDBCoreError(f"Secure extraction failed: {e}", E_MFDB_CORE_ARCHIVE_ERROR)
 
         if not manifest_path.exists():
             shutil.rmtree(target_dir)
