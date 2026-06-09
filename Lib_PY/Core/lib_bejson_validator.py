@@ -127,19 +127,19 @@ def bejson_validator_check_values(doc, version, fields_count):
             
             # REMEDIATED: Full type validation including array/object
             if ftype == "string" and not isinstance(val, str):
-                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected string", E_TYPE_MISMATCH)
+                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected string, got {type(val).__name__}", E_TYPE_MISMATCH)
             elif ftype == "integer" and (not isinstance(val, int) or isinstance(val, bool)):
-                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected integer", E_TYPE_MISMATCH)
+                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected integer, got {type(val).__name__}", E_TYPE_MISMATCH)
             elif ftype == "number" and (not isinstance(val, (int, float)) or isinstance(val, bool)):
                  # FIX PY2: bool is a subclass of int in Python, so True/False pass isinstance(int,float).
                  # Explicitly exclude bool — BEJSON "number" means a numeric value, not a boolean.
-                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected number, got bool", E_TYPE_MISMATCH)
+                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected number, got {type(val).__name__}", E_TYPE_MISMATCH)
             elif ftype == "boolean" and not isinstance(val, bool):
-                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected boolean", E_TYPE_MISMATCH)
+                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected boolean, got {type(val).__name__}", E_TYPE_MISMATCH)
             elif ftype == "array" and not isinstance(val, list):
-                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected array", E_TYPE_MISMATCH)
+                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected array, got {type(val).__name__}", E_TYPE_MISMATCH)
             elif ftype == "object" and not isinstance(val, dict):
-                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected object", E_TYPE_MISMATCH)
+                 raise BEJSONValidationError(f"Type mismatch at row {i}, col {j} ({fields[j]['name']}): expected object, got {type(val).__name__}", E_TYPE_MISMATCH)
 
 def bejson_validator_check_custom_headers(doc, version):
     mandatory_set = set(MANDATORY_KEYS)

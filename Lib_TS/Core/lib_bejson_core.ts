@@ -277,13 +277,24 @@ export async function encryptRecord(
   for (let j = 0; j < newRow.length; j++) {
     const field = doc.Fields[j];
     if (field.name === "Record_Type_Parent" || field.name === "is_encrypted") continue;
-    if (newRow[j] === null || (typeof newRow[j] === "string" && (newRow[j] as string).startsWith("ENC:AES-GCM:"))) continue;
+    
+    const val = newRow[j];
+    if (val === null) continue;
+    
+    // Check if already encrypted (handle both legacy string and new object format)
+    if (typeof val === "string" && val.startsWith("ENC:AES-GCM:")) continue;
+    if (val && typeof val === "object" && (val as any)._enc === "AES-GCM") continue;
 
-    const dataEnc = new TextEncoder().encode(JSON.stringify(newRow[j]));
+    const dataEnc = new TextEncoder().encode(JSON.stringify(val));
     const iv = crypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, dataEnc);
 
-    newRow[j] = "ENC:AES-GCM:" + saltB64 + ":" + _ab2base64(iv) + ":" + _ab2base64(ciphertext);
+    newRow[j] = {
+      _enc: "AES-GCM",
+      salt: saltB64,
+      iv: _ab2base64(iv),
+      ct: _ab2base64(ciphertext)
+    };
   }
 
   const ieIdx = doc.Fields.findIndex((f) => f.name === "is_encrypted");
@@ -306,23 +317,45 @@ export async function decryptRecord(
 
   for (let j = 0; j < newRow.length; j++) {
     const val = newRow[j];
-    if (typeof val !== "string" || !val.startsWith("ENC:AES-GCM:")) continue;
+    
+    let saltB64: string | undefined;
+    let ivB64: string | undefined;
+    let ctB64: string | undefined;
 
-    const parts = val.split(":");
-    if (parts.length !== 5) continue;
+    if (typeof val === "string" && val.startsWith("ENC:AES-GCM:")) {
+      const parts = val.split(":");
+      if (parts.length === 5) {
+        saltB64 = parts[2];
+        ivB64 = parts[3];
+        ctB64 = parts[4];
+      }
+    } else if (val && typeof val === "object" && (val as any)._enc === "AES-GCM") {
+      saltB64 = (val as any).salt;
+      ivB64 = (val as any).iv;
+      ctB64 = (val as any).ct;
+    }
 
-    const salt = _base642ab(parts[2]);
-    const iv = _base642ab(parts[3]);
-    const ct = _base642ab(parts[4]);
+    if (!saltB64 || !ivB64 || !ctB64) continue;
 
-    const key = await _getOrDeriveKey(password, salt);
-    const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct);
-    newRow[j] = JSON.parse(new TextDecoder().decode(decrypted));
+    try {
+      const salt = _base642ab(saltB64);
+      const iv = _base642ab(ivB64);
+      const ct = _base642ab(ctB64);
+
+      const key = await _getOrDeriveKey(password, salt);
+      const decrypted = await crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, key, ct);
+      newRow[j] = JSON.parse(new TextDecoder().decode(decrypted));
+    } catch (e) {
+      throw new BEJSONCoreError(BEJSON_CORE_CODES.DECRYPTION_FAILED, "Decryption failed at field " + j + ": " + String(e));
+    }
   }
 
   const ieIdx = doc.Fields.findIndex((f) => f.name === "is_encrypted");
   if (ieIdx !== -1) {
-    newRow[ieIdx] = newRow.some((v, idx) => doc.Fields[idx].name !== "is_encrypted" && typeof v === "string" && v.startsWith("ENC:AES-GCM:"));
+    newRow[ieIdx] = newRow.some((v, idx) => {
+      if (doc.Fields[idx].name === "is_encrypted") return false;
+      return (typeof v === "string" && v.startsWith("ENC:AES-GCM:")) || (v && typeof v === "object" && (v as any)._enc === "AES-GCM");
+    });
   }
 
   const newValues = doc.Values.map((r, i) => (i === recordIndex ? newRow : r));

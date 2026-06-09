@@ -220,6 +220,14 @@ export const BEJSON_CORE_CODES = {
   ENCRYPTION_FAILED: 28,
   
   DECRYPTION_FAILED: 29,
+
+  // Missing codes added for parity and compiler safety
+  PARSE_ERROR: 100,
+  NULL_DOCUMENT: 101,
+  SERIALIZATION_ERROR: 102,
+  UNSUPPORTED_OPERATION: 103,
+  WRITE_LENGTH_MISMATCH: 104,
+  WRITE_TYPE_MISMATCH: 105,
 } as const;
 
 export const MFDB_VALIDATION_CODES = {

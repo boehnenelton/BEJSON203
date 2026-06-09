@@ -11,7 +11,20 @@
  * Description:  State-machine driven game engine utilizing BEJSON for entity state.
  */
 
-window.Core = window.Core || {};
+class BEJSONEngine {
+    constructor() {
+        this.systems = new Map();
+        this.state = 'BOOT';
+    }
+    registerSystem(name, system) { this.systems.set(name, system); }
+    getSystem(name) { return this.systems.get(name); }
+    loop(dt) {
+        this.systems.forEach(s => {
+            if (s.step) s.step(dt);
+            if (s.update) s.update(dt);
+        });
+    }
+}
 
 class ChunkManager {
     constructor(engine, options = {}) {

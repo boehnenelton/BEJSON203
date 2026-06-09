@@ -48,21 +48,6 @@ class BEJSONCoreError extends Error {
     }
 }
 
-class BEJSONEngine {
-    constructor() {
-        this.systems = new Map();
-        this.state = 'BOOT';
-    }
-    registerSystem(name, system) { this.systems.set(name, system); }
-    getSystem(name) { return this.systems.get(name); }
-    loop(dt) {
-        this.systems.forEach(s => {
-            if (s.step) s.step(dt);
-            if (s.update) s.update(dt);
-        });
-    }
-}
-
 // --- Internal Key Cache for current session/document operation ---
 let _keyCache = null;
 
@@ -274,6 +259,18 @@ const CoreExports = {
     // Error codes
     E_CORE_INVALID_VERSION, E_CORE_INVALID_OPERATION, E_CORE_INDEX_OUT_OF_BOUNDS,
     E_CORE_FIELD_NOT_FOUND, E_CORE_TYPE_CONVERSION_FAILED, E_CORE_BACKUP_FAILED,
+    E_CORE_WRITE_FAILED, E_CORE_QUERY_FAILED, E_CORE_ENCRYPTION_FAILED, E_CORE_DECRYPTION_FAILED
+};
+
+// UMD-like export
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = CoreExports;
+}
+if (typeof window !== 'undefined') {
+    window.BEJSON = window.BEJSON || {};
+    Object.assign(window.BEJSON, CoreExports);
+}
+ED, E_CORE_BACKUP_FAILED,
     E_CORE_WRITE_FAILED, E_CORE_QUERY_FAILED, E_CORE_ENCRYPTION_FAILED, E_CORE_DECRYPTION_FAILED
 };
 

@@ -29,19 +29,26 @@ const _FIELD_MAP_CACHE: Map<string, FieldMap> = new Map();
  */
 export function bejson_core_get_field_map(doc: BEJSONDocument): FieldMap {
     if (!doc || !doc.Fields) return {};
+
+    // High-performance in-document cache check
+    if ((doc as any)._bejson_field_map) return (doc as any)._bejson_field_map;
     
     const fieldNames = doc.Fields.map(f => f.name);
     const cacheKey = (doc.Format_Version || '104') + ':' + fieldNames.join(',');
     
-    const cached = _FIELD_MAP_CACHE.get(cacheKey);
-    if (cached) return cached;
+    let fieldMap = _FIELD_MAP_CACHE.get(cacheKey);
     
-    const fieldMap: FieldMap = {};
-    doc.Fields.forEach((f, i) => {
-        fieldMap[f.name] = i;
-    });
+    if (!fieldMap) {
+        fieldMap = {};
+        doc.Fields.forEach((f, i) => {
+            fieldMap![f.name] = i;
+        });
+        _FIELD_MAP_CACHE.set(cacheKey, fieldMap);
+    }
+
+    // Inject into document for subsequent O(1) lookups
+    try { (doc as any)._bejson_field_map = fieldMap; } catch(e) {}
     
-    _FIELD_MAP_CACHE.set(cacheKey, fieldMap);
     return fieldMap;
 }
 

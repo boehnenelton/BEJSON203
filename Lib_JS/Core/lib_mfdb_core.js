@@ -112,5 +112,70 @@ class MFDBArchive {
 window.MFDB_CORE = {
     ...window.MFDB_CORE,
     MFDBArchive,
-    version: "1.31"  // FIX JS4: was "1.21"; spec is MFDB v1.31
+    version: "1.31",  // FIX JS4: was "1.21"; spec is MFDB v1.31
+    
+    /**
+     * mfdb_core_get_stats (JS Mirror)
+     * Returns summary statistics for an MFDB directory handle.
+     */
+    async get_stats(dirHandle) {
+        const stats = { entity_count: 0, record_count: 0, total_bytes: 0 };
+        try {
+            const manifestHandle = await dirHandle.getFileHandle('104a.mfdb.bejson');
+            const file = await manifestHandle.getFile();
+            const doc = JSON.parse(await file.text());
+            
+            const fpIdx = doc.Fields.findIndex(f => f.name === 'file_path');
+            const enIdx = doc.Fields.findIndex(f => f.name === 'entity_name');
+            
+            for (const row of doc.Values) {
+                stats.entity_count++;
+                try {
+                    const entPath = row[fpIdx];
+                    const entHandle = await dirHandle.getFileHandle(entPath);
+                    const entFile = await entHandle.getFile();
+                    stats.total_bytes += entFile.size;
+                    const entDoc = JSON.parse(await entFile.text());
+                    stats.record_count += (entDoc.Values ? entDoc.Values.length : 0);
+                } catch (e) {
+                    console.warn(`[MFDB] Failed to stat entity: ${row[enIdx]}`);
+                }
+            }
+        } catch (e) {
+            console.error("[MFDB] Failed to get stats:", e);
+        }
+        return stats;
+    },
+
+    /**
+     * mfdb_core_load_entity (JS Mirror)
+     * Loads a specific entity from an MFDB directory handle as an array of objects.
+     */
+    async load_entity(dirHandle, entityName) {
+        try {
+            const manifestHandle = await dirHandle.getFileHandle('104a.mfdb.bejson');
+            const file = await manifestHandle.getFile();
+            const doc = JSON.parse(await file.text());
+            
+            const fpIdx = doc.Fields.findIndex(f => f.name === 'file_path');
+            const enIdx = doc.Fields.findIndex(f => f.name === 'entity_name');
+            
+            const entry = doc.Values.find(row => row[enIdx] === entityName);
+            if (!entry) throw new Error(`Entity not found: ${entityName}`);
+            
+            const entHandle = await dirHandle.getFileHandle(entry[fpIdx]);
+            const entFile = await entHandle.getFile();
+            const entDoc = JSON.parse(await entFile.text());
+            
+            const fields = entDoc.Fields.map(f => f.name);
+            return entDoc.Values.map(row => {
+                const obj = {};
+                fields.forEach((name, i) => { obj[name] = row[i]; });
+                return obj;
+            });
+        } catch (e) {
+            console.error(`[MFDB] Failed to load entity ${entityName}:`, e);
+            throw e;
+        }
+    }
 };

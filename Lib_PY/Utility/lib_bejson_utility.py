@@ -24,19 +24,21 @@ from typing import Any, Dict, List, Optional, Union
 # Sibling Path Resolution
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PARENT_LIB_DIR = os.path.dirname(CURRENT_DIR)
+# Handle both nested (Parent/Core) and flat (Parent is Core) structures
 CORE_DIR = os.path.join(PARENT_LIB_DIR, "Core")
-if CORE_DIR not in sys.path:
-    sys.path.append(CORE_DIR)
+if os.path.exists(CORE_DIR) and CORE_DIR not in sys.path:
+    sys.path.insert(0, CORE_DIR)
+elif CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
 
 try:
     import lib_bejson_core as BEJSONCore
 except ImportError:
-    # Fallback for environments where it's not in the same folder structure
-    print("Warning: lib_bejson_core not found via standard import, attempting fallback...")
+    # Fallback for flat-deployment where lib_bejson_core is a sibling in sys.path
     try:
         import lib_bejson_core as BEJSONCore
     except ImportError:
-        print("CRITICAL: lib_bejson_core still not found.")
+        print("CRITICAL: lib_bejson_core not found in sys.path.")
         raise
 
 # ---------------------------------------------------------------------------
