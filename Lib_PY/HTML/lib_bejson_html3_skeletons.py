@@ -4,7 +4,7 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.0.0 OFFICIAL
+Version:      3.0.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-05-29
@@ -15,7 +15,7 @@ Description:  Authoritative BECSS skeletal templates for HTML3.
 import html as html_mod
 import json
 
-VERSION = "3.0.0"
+VERSION = "3.0.1"
 SCRIPT_NAME = "lib_bejson_html3_skeletons.py"
 RELATIONAL_ID = "c7d6b5a4-1f8a-4e8a-9d6c-5f4b5a6c7d8e"
 
@@ -25,15 +25,15 @@ RELATIONAL_ID = "c7d6b5a4-1f8a-4e8a-9d6c-5f4b5a6c7d8e"
 # ═══════════════════════════════════════════════════════
 
 COLOR = {
-    "primary":         "oklch(65% 0.2 25)",
-    "primary_muted":   "oklch(65% 0.2 25 / 0.1)",
-    "bg_page":         "oklch(100% 0 0)",
-    "bg_alt":          "oklch(98% 0.005 250)",
-    "bg_surface":      "oklch(98% 0.005 250)",
-    "text_main":       "oklch(20% 0 0)",
-    "text_muted":      "oklch(50% 0 0)",
-    "border":          "oklch(90% 0 0)",
-    "border_muted":    "oklch(95% 0 0)",
+    "primary":         "#DE2626", # DE2626 Red fallback
+    "primary_muted":   "rgba(222, 38, 38, 0.1)",
+    "bg_page":         "#FFFFFF",
+    "bg_alt":          "#F8F9FA",
+    "bg_surface":      "#FFFFFF",
+    "text_main":       "#1A1A1A",
+    "text_muted":      "#6B7280",
+    "border":          "#E5E7EB",
+    "border_muted":    "#F3F4F6",
     "font_sans":       "'Inter', system-ui, -apple-system, sans-serif",
     "font_mono":       "'Roboto Mono', 'Source Code Pro', monospace",
     "sidebar_width":   "250px",
@@ -43,20 +43,20 @@ COLOR = {
 }
 
 BRUTAL_COLOR = {
-    "primary":         "oklch(60% 0.3 25)",
-    "primary_muted":   "oklch(60% 0.3 25 / 0.2)",
-    "bg_page":         "oklch(100% 0 0)",
-    "bg_alt":          "oklch(95% 0 0)",
-    "bg_surface":      "oklch(100% 0 0)",
-    "text_main":       "oklch(0% 0 0)",
-    "text_muted":      "oklch(30% 0 0)",
-    "border":          "oklch(0% 0 0)",
-    "border_muted":    "oklch(0% 0 0)",
+    "primary":         "#DE2626",
+    "primary_muted":   "rgba(222, 38, 38, 0.2)",
+    "bg_page":         "#FFFFFF",
+    "bg_alt":          "#F3F4F6",
+    "bg_surface":      "#FFFFFF",
+    "text_main":       "#000000",
+    "text_muted":      "#4B5563",
+    "border":          "#000000",
+    "border_muted":    "#000000",
     "font_sans":       "'Source Code Pro', monospace",
     "font_mono":       "'Source Code Pro', monospace",
     "sidebar_width":   "250px",
     "transition":      "0s",
-    "shadow_sm":       "8px 8px 0px oklch(0% 0 0)",
+    "shadow_sm":       "8px 8px 0px #000000",
     "radius":          "0px",
 }
 
@@ -158,6 +158,15 @@ CSS_CORE_SKELETON = """
         min-width: 0; /* CRITICAL: Prevents grid blowout from wide child content */
         max-width: 100%;
     }}
+
+    .c-sidebar {{
+        background-color: var(--bg-page);
+        border-right: 1px solid var(--border);
+        overflow-y: auto;
+    }}
+
+    .c-hamburger {{ display: none; }}
+
     .c-sidebar__top {{ flex: 1; overflow-y: auto; padding-bottom: 16px; }}
     .c-sidebar__bottom {{ padding: 16px; background: var(--bg-alt); border-top: 1px solid var(--border-muted); border-radius: var(--radius); }}
     
@@ -177,7 +186,8 @@ CSS_CORE_SKELETON = """
 
     @media (max-width: 1024px) {{
         .c-container {{ grid-template-columns: 1fr; }}
-        .c-sidebar {{ position: fixed; left: -300px; transition: left 0.3s ease; z-index: 1001; height: 100dvh; }}
+        .c-hamburger {{ display: flex; }}
+        .c-sidebar {{ position: fixed; left: -300px; transition: left 0.3s ease; z-index: 1001; height: 100dvh; border-right: none; }}
         .c-sidebar--open {{ left: 0; }}
         .c-sidebar-overlay {{ display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; }}
         .c-sidebar-overlay--open {{ display: block; }}

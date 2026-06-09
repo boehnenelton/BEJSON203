@@ -105,4 +105,4 @@ def brain_get_html3(key: str) -> Optional[Dict[str, Any]]:
     return brain_get_record("html3", "key", key)
 
 if __name__ == "__main__":
-    print("Brain Helper Library Loaded.")
+    pass

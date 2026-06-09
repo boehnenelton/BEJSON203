@@ -78,7 +78,7 @@ def html_subtabs(tabs: List[Dict[str, Any]]) -> str:
     for t in tabs:
         active_class = " c-subtabs__btn--active" if t.get("active") else ""
         label = html_mod.escape(str(t.get("label", "")))
-        tab_id = html_mod.escape(str(t.get("id", "")))
+        tab_id = str(t.get("id", "")).replace("'", "\\'")
         items += f'<button class="c-subtabs__btn{active_class}" onclick="switchSubTab(\'{tab_id}\'); this.parentElement.querySelectorAll(\'.c-subtabs__btn\').forEach(function(b) {{ b.classList.remove(\'c-subtabs__btn--active\'); }}); this.classList.add(\'c-subtabs__btn--active\');">{label}</button>\n'
     return f'<div class="c-subtabs">{items}</div>'
 
@@ -179,9 +179,10 @@ def html_breadcrumbs(links: List[Dict[str, str]]) -> str:
         if is_last:
             items += f'<li class="c-breadcrumbs__item">{label}</li>'
         else:
+            safe_url = html_mod.escape(link['url'], quote=True)
             items += f"""
             <li class="c-breadcrumbs__item">
-                <a href="{link['url']}">{label}</a>
+                <a href="{safe_url}">{label}</a>
                 <span class="c-breadcrumbs__separator">/</span>
             </li>"""
     return f'<ul class="c-breadcrumbs">{items}</ul>'

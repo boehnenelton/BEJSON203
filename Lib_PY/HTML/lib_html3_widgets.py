@@ -35,7 +35,7 @@ def html_widget(content, title="WIDGET", size="small", container_id=None):
     elif size == "medium": width, height = W_MEDIUM
     else: width, height = W_SMALL
     
-    style = f'width: {width}px; height: {height}px; min-width: {width}px; min-height: {height}px;'
+    style = f'max-width: {width}px; width: 100%; height: {height}px; min-height: {height}px;'
     
     return f"""
     <div id="{cid}" class="c-widget" style="{style}">
@@ -70,7 +70,7 @@ def html_gallery(dir_path, url_prefix="", recursive=False, container_id=None):
             # Build clean source path
             src = f"{prefix}/{img.name}" if prefix else img.name
             items += f"""
-            <div class="c-gallery-item" onclick="openLightbox('{src}', '{html_mod.escape(img.name)}')">
+            <div class="c-gallery-item" onclick="openLightbox('{src.replace("'", "\\'")}', '{html_mod.escape(img.name).replace("'", "\\'")}')">
                 <img src="{src}" alt="{img.name}" loading="lazy" onerror="this.src='https://placehold.co/400x300?text=Missing+Image'">
                 <div class="c-gallery-item__label">{img.name}</div>
             </div>"""

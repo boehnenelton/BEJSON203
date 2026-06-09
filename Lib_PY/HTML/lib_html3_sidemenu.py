@@ -27,33 +27,26 @@ def _sidebar_html(nav_links, title="Menu"):
         return "", "", ""
         
     def safe_label(l):
-        l_str = str(l)
-        if "&" in l_str or "&#" in l_str or any(ord(c) > 127 for c in l_str):
-            return l_str
-        return html_mod.escape(l_str)
+        return html_mod.escape(str(l))
 
     links = "".join(f'<a href="{html_mod.escape(str(h))}" class="c-sidebar__link"><span>❯</span> {safe_label(l)}</a>\n' for l, h in nav_links)
     
     header = f"""
 <header class="c-header" role="banner">
-    <button class="c-hamburger" onclick="document.querySelector('.c-sidebar').classList.toggle('c-sidebar--open');document.querySelector('.c-sidebar-overlay').classList.toggle('c-sidebar-overlay--open'); var expanded = this.getAttribute('aria-expanded') === 'true'; this.setAttribute('aria-expanded', !expanded);" aria-label="Toggle navigation" aria-expanded="false" style="background:none; border:none; cursor:pointer; display:flex; flex-direction:column; gap:4px; padding:4px;">
-        <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
-        <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
-        <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
+    <button class="c-hamburger" onclick="document.querySelector('.c-sidebar').classList.toggle('c-sidebar--open'); document.querySelector('.c-sidebar-overlay').classList.toggle('c-sidebar-overlay--active'); var expanded = this.getAttribute('aria-expanded') === 'true'; this.setAttribute('aria-expanded', !expanded);" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
     </button>
     <div class="c-header__logo">{html_mod.escape(str(title))}</div>
 </header>"""
 
     sidebar = f"""
 <aside class="c-sidebar" role="navigation" aria-label="Main navigation">
-    <div class="c-sidebar__top">
-        <nav class="c-sidebar__links">
-            {links}
-        </nav>
-    </div>
+    <nav class="c-sidebar__links">
+        {links}
+    </nav>
 </aside>"""
     
-    overlay = f"""<div class="c-sidebar-overlay" onclick="document.querySelector('.c-sidebar').classList.remove('c-sidebar--open');document.querySelector('.c-sidebar-overlay').classList.remove('c-sidebar-overlay--open')"></div>"""
+    overlay = f"""<div class="c-sidebar-overlay" onclick="document.querySelector('.c-sidebar').classList.remove('c-sidebar--open'); document.querySelector('.c-sidebar-overlay').classList.remove('c-sidebar-overlay--active')"></div>"""
     
     return header, sidebar, overlay
 
@@ -63,12 +56,12 @@ def html_navbar(links, dark=False):
     """
     link_html = "".join(f'<a href="{html_mod.escape(str(h))}" class="c-sidebar__link">{html_mod.escape(str(l))}</a>\n' for l, h in links)
     return f"""
-<button class="c-hamburger" onclick="document.querySelector('.c-sidebar-overlay').classList.toggle('c-sidebar-overlay--open')" style="background:none; border:none; cursor:pointer; display:flex; flex-direction:column; gap:4px; padding:4px;">
+<button class="c-hamburger" onclick="document.querySelector('.c-sidebar-overlay').classList.toggle('c-sidebar-overlay--active')" style="background:none; border:none; cursor:pointer; display:flex; flex-direction:column; gap:4px; padding:4px;">
     <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
     <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
     <span style="display:block; width:24px; height:2px; background:var(--text-main);"></span>
 </button>
-<div class="c-sidebar-overlay" onclick="if(event.target===this)this.classList.remove('c-sidebar-overlay--open')">
+<div class="c-sidebar-overlay" onclick="if(event.target===this)this.classList.remove('c-sidebar-overlay--active')">
     <div class="c-sidebar" style="position:fixed; left:0; top:0; height:100%; width:250px; background:var(--bg-page); border-right:1px solid var(--border);">
         {link_html}
     </div>

@@ -50,7 +50,6 @@ class BloggerManager:
                 token.write(creds.to_json())
 
         self.service = build('blogger', 'v3', credentials=creds)
-        print("[SUCCESS] Blogger API Authenticated.")
         return True
 
     def list_blogs(self):
@@ -83,4 +82,4 @@ class BloggerManager:
         return True
 
 if __name__ == "__main__":
-    print("Blogger Manager Library - v1.3.1 OFFICIAL")
+    pass

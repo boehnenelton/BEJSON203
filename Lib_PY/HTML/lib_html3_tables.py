@@ -82,6 +82,7 @@ COMPONENT_TEMPLATE = """
         
         var searchTerm = "";
         var isSchemaView = false;
+        var currentTotalPages = 1;
         
         var selectEl = document.getElementById(cid + '_select');
         var searchEl = document.getElementById(cid + '_search');
@@ -150,12 +151,12 @@ COMPONENT_TEMPLATE = """
             }}
 
             countEl.textContent = 'RECORDS: ' + records.length;
-            var totalPages = Math.ceil(records.length / pageSize) || 1;
-            if (currentPage > totalPages) currentPage = totalPages;
+            currentTotalPages = Math.ceil(records.length / pageSize) || 1;
+            if (currentPage > currentTotalPages) currentPage = currentTotalPages;
             
-            pageInfoEl.textContent = 'PAGE ' + currentPage + ' / ' + totalPages;
+            pageInfoEl.textContent = 'PAGE ' + currentPage + ' / ' + currentTotalPages;
             prevBtn.disabled = currentPage === 1;
-            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.disabled = currentPage === currentTotalPages;
 
             // Render Head
             var headHtml = '<tr>';
@@ -252,13 +253,14 @@ COMPONENT_TEMPLATE = """
 
             // 3. Pagination
             if (target.id === cid + '_prev' && currentPage > 1) {{ currentPage--; renderTable(); return; }}
-            if (target.id === cid + '_next' && currentPage < Math.ceil(bejson.Values.length / pageSize)) {{ currentPage++; renderTable(); return; }}
+            if (target.id === cid + '_next' && currentPage < currentTotalPages) {{ currentPage++; renderTable(); return; }}
         }});
 
         if (bejson.Records_Type) {{
-            bejson.Records_Type.forEach(function(type) {{
+            var rt = Array.isArray(bejson.Records_Type) ? bejson.Records_Type : [bejson.Records_Type];
+            rt.forEach(function(type) {{
                 var option = document.createElement('option'); 
-                option.value = type; option.textContent = type.toUpperCase(); 
+                option.value = type; option.textContent = String(type).toUpperCase(); 
                 selectEl.appendChild(option);
             }});
         }} else {{

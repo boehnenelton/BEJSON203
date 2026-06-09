@@ -196,7 +196,6 @@ class GenAIClient:
                 )
                 
                 self.update_status("success", "QUERY SUCCESSFUL")
-                print() # Move past status line
                 return response.text
 
             except Exception as e:
