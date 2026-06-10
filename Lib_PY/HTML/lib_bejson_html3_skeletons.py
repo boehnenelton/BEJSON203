@@ -4,10 +4,10 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.0.1 OFFICIAL
+Version:      3.0.2 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-05-29
+Date:         2026-06-10
 Description:  Authoritative BECSS skeletal templates for HTML3.
               Implements Cascade Layers, OKLCH tokens, and BEM (c- prefix).
 """
@@ -15,7 +15,7 @@ Description:  Authoritative BECSS skeletal templates for HTML3.
 import html as html_mod
 import json
 
-VERSION = "3.0.1"
+VERSION = "3.0.2"
 SCRIPT_NAME = "lib_bejson_html3_skeletons.py"
 RELATIONAL_ID = "c7d6b5a4-1f8a-4e8a-9d6c-5f4b5a6c7d8e"
 
@@ -203,10 +203,10 @@ CSS_CORE_SKELETON = """
 }}
 """
 
-CSS_CORE = CSS_CORE_SKELETON.replace("{COMPONENT_CSS}", COMPONENT_CSS)
+CSS_CORE = CSS_CORE_SKELETON.replace("{COMPONENT_CSS}", COMPONENT_CSS.replace("{", "{{").replace("}", "}}"))
 
 # Brutal Theme Refinement
-CSS_BRUTAL = CSS_CORE_SKELETON.replace("{COMPONENT_CSS}", COMPONENT_CSS) + """
+CSS_BRUTAL = CSS_CORE_SKELETON.replace("{COMPONENT_CSS}", COMPONENT_CSS.replace("{", "{{").replace("}", "}}")) + """
 @layer components {{
     .c-card {{ border: 4px solid var(--border); border-radius: 0; box-shadow: var(--shadow-sm); }}
     .c-button {{ border-radius: 0; border: 2px solid var(--text-main); font-weight: 900; }}
