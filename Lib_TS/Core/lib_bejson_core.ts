@@ -4,10 +4,10 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.3 OFFICIAL
+ * Version:      2.0.4 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-06-05
+ * Date:         2026-06-09
  * Description:  Low-level primitive operations for BEJSON document manipulation.
  * REMEDIATED:   Removed regex parser crutch and optimized cryptographic bottlenecks.
  * ALIGNED:      v2.0.3 parity with JS core families; internal metadata stripping (Audit Finding 13).

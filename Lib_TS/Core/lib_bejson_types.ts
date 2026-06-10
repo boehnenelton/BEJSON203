@@ -4,10 +4,10 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.3 OFFICIAL
+ * Version:      2.0.4 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-06-05
+ * Date:         2026-06-09
  * Description:  Type definitions and interface contracts for TypeScript libraries.
  * 
  * NOTE: Error codes are mirrored across SH, JS, PY, and TS registries.
@@ -221,13 +221,13 @@ export const BEJSON_CORE_CODES = {
   
   DECRYPTION_FAILED: 29,
 
-  // Missing codes added for parity and compiler safety
-  PARSE_ERROR: 100,
-  NULL_DOCUMENT: 101,
-  SERIALIZATION_ERROR: 102,
-  UNSUPPORTED_OPERATION: 103,
-  WRITE_LENGTH_MISMATCH: 104,
-  WRITE_TYPE_MISMATCH: 105,
+  // Standardized codes 60-65 (Audit Finding TS1)
+  PARSE_ERROR: 60,
+  NULL_DOCUMENT: 61,
+  SERIALIZATION_ERROR: 62,
+  UNSUPPORTED_OPERATION: 63,
+  WRITE_LENGTH_MISMATCH: 64,
+  WRITE_TYPE_MISMATCH: 65,
 } as const;
 
 export const MFDB_VALIDATION_CODES = {

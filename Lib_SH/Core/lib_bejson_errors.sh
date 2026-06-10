@@ -3,12 +3,15 @@
 # Jurisdiction: ["BEJSON_LIBRARIES", "SH"]
 # Status:       OFFICIAL
 # Author:       Elton Boehnen
-# Version:      1.1.0 OFFICIAL
+# Version:      1.1.1 OFFICIAL
 # MFDB Version: 1.31
 # Format_Creator: Elton Boehnen
-# Date:         2026-06-02
+# Date:         2026-06-09
 # Description:  Centralized error code registry for all Bash BEJSON libraries.
 #               Mirrors lib_bejson_errors.js and lib_bejson_errors.py.
+#
+# CHANGELOG v1.1.1:
+#   - Added standardized codes 60-65 (Audit Finding TS1 Parity).
 #
 # CHANGELOG v1.1.0:
 #   - Added E_CORE_ENCRYPTION_FAILED (28) and E_CORE_DECRYPTION_FAILED (29).
@@ -36,7 +39,7 @@
 [[ -v E_INVALID_FORMAT_CREATOR      ]] || readonly E_INVALID_FORMAT_CREATOR=16
 
 # ===========================================================================
-# BEJSON CORE ERRORS (20–29)
+# BEJSON CORE ERRORS (20–29, 60-69)
 # ===========================================================================
 [[ -v E_CORE_INVALID_VERSION        ]] || readonly E_CORE_INVALID_VERSION=20
 [[ -v E_CORE_INVALID_OPERATION      ]] || readonly E_CORE_INVALID_OPERATION=21
@@ -48,6 +51,14 @@
 [[ -v E_CORE_QUERY_FAILED           ]] || readonly E_CORE_QUERY_FAILED=27
 [[ -v E_CORE_ENCRYPTION_FAILED      ]] || readonly E_CORE_ENCRYPTION_FAILED=28
 [[ -v E_CORE_DECRYPTION_FAILED      ]] || readonly E_CORE_DECRYPTION_FAILED=29
+
+# Standardized codes 60-65 (Audit Finding TS1 Parity)
+[[ -v E_CORE_PARSE_ERROR            ]] || readonly E_CORE_PARSE_ERROR=60
+[[ -v E_CORE_NULL_DOCUMENT          ]] || readonly E_CORE_NULL_DOCUMENT=61
+[[ -v E_CORE_SERIALIZATION_ERROR    ]] || readonly E_CORE_SERIALIZATION_ERROR=62
+[[ -v E_CORE_UNSUPPORTED_OPERATION  ]] || readonly E_CORE_UNSUPPORTED_OPERATION=63
+[[ -v E_CORE_WRITE_LENGTH_MISMATCH  ]] || readonly E_CORE_WRITE_LENGTH_MISMATCH=64
+[[ -v E_CORE_WRITE_TYPE_MISMATCH    ]] || readonly E_CORE_WRITE_TYPE_MISMATCH=65
 
 # ===========================================================================
 # MFDB VALIDATOR ERRORS (30–49)

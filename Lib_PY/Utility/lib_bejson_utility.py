@@ -4,13 +4,11 @@ Family:       Utility
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.3.2 OFFICIAL
-            MFDB Version: 1.31
+Version:      2.3.3 OFFICIAL
+MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-07
+Date:         2026-06-09
 Description:  Cross-compatible chunking utilities for CLI_CHUNKER and MFDB_V5.
-REMEDIATED:   Restored missing helpers (sanitize, encode, is_binary).
-REMEDIATED:   Fixed inconsistent BEJSONCore imports and name errors.
 """
 
 import os
@@ -21,25 +19,22 @@ import base64
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-# Sibling Path Resolution
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_LIB_DIR = os.path.dirname(CURRENT_DIR)
-# Handle both nested (Parent/Core) and flat (Parent is Core) structures
-CORE_DIR = os.path.join(PARENT_LIB_DIR, "Core")
-if os.path.exists(CORE_DIR) and CORE_DIR not in sys.path:
-    sys.path.insert(0, CORE_DIR)
-elif CURRENT_DIR not in sys.path:
-    sys.path.insert(0, CURRENT_DIR)
+# AUTHORITATIVE PATH RESOLUTION (Audit Finding PY1)
+# Ensures imports work in both nested (Core/Utility) and flat deployments.
+_OWN_DIR = os.path.dirname(os.path.abspath(__file__))
+_PARENT_DIR = os.path.dirname(_OWN_DIR)
+_CORE_DIR = os.path.join(_PARENT_DIR, "Core")
+
+# Prioritize current dir and Core sibling
+for d in [_OWN_DIR, _CORE_DIR, _PARENT_DIR]:
+    if os.path.exists(d) and d not in sys.path:
+        sys.path.insert(0, d)
 
 try:
     import lib_bejson_core as BEJSONCore
 except ImportError:
-    # Fallback for flat-deployment where lib_bejson_core is a sibling in sys.path
-    try:
-        import lib_bejson_core as BEJSONCore
-    except ImportError:
-        print("CRITICAL: lib_bejson_core not found in sys.path.")
-        raise
+    # Final fallback for unusual sys.path configurations
+    from Core import lib_bejson_core as BEJSONCore
 
 # ---------------------------------------------------------------------------
 # Constants & Official Schemas
