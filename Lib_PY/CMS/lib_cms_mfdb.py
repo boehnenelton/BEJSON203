@@ -4,7 +4,7 @@ Family:       CMS
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.3 OFFICIAL
+Version:      2.0.4 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-05-18
@@ -17,6 +17,7 @@ import sys
 import uuid
 import hashlib
 import shutil
+import zipfile
 import re
 import json
 from pathlib import Path
@@ -470,4 +471,70 @@ class MFDB_CMS_Manager:
                     if md_body:
                         MFDBCore.mfdb_core_update_entity_record(self.content_manifest, "PageContent", i, "markdown_body", md_body)
             print(f"Updated references for {len(updated_paths)} assets across pages.")
+        return True
+
+    def create_site_backup(self, backup_dir: str) -> Optional[str]:
+        """Creates a full site backup zip containing DBs, assets, and apps."""
+        if self.is_dirty():
+            self.repack_system()
+            
+        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+        backup_name = f"bejson_cms_backup_{ts}.zip"
+        backup_path = os.path.join(backup_dir, backup_name)
+        
+        os.makedirs(backup_dir, exist_ok=True)
+        
+        with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
+            # Add DB Archives
+            if os.path.exists(self.global_archive):
+                zf.write(self.global_archive, "global_master.mfdb.zip")
+            if os.path.exists(self.content_archive):
+                zf.write(self.content_archive, "content_master.mfdb.zip")
+            
+            # Add Assets
+            for root, _, files in os.walk(self.assets_dir):
+                for file in files:
+                    fpath = os.path.join(root, file)
+                    zf.write(fpath, os.path.join("assets", os.path.relpath(fpath, self.assets_dir)))
+            
+            # Add Apps
+            for root, _, files in os.walk(self.apps_dir):
+                for file in files:
+                    fpath = os.path.join(root, file)
+                    zf.write(fpath, os.path.join("standalone_apps", os.path.relpath(fpath, self.apps_dir)))
+                    
+        return backup_path
+
+    def restore_site_backup(self, backup_path: str) -> bool:
+        """Restores a full site backup."""
+        if not os.path.exists(backup_path):
+            return False
+            
+        # 1. Clear Workspace
+        if os.path.exists(self.workspace_root):
+            shutil.rmtree(self.workspace_root)
+        os.makedirs(self.workspace_root, exist_ok=True)
+        
+        # 2. Extract Archive
+        with zipfile.ZipFile(backup_path, 'r') as zf:
+            # Restore Databases
+            if "global_master.mfdb.zip" in zf.namelist():
+                zf.extract("global_master.mfdb.zip", self.data_root)
+            if "content_master.mfdb.zip" in zf.namelist():
+                zf.extract("content_master.mfdb.zip", self.data_root)
+                
+            # Restore Assets
+            if os.path.exists(self.assets_dir): shutil.rmtree(self.assets_dir)
+            for item in zf.namelist():
+                if item.startswith("assets/"):
+                    zf.extract(item, self.data_root)
+                    
+            # Restore Apps
+            if os.path.exists(self.apps_dir): shutil.rmtree(self.apps_dir)
+            for item in zf.namelist():
+                if item.startswith("standalone_apps/"):
+                    zf.extract(item, self.data_root)
+                    
+        # 3. Re-mount
+        self.mount_system(force=True)
         return True
