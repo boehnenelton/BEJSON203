@@ -4,7 +4,7 @@ Family:       CMS
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.2 OFFICIAL
+Version:      2.0.3 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-05-18
@@ -19,6 +19,7 @@ import hashlib
 import shutil
 import re
 import json
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -205,10 +206,25 @@ class MFDB_CMS_Manager:
         self.log_change("AdUnit", "ADD", auuid)
         return auuid
 
-    def add_asset(self, filename: str, original_name: str, file_hash: str, file_size: int, mime_type: str):
+    def add_asset(self, src_path: str, custom_filename: str = None):
+        """Copies a file to assets and registers it in the database."""
+        src = Path(src_path)
+        if not src.exists(): return None
+        
+        fname = custom_filename or src.name
+        dest = os.path.join(self.assets_dir, fname)
+        shutil.copy2(src, dest)
+        
+        with open(dest, "rb") as f:
+            data = f.read()
+        fhash = hashlib.sha256(data).hexdigest()
+        fsize = len(data)
+        mtype = "application/octet-stream"
+        
         uploaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "MediaAsset", [filename, original_name, file_hash, file_size, mime_type, uploaded_at])
-        self.log_change("MediaAsset", "ADD", filename)
+        MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "MediaAsset", [fname, src.name, fhash, fsize, mtype, uploaded_at])
+        self.log_change("MediaAsset", "ADD", fname)
+        return fname
 
     def delete_asset(self, filename: str):
         recs = MFDBCore.mfdb_core_load_entity(self.global_manifest, "MediaAsset")
@@ -368,3 +384,90 @@ class MFDB_CMS_Manager:
             [app_uuid, name, slug, description, category, featured_img, entry_file, created_at]
         )
         self.log_change("StandaloneApp", "ADD", app_uuid)
+        return app_uuid
+
+    def import_html_as_page(self, file_path: str, title: str, category: str, author_uuid: str = ""):
+        """Imports an HTML file as a new CMS page."""
+        path = Path(file_path)
+        if not path.exists(): return None
+        
+        content = path.read_text(encoding="utf-8")
+        # Simple extraction: if <body> exists, take inner, else take all
+        import re
+        body_match = re.search(r"<body[^>]*>(.*?)</body>", content, re.DOTALL | re.IGNORECASE)
+        html_body = body_match.group(1) if body_match else content
+        
+        return self.create_page(title, category, "blog", {"html_body": html_body, "author_fk": author_uuid})
+
+    def import_app_as_page(self, app_uuid: str, author_uuid: str = ""):
+        """Wraps a StandaloneApp in a CMS page."""
+        apps = self.get_apps()
+        app = next((a for a in apps if a["app_uuid"] == app_uuid), None)
+        if not app: return None
+        
+        content = {
+            "html_body": f'<iframe src="{app["entry_file"]}" style="width:100%; height:80vh; border:none;"></iframe>',
+            "author_fk": author_uuid
+        }
+        return self.create_page(f"App: {app['name']}", app["category_fk"], "app", content)
+
+    def optimize_assets(self, convert_webp: bool = True):
+        """Converts PNGs to WebP and updates all database references."""
+        try:
+            from PIL import Image
+        except ImportError:
+            print("Error: Pillow library required for image optimization.")
+            return False
+            
+        recs = self.get_assets()
+        updated_paths = {}
+        
+        for r in recs:
+            filename = r["filename"]
+            if convert_webp and filename.lower().endswith(".png"):
+                old_path = os.path.join(self.assets_dir, filename)
+                new_filename = filename.rsplit(".", 1)[0] + ".webp"
+                new_path = os.path.join(self.assets_dir, new_filename)
+                
+                if os.path.exists(old_path):
+                    try:
+                        img = Image.open(old_path)
+                        img.save(new_path, "webp")
+                        
+                        # Update registry
+                        file_size = os.path.getsize(new_path)
+                        with open(new_path, "rb") as f:
+                            file_hash = self.get_file_hash(f.read())
+                        
+                        # Add new record directly (avoid redundant copy)
+                        uploaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                        MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "MediaAsset", [new_filename, r["original_name"], file_hash, file_size, "image/webp", uploaded_at])
+                        
+                        # Delete old
+                        self.delete_asset(filename)
+                        updated_paths[filename] = new_filename
+                        print(f"Optimized: {filename} -> {new_filename}")
+                    except Exception as e:
+                        print(f"Failed to optimize {filename}: {e}")
+        
+        # Update PageContent references
+        if updated_paths:
+            page_contents = MFDBCore.mfdb_core_load_entity(self.content_manifest, "PageContent")
+            for i, pc in enumerate(page_contents):
+                body = pc.get("html_body", "")
+                md_body = pc.get("markdown_body", "")
+                changed = False
+                for old, new in updated_paths.items():
+                    if old in body:
+                        body = body.replace(old, new)
+                        changed = True
+                    if md_body and old in md_body:
+                        md_body = md_body.replace(old, new)
+                        changed = True
+                
+                if changed:
+                    MFDBCore.mfdb_core_update_entity_record(self.content_manifest, "PageContent", i, "html_body", body)
+                    if md_body:
+                        MFDBCore.mfdb_core_update_entity_record(self.content_manifest, "PageContent", i, "markdown_body", md_body)
+            print(f"Updated references for {len(updated_paths)} assets across pages.")
+        return True
