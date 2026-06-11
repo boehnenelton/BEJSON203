@@ -4,7 +4,7 @@ Family:       CMS
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.0.1 OFFICIAL
+Version:      2.0.2 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-05-18
@@ -137,7 +137,12 @@ class MFDB_CMS_Manager:
         # 2. CONTENT DATABASE
         if not os.path.exists(self.content_manifest):
             content_entities = [
-                {"name": "Category", "primary_key": "category_slug", "fields": [{"name": "category_name", "type": "string"}, {"name": "category_slug", "type": "string"}]},
+                {"name": "Category", "primary_key": "category_slug", "fields": [
+                    {"name": "category_name", "type": "string"},
+                    {"name": "category_slug", "type": "string"},
+                    {"name": "description", "type": "string"},
+                    {"name": "feed_type", "type": "string"}
+                ]},
                 {"name": "Page", "primary_key": "page_uuid", "fields": [{"name": "page_uuid", "type": "string"}, {"name": "title", "type": "string"}, {"name": "slug", "type": "string"}, {"name": "category_fk", "type": "string"}, {"name": "author_fk", "type": "string"}, {"name": "page_type", "type": "string"}, {"name": "featured_img", "type": "string"}, {"name": "created_at", "type": "string"}]},
                 {"name": "PageContent", "fields": [{"name": "page_uuid_fk", "type": "string"}, {"name": "html_body", "type": "string"}, {"name": "markdown_body", "type": "string"}, {"name": "source_files", "type": "array"}, {"name": "video_url", "type": "string"}, {"name": "pdf_url", "type": "string"}, {"name": "pros", "type": "array"}, {"name": "cons", "type": "array"}, {"name": "verdict_score", "type": "number"}]},
                 {"name": "StandaloneApp", "primary_key": "app_uuid", "fields": [{"name": "app_uuid", "type": "string"}, {"name": "name", "type": "string"}, {"name": "slug", "type": "string"}, {"name": "description", "type": "string"}, {"name": "category_fk", "type": "string"}, {"name": "featured_img", "type": "string"}, {"name": "entry_file", "type": "string"}, {"name": "created_at", "type": "string"}]}
@@ -216,8 +221,8 @@ class MFDB_CMS_Manager:
                 return True
         return False
 
-    def add_category(self, name: str, slug: str):
-        MFDBCore.mfdb_core_add_entity_record(self.content_manifest, "Category", [name, slug])
+    def add_category(self, name: str, slug: str, description: str = "", feed_type: str = "blog"):
+        MFDBCore.mfdb_core_add_entity_record(self.content_manifest, "Category", [name, slug, description, feed_type])
         self.log_change("Category", "ADD", slug)
 
     def update_category(self, slug: str, name: str):
@@ -328,6 +333,12 @@ class MFDB_CMS_Manager:
 
     def get_apps(self) -> List[Dict]:
         return MFDBCore.mfdb_core_load_entity(self.content_manifest, "StandaloneApp")
+
+    def get_pages(self) -> List[Dict]:
+        return MFDBCore.mfdb_core_load_entity(self.content_manifest, "Page")
+
+    def get_categories(self) -> List[Dict]:
+        return MFDBCore.mfdb_core_load_entity(self.content_manifest, "Category")
 
     def get_pages_in_category(self, category_slug: str) -> List[Dict]:
         return [p for p in MFDBCore.mfdb_core_load_entity(self.content_manifest, "Page")
