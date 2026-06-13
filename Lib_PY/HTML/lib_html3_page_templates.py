@@ -12,8 +12,8 @@ Description:  BECSS-compliant page templates for HTML3.
 """
 
 import os
-from .lib_bejson_html3_skeletons import COLOR, BRUTAL_COLOR, CSS_CORE, CSS_BRUTAL, HTML_SKELETON, HTML_SKELETON_BRUTAL
-from .lib_html3_sidemenu import _sidebar_html
+from lib_bejson_html3_skeletons import COLOR, BRUTAL_COLOR, CSS_CORE, CSS_BRUTAL, HTML_SKELETON, HTML_SKELETON_BRUTAL
+from lib_html3_sidemenu import _sidebar_html
 
 VERSION = "3.0.0"
 SCRIPT_NAME = "lib_html3_page_templates.py"

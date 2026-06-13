@@ -4,10 +4,10 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.0.2 OFFICIAL
+Version:      3.0.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-10
+Date:         2026-05-29
 Description:  Authoritative BECSS skeletal templates for HTML3.
               Implements Cascade Layers, OKLCH tokens, and BEM (c- prefix).
 """
@@ -15,7 +15,7 @@ Description:  Authoritative BECSS skeletal templates for HTML3.
 import html as html_mod
 import json
 
-VERSION = "3.0.2"
+VERSION = "3.0.1"
 SCRIPT_NAME = "lib_bejson_html3_skeletons.py"
 RELATIONAL_ID = "c7d6b5a4-1f8a-4e8a-9d6c-5f4b5a6c7d8e"
 
@@ -66,7 +66,7 @@ BRUTAL_COLOR = {
 
 # Import component CSS
 try:
-    from .lib_bejson_html3_component_css import COMPONENT_CSS
+    from lib_bejson_html3_component_css import COMPONENT_CSS
 except ImportError:
     COMPONENT_CSS = ""
 
@@ -203,10 +203,10 @@ CSS_CORE_SKELETON = """
 }}
 """
 
-CSS_CORE = CSS_CORE_SKELETON.replace("{COMPONENT_CSS}", COMPONENT_CSS.replace("{", "{{").replace("}", "}}"))
+CSS_CORE = CSS_CORE_SKELETON.replace("{COMPONENT_CSS}", COMPONENT_CSS)
 
 # Brutal Theme Refinement
-CSS_BRUTAL = CSS_CORE_SKELETON.replace("{COMPONENT_CSS}", COMPONENT_CSS.replace("{", "{{").replace("}", "}}")) + """
+CSS_BRUTAL = CSS_CORE_SKELETON.replace("{COMPONENT_CSS}", COMPONENT_CSS) + """
 @layer components {{
     .c-card {{ border: 4px solid var(--border); border-radius: 0; box-shadow: var(--shadow-sm); }}
     .c-button {{ border-radius: 0; border: 2px solid var(--text-main); font-weight: 900; }}

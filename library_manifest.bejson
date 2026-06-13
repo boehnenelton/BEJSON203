@@ -1370,6 +1370,27 @@
         "bejson_utility_snapshot_project",
         "bejson_utility_restore_version"
       ]
+    ],
+    [
+      "lib_mfdb_chunker_v5.py",
+      "lib_mfdb_chunker_v5_py",
+      "/data/data/com.termux/files/home/libraries/Lib_PY/Chunker/lib_mfdb_chunker_v5.py",
+      "Legacy Chunker v5 for MFDB.",
+      []
+    ],
+    [
+      "lib_mfdb_chunker_v6.py",
+      "lib_mfdb_chunker_v6_py",
+      "/data/data/com.termux/files/home/libraries/Lib_PY/Chunker/lib_mfdb_chunker_v6.py",
+      "Current Chunker v6 for MFDB.",
+      []
+    ],
+    [
+      "lib_cms_chunker_wrapper.py",
+      "lib_cms_chunker_wrapper_py",
+      "/data/data/com.termux/files/home/libraries/Lib_PY/Chunker/lib_cms_chunker_wrapper.py",
+      "Wrapper for Chunker v5 and v6.",
+      []
     ]
   ]
 }

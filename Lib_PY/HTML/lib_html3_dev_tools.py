@@ -43,7 +43,7 @@ def html_bejson_inspector(doc: Dict[str, Any]) -> str:
     Generates an interactive JSON inspector for a BEJSON document.
     """
     pretty = json.dumps(doc, indent=2)
-    from .lib_html3_body import html_code_box
+    from lib_html3_body import html_code_box
     return f"""
     <div class="c-card" style="border-style:dashed;">
         <h3 class="c-card__title">BEJSON INSPECTOR</h3>

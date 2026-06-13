@@ -3,7 +3,7 @@
  * Family:       Core
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.0.3 OFFICIAL
+ * Version:      2.0.2 OFFICIAL
  * Description:  Unified error registry for BEJSON ecosystem.
  */
 
@@ -35,14 +35,6 @@ const BEJSON_ERRORS = {
     E_CORE_QUERY_FAILED: 27,
     E_CORE_ENCRYPTION_FAILED: 28,
     E_CORE_DECRYPTION_FAILED: 29,
-
-    // Standardized codes 60-65 (Audit Finding TS1 Parity)
-    E_CORE_PARSE_ERROR: 60,
-    E_CORE_NULL_DOCUMENT: 61,
-    E_CORE_SERIALIZATION_ERROR: 62,
-    E_CORE_UNSUPPORTED_OPERATION: 63,
-    E_CORE_WRITE_LENGTH_MISMATCH: 64,
-    E_CORE_WRITE_TYPE_MISMATCH: 65,
 
     // MFDB Core/Validator (30-49)
     E_MFDB_NOT_MANIFEST: 30,

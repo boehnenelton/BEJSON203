@@ -4,10 +4,10 @@
  * Jurisdiction: ["BEJSON_LIBRARIES", "TS"]
  * Status:       OFFICIAL
  * Author:       Elton Boehnen
- * Version:      2.1.1 OFFICIAL
+ * Version:      2.1.0 OFFICIAL
  * MFDB Version: 1.31
  * Format_Creator: Elton Boehnen
- * Date:         2026-06-09
+ * Date:         2026-06-02
  * Description:  TypeScript implementation of the Field Map Cache.
  */
 
@@ -29,26 +29,19 @@ const _FIELD_MAP_CACHE: Map<string, FieldMap> = new Map();
  */
 export function bejson_core_get_field_map(doc: BEJSONDocument): FieldMap {
     if (!doc || !doc.Fields) return {};
-
-    // High-performance in-document cache check
-    if ((doc as any)._bejson_field_map) return (doc as any)._bejson_field_map;
     
     const fieldNames = doc.Fields.map(f => f.name);
     const cacheKey = (doc.Format_Version || '104') + ':' + fieldNames.join(',');
     
-    let fieldMap = _FIELD_MAP_CACHE.get(cacheKey);
+    const cached = _FIELD_MAP_CACHE.get(cacheKey);
+    if (cached) return cached;
     
-    if (!fieldMap) {
-        fieldMap = {};
-        doc.Fields.forEach((f, i) => {
-            fieldMap![f.name] = i;
-        });
-        _FIELD_MAP_CACHE.set(cacheKey, fieldMap);
-    }
-
-    // Inject into document for subsequent O(1) lookups
-    try { (doc as any)._bejson_field_map = fieldMap; } catch(e) {}
+    const fieldMap: FieldMap = {};
+    doc.Fields.forEach((f, i) => {
+        fieldMap[f.name] = i;
+    });
     
+    _FIELD_MAP_CACHE.set(cacheKey, fieldMap);
     return fieldMap;
 }
 
@@ -66,14 +59,4 @@ export function bejson_core_get_field_index(doc: BEJSONDocument, fieldName: stri
  */
 export function bejson_core_clear_field_map_cache(): void {
     _FIELD_MAP_CACHE.clear();
-}
-
-/**
- * Invalidates the in-document field map cache for a specific document.
- * Useful when doc.Fields is mutated in-place.
- */
-export function bejson_core_invalidate_doc_field_map(doc: BEJSONDocument): void {
-    if (doc && (doc as any)._bejson_field_map) {
-        try { delete (doc as any)._bejson_field_map; } catch(e) {}
-    }
 }

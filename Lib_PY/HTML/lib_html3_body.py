@@ -4,29 +4,22 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.1.0 OFFICIAL
+Version:      3.0.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-10
+Date:         2026-05-29
 Description:  Core UI components refactored to BECSS (BEM + OKLCH) standards.
-              Enhanced with rich text/markdown support and Type Hints.
+              Enhanced with Type Hints and Doctests.
 """
 
 import html as html_mod
 import uuid
 from typing import List, Dict, Optional, Any
-from .lib_html3_text import html_render_text, is_html
 
-VERSION = "3.1.0"
+VERSION = "3.0.0"
 SCRIPT_NAME = "lib_html3_body.py"
 RELATIONAL_ID = "f4e20029-6b75-4b51-a664-75ac1c265c97"
 ES5_SAFE = True 
-
-def _auto_render(content: str) -> str:
-    """Internal helper to apply rich text rendering if content is not HTML."""
-    if not content: return ""
-    if is_html(content): return content
-    return html_render_text(content)
 
 def html_stats_bar(stats_list: List[Dict[str, Any]]) -> str:
     """
@@ -50,17 +43,15 @@ def html_stats_bar(stats_list: List[Dict[str, Any]]) -> str:
 def html_card(title: str, body: str, variant: Optional[str] = None) -> str:
     """
     Standard BECSS Card component.
-    Now supports auto-rendering markdown if body is not HTML.
     
-    >>> html_card("Hello", "World")
+    >>> html_card("Hello", "<p>World</p>")
     '\\n    <div class="c-card">...</div>'
     """
-    display_body = _auto_render(body)
     modifier = f" c-card--{variant}" if variant else ""
     return f"""
     <div class="c-card{modifier}">
         <h2 class="c-card__title">{html_mod.escape(title)}</h2>
-        <div class="c-card__body">{display_body}</div>
+        <div class="c-card__body">{body}</div>
     </div>"""
 
 def html_brutal_card(title: str, content: str) -> str:
@@ -87,7 +78,7 @@ def html_subtabs(tabs: List[Dict[str, Any]]) -> str:
     for t in tabs:
         active_class = " c-subtabs__btn--active" if t.get("active") else ""
         label = html_mod.escape(str(t.get("label", "")))
-        tab_id = str(t.get("id", "")).replace("'", "\\'")
+        tab_id = html_mod.escape(str(t.get("id", "")))
         items += f'<button class="c-subtabs__btn{active_class}" onclick="switchSubTab(\'{tab_id}\'); this.parentElement.querySelectorAll(\'.c-subtabs__btn\').forEach(function(b) {{ b.classList.remove(\'c-subtabs__btn--active\'); }}); this.classList.add(\'c-subtabs__btn--active\');">{label}</button>\n'
     return f'<div class="c-subtabs">{items}</div>'
 
@@ -166,15 +157,14 @@ def html_accordion(items: List[Dict[str, str]]) -> str:
     html = '<div class="c-accordion">'
     for i, item in enumerate(items):
         cid = f"{id_prefix}_{i}"
-        display_content = _auto_render(item.get('content', ''))
         html += f"""
         <div class="c-accordion__item">
             <div class="c-accordion__header" onclick="var c=document.getElementById('{cid}'); var s=c.style.display==='block'; c.style.display=s?'none':'block'; this.querySelector('.c-accordion__icon').style.transform=s?'rotate(0)':'rotate(90deg)';">
-                <span>{html_mod.escape(item.get('title', ''))}</span>
+                <span>{html_mod.escape(item['title'])}</span>
                 <span class="c-accordion__icon">❯</span>
             </div>
             <div class="c-accordion__content" id="{cid}">
-                {display_content}
+                {item['content']}
             </div>
         </div>"""
     html += '</div>'
@@ -189,10 +179,9 @@ def html_breadcrumbs(links: List[Dict[str, str]]) -> str:
         if is_last:
             items += f'<li class="c-breadcrumbs__item">{label}</li>'
         else:
-            safe_url = html_mod.escape(link['url'], quote=True)
             items += f"""
             <li class="c-breadcrumbs__item">
-                <a href="{safe_url}">{label}</a>
+                <a href="{link['url']}">{label}</a>
                 <span class="c-breadcrumbs__separator">/</span>
             </li>"""
     return f'<ul class="c-breadcrumbs">{items}</ul>'

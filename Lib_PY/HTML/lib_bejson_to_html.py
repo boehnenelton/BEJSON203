@@ -4,12 +4,11 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.1.0 OFFICIAL
+Version:      3.0.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-10
+Date:         2026-05-29
 Description:  Core transformer for converting BEJSON data into BECSS HTML3 components.
-              Enhanced with rich text support for metadata.
 """
 
 import json
@@ -17,8 +16,7 @@ import html as html_mod
 from datetime import datetime
 
 # Import components
-from .lib_html3_body import html_card, html_brutal_table, html_subtabs, html_tab_content
-from .lib_html3_text import html_render_text
+from lib_html3_body import html_card, html_brutal_table, html_subtabs, html_tab_content
 
 def bejson_to_html_viewer(bejson_doc):
     """
@@ -75,18 +73,10 @@ def bejson_to_html_viewer(bejson_doc):
     if len(record_types) > 1:
         switcher = html_subtabs(tabs)
         content_stack = "".join(tab_contents)
-        viewer_html = f"{switcher}<div class='c-card' style='margin-top:-2px; border-top-left-radius:0;'>{content_stack}</div>"
+        return f"{switcher}<div class='c-card' style='margin-top:-2px; border-top-left-radius:0;'>{content_stack}</div>"
     else:
         title = record_types[0] if record_types else "RECORDS"
-        viewer_html = html_card(title, tab_contents[0] if tab_contents else "")
-
-    # Prepend description if present
-    desc = bejson_doc.get("DB_Description") or bejson_doc.get("description")
-    if desc:
-        rendered_desc = html_card("DESCRIPTION", html_render_text(desc))
-        return f"{rendered_desc}\n{viewer_html}"
-    
-    return viewer_html
+        return html_card(title, tab_contents[0] if tab_contents else "")
 
 def bejson_schema_viewer(bejson_doc):
     """

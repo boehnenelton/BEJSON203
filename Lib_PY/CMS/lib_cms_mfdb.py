@@ -4,7 +4,7 @@ Family:       CMS
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      2.1.0 OFFICIAL
+Version:      2.0.1 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
 Date:         2026-05-18
@@ -17,10 +17,8 @@ import sys
 import uuid
 import hashlib
 import shutil
-import zipfile
 import re
 import json
-from pathlib import Path
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -139,12 +137,7 @@ class MFDB_CMS_Manager:
         # 2. CONTENT DATABASE
         if not os.path.exists(self.content_manifest):
             content_entities = [
-                {"name": "Category", "primary_key": "category_slug", "fields": [
-                    {"name": "category_name", "type": "string"},
-                    {"name": "category_slug", "type": "string"},
-                    {"name": "description", "type": "string"},
-                    {"name": "feed_type", "type": "string"}
-                ]},
+                {"name": "Category", "primary_key": "category_slug", "fields": [{"name": "category_name", "type": "string"}, {"name": "category_slug", "type": "string"}]},
                 {"name": "Page", "primary_key": "page_uuid", "fields": [{"name": "page_uuid", "type": "string"}, {"name": "title", "type": "string"}, {"name": "slug", "type": "string"}, {"name": "category_fk", "type": "string"}, {"name": "author_fk", "type": "string"}, {"name": "page_type", "type": "string"}, {"name": "featured_img", "type": "string"}, {"name": "created_at", "type": "string"}]},
                 {"name": "PageContent", "fields": [{"name": "page_uuid_fk", "type": "string"}, {"name": "html_body", "type": "string"}, {"name": "markdown_body", "type": "string"}, {"name": "source_files", "type": "array"}, {"name": "video_url", "type": "string"}, {"name": "pdf_url", "type": "string"}, {"name": "pros", "type": "array"}, {"name": "cons", "type": "array"}, {"name": "verdict_score", "type": "number"}]},
                 {"name": "StandaloneApp", "primary_key": "app_uuid", "fields": [{"name": "app_uuid", "type": "string"}, {"name": "name", "type": "string"}, {"name": "slug", "type": "string"}, {"name": "description", "type": "string"}, {"name": "category_fk", "type": "string"}, {"name": "featured_img", "type": "string"}, {"name": "entry_file", "type": "string"}, {"name": "created_at", "type": "string"}]}
@@ -207,25 +200,10 @@ class MFDB_CMS_Manager:
         self.log_change("AdUnit", "ADD", auuid)
         return auuid
 
-    def add_asset(self, src_path: str, custom_filename: str = None):
-        """Copies a file to assets and registers it in the database."""
-        src = Path(src_path)
-        if not src.exists(): return None
-        
-        fname = custom_filename or src.name
-        dest = os.path.join(self.assets_dir, fname)
-        shutil.copy2(src, dest)
-        
-        with open(dest, "rb") as f:
-            data = f.read()
-        fhash = hashlib.sha256(data).hexdigest()
-        fsize = len(data)
-        mtype = "application/octet-stream"
-        
+    def add_asset(self, filename: str, original_name: str, file_hash: str, file_size: int, mime_type: str):
         uploaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "MediaAsset", [fname, src.name, fhash, fsize, mtype, uploaded_at])
-        self.log_change("MediaAsset", "ADD", fname)
-        return fname
+        MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "MediaAsset", [filename, original_name, file_hash, file_size, mime_type, uploaded_at])
+        self.log_change("MediaAsset", "ADD", filename)
 
     def delete_asset(self, filename: str):
         recs = MFDBCore.mfdb_core_load_entity(self.global_manifest, "MediaAsset")
@@ -238,8 +216,8 @@ class MFDB_CMS_Manager:
                 return True
         return False
 
-    def add_category(self, name: str, slug: str, description: str = "", feed_type: str = "blog"):
-        MFDBCore.mfdb_core_add_entity_record(self.content_manifest, "Category", [name, slug, description, feed_type])
+    def add_category(self, name: str, slug: str):
+        MFDBCore.mfdb_core_add_entity_record(self.content_manifest, "Category", [name, slug])
         self.log_change("Category", "ADD", slug)
 
     def update_category(self, slug: str, name: str):
@@ -351,12 +329,6 @@ class MFDB_CMS_Manager:
     def get_apps(self) -> List[Dict]:
         return MFDBCore.mfdb_core_load_entity(self.content_manifest, "StandaloneApp")
 
-    def get_pages(self) -> List[Dict]:
-        return MFDBCore.mfdb_core_load_entity(self.content_manifest, "Page")
-
-    def get_categories(self) -> List[Dict]:
-        return MFDBCore.mfdb_core_load_entity(self.content_manifest, "Category")
-
     def get_pages_in_category(self, category_slug: str) -> List[Dict]:
         return [p for p in MFDBCore.mfdb_core_load_entity(self.content_manifest, "Page")
                 if p.get("category_fk") == category_slug]
@@ -385,156 +357,3 @@ class MFDB_CMS_Manager:
             [app_uuid, name, slug, description, category, featured_img, entry_file, created_at]
         )
         self.log_change("StandaloneApp", "ADD", app_uuid)
-        return app_uuid
-
-    def import_html_as_page(self, file_path: str, title: str, category: str, author_uuid: str = ""):
-        """Imports an HTML file as a new CMS page."""
-        path = Path(file_path)
-        if not path.exists(): return None
-        
-        content = path.read_text(encoding="utf-8")
-        # Simple extraction: if <body> exists, take inner, else take all
-        import re
-        body_match = re.search(r"<body[^>]*>(.*?)</body>", content, re.DOTALL | re.IGNORECASE)
-        html_body = body_match.group(1) if body_match else content
-        
-        return self.create_page(title, category, "blog", {"html_body": html_body, "author_fk": author_uuid})
-
-    def import_app_as_page(self, app_uuid: str, author_uuid: str = ""):
-        """Wraps a StandaloneApp in a CMS page."""
-        apps = self.get_apps()
-        app = next((a for a in apps if a["app_uuid"] == app_uuid), None)
-        if not app: return None
-        
-        content = {
-            "html_body": f'<iframe src="{app["entry_file"]}" style="width:100%; height:80vh; border:none;"></iframe>',
-            "author_fk": author_uuid
-        }
-        return self.create_page(f"App: {app['name']}", app["category_fk"], "app", content)
-
-    def optimize_assets(self, convert_webp: bool = True):
-        """Converts PNGs to WebP and updates all database references."""
-        try:
-            from PIL import Image
-        except ImportError:
-            print("Error: Pillow library required for image optimization.")
-            return False
-            
-        recs = self.get_assets()
-        updated_paths = {}
-        
-        for r in recs:
-            filename = r["filename"]
-            if convert_webp and filename.lower().endswith(".png"):
-                old_path = os.path.join(self.assets_dir, filename)
-                new_filename = filename.rsplit(".", 1)[0] + ".webp"
-                new_path = os.path.join(self.assets_dir, new_filename)
-                
-                if os.path.exists(old_path):
-                    try:
-                        img = Image.open(old_path)
-                        img.save(new_path, "webp")
-                        
-                        # Update registry
-                        file_size = os.path.getsize(new_path)
-                        with open(new_path, "rb") as f:
-                            file_hash = self.get_file_hash(f.read())
-                        
-                        # Add new record directly (avoid redundant copy)
-                        uploaded_at = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                        MFDBCore.mfdb_core_add_entity_record(self.global_manifest, "MediaAsset", [new_filename, r["original_name"], file_hash, file_size, "image/webp", uploaded_at])
-                        
-                        # Delete old
-                        self.delete_asset(filename)
-                        updated_paths[filename] = new_filename
-                        print(f"Optimized: {filename} -> {new_filename}")
-                    except Exception as e:
-                        print(f"Failed to optimize {filename}: {e}")
-        
-        # Update PageContent references
-        if updated_paths:
-            page_contents = MFDBCore.mfdb_core_load_entity(self.content_manifest, "PageContent")
-            for i, pc in enumerate(page_contents):
-                body = pc.get("html_body", "")
-                md_body = pc.get("markdown_body", "")
-                changed = False
-                for old, new in updated_paths.items():
-                    if old in body:
-                        body = body.replace(old, new)
-                        changed = True
-                    if md_body and old in md_body:
-                        md_body = md_body.replace(old, new)
-                        changed = True
-                
-                if changed:
-                    MFDBCore.mfdb_core_update_entity_record(self.content_manifest, "PageContent", i, "html_body", body)
-                    if md_body:
-                        MFDBCore.mfdb_core_update_entity_record(self.content_manifest, "PageContent", i, "markdown_body", md_body)
-            print(f"Updated references for {len(updated_paths)} assets across pages.")
-        return True
-
-    def create_site_backup(self, backup_dir: str) -> Optional[str]:
-        """Creates a full site backup zip containing DBs, assets, and apps."""
-        if self.is_dirty():
-            self.repack_system()
-            
-        ts = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
-        backup_name = f"bejson_cms_backup_{ts}.zip"
-        backup_path = os.path.join(backup_dir, backup_name)
-        
-        os.makedirs(backup_dir, exist_ok=True)
-        
-        with zipfile.ZipFile(backup_path, 'w', zipfile.ZIP_DEFLATED) as zf:
-            # Add DB Archives
-            if os.path.exists(self.global_archive):
-                zf.write(self.global_archive, "global_master.mfdb.zip")
-            if os.path.exists(self.content_archive):
-                zf.write(self.content_archive, "content_master.mfdb.zip")
-            
-            # Add Assets
-            for root, _, files in os.walk(self.assets_dir):
-                for file in files:
-                    fpath = os.path.join(root, file)
-                    zf.write(fpath, os.path.join("assets", os.path.relpath(fpath, self.assets_dir)))
-            
-            # Add Apps
-            for root, _, files in os.walk(self.apps_dir):
-                for file in files:
-                    fpath = os.path.join(root, file)
-                    zf.write(fpath, os.path.join("standalone_apps", os.path.relpath(fpath, self.apps_dir)))
-                    
-        return backup_path
-
-    def restore_site_backup(self, backup_path: str) -> bool:
-        """Restores a full site backup."""
-        if not os.path.exists(backup_path):
-            return False
-            
-        # 1. Clear Workspace
-        if os.path.exists(self.workspace_root):
-            shutil.rmtree(self.workspace_root)
-        os.makedirs(self.workspace_root, exist_ok=True)
-        
-        # 2. Extract Archive
-        with zipfile.ZipFile(backup_path, 'r') as zf:
-            # Restore Databases
-            if "global_master.mfdb.zip" in zf.namelist():
-                zf.extract("global_master.mfdb.zip", self.data_root)
-            if "content_master.mfdb.zip" in zf.namelist():
-                zf.extract("content_master.mfdb.zip", self.data_root)
-                
-            # Restore Assets
-            if os.path.exists(self.assets_dir): shutil.rmtree(self.assets_dir)
-            for item in zf.namelist():
-                if item.startswith("assets/"):
-                    zf.extract(item, self.data_root)
-                    
-            # Restore Apps
-            if os.path.exists(self.apps_dir): shutil.rmtree(self.apps_dir)
-            for item in zf.namelist():
-                if item.startswith("standalone_apps/"):
-                    zf.extract(item, self.data_root)
-                    
-        # 3. Re-mount
-        self.mount_system(force=True)
-        return True

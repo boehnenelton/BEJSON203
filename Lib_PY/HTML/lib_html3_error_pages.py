@@ -11,7 +11,7 @@ Date:         2026-05-29
 Description:  Styled BECSS error pages (404, 500) for HTML3 applications.
 """
 
-from .lib_html3_page_templates import html_page
+from lib_html3_page_templates import html_page
 
 VERSION = "3.0.0"
 SCRIPT_NAME = "lib_html3_error_pages.py"

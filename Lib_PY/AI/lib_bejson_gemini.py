@@ -46,6 +46,7 @@ try:
     )
     from lib_bejson_schema import SCHEMA_MODEL_REGISTRY
 except ImportError as e:
+    print(f"Gemini Lib Error: Missing core dependencies. {e}")
     sys.exit(1)
 
 # --- Legacy Fallback Constants ---

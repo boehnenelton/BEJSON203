@@ -128,7 +128,7 @@ def html_sparkline(data=None, color=None, height="50px"):
     accent = color or "oklch(65% 0.2 25)"
     
     html = f"""
-    <div class="c-sparkline">
+    <div style="height:{height}; width:100%; margin-top: 10px;">
         <canvas id="{chart_id}"></canvas>
     </div>
     <script>

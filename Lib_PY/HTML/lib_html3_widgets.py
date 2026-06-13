@@ -4,12 +4,11 @@ Family:       HTML3
 Jurisdiction: ["BEJSON_LIBRARIES", "PY"]
 Status:       OFFICIAL
 Author:       Elton Boehnen
-Version:      3.1.0 OFFICIAL
+Version:      3.0.0 OFFICIAL
             MFDB Version: 1.31
 Format_Creator: Elton Boehnen
-Date:         2026-06-10
+Date:         2026-05-29
 Description:  Modular BECSS-compliant widgets for HTML3.
-              Enhanced with rich text/markdown support.
 """
 
 import html as html_mod
@@ -17,18 +16,11 @@ import os
 import re
 import uuid
 from pathlib import Path
-from .lib_html3_text import html_render_text, is_html
 
-VERSION = "3.1.0"
+VERSION = "3.0.0"
 SCRIPT_NAME = "lib_html3_widgets.py"
 RELATIONAL_ID = "9e4d3c2b-1f8a-4e8a-9d6c-4f4b5a6c7d8e"
 ES5_SAFE = True
-
-def _auto_render(content: str) -> str:
-    """Internal helper to apply rich text rendering if content is not HTML."""
-    if not content: return ""
-    if is_html(content): return content
-    return html_render_text(content)
 
 # Widget Size Standards (Fixed Grid PX)
 W_SMALL = (220, 200)
@@ -36,15 +28,14 @@ W_MEDIUM = (580, 300)
 W_LARGE = (1180, 400)
 
 def html_widget(content, title="WIDGET", size="small", container_id=None):
-    """BECSS Widget Container. Supports markdown if content is not HTML."""
+    """BECSS Widget Container."""
     cid = container_id or f"widget_{uuid.uuid4().hex[:12]}"
-    display_content = _auto_render(content)
     
     if size == "large": width, height = W_LARGE
     elif size == "medium": width, height = W_MEDIUM
     else: width, height = W_SMALL
     
-    style = f'max-width: {width}px; width: 100%; height: {height}px; min-height: {height}px;'
+    style = f'width: {width}px; height: {height}px; min-width: {width}px; min-height: {height}px;'
     
     return f"""
     <div id="{cid}" class="c-widget" style="{style}">
@@ -53,7 +44,7 @@ def html_widget(content, title="WIDGET", size="small", container_id=None):
             <span style="opacity: 0.5;">[{size.upper()}]</span>
         </div>
         <div class="c-widget__body">
-            {display_content}
+            {content}
         </div>
     </div>
     """
@@ -79,7 +70,7 @@ def html_gallery(dir_path, url_prefix="", recursive=False, container_id=None):
             # Build clean source path
             src = f"{prefix}/{img.name}" if prefix else img.name
             items += f"""
-            <div class="c-gallery-item" onclick="openLightbox('{src.replace("'", "\\'")}', '{html_mod.escape(img.name).replace("'", "\\'")}')">
+            <div class="c-gallery-item" onclick="openLightbox('{src}', '{html_mod.escape(img.name)}')">
                 <img src="{src}" alt="{img.name}" loading="lazy" onerror="this.src='https://placehold.co/400x300?text=Missing+Image'">
                 <div class="c-gallery-item__label">{img.name}</div>
             </div>"""
@@ -117,14 +108,10 @@ def html_video_grid(videos, container_id=None):
     return f'<div id="{cid}" class="c-video-grid">{items}</div>'
 
 def html_info_box(title, content, link_url=None, link_label="View More", container_id=None, escape_content=False):
-    """BECSS Info Box. Now supports markdown if not HTML."""
+    """BECSS Info Box."""
     cid = container_id or f"infobox_{uuid.uuid4().hex[:12]}"
     link_html = f"""<a href="{link_url}" class="c-info-box__link">{link_label}</a>""" if link_url else ""
-    
-    if escape_content:
-        display_content = html_mod.escape(content)
-    else:
-        display_content = _auto_render(content)
+    display_content = html_mod.escape(content) if escape_content else content
 
     return f"""
     <div id="{cid}" class="c-info-box">
@@ -214,12 +201,8 @@ def html_code_block(code, title="Source Code", container_id=None):
     """
 
 def html_dialog(dialog_id, title, content, actions_html="", escape_content=True):
-    """BECSS Modal Dialog. Now supports markdown if escape_content is False."""
-    if escape_content:
-        display_content = html_mod.escape(content)
-    else:
-        display_content = _auto_render(content)
-        
+    """BECSS Modal Dialog."""
+    display_content = html_mod.escape(content) if escape_content else content
     return f"""
     <div id="{dialog_id}" class="c-dialog-mask">
         <div class="c-dialog">

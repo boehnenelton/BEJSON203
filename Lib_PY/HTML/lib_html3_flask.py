@@ -27,10 +27,10 @@ SCRIPT_NAME = "lib_html3_flask.py"
 RELATIONAL_ID = "de2626-flask-optimized-005"
 
 # Core UI imports
-from .lib_bejson_html3_skeletons import COLOR, CSS_CORE, HTML_SKELETON
-from .lib_html3_page_templates import html_page
-from .lib_html3_tables import html_table
-from .lib_html3_body import html_stats_bar, html_card, html_card_grid, html_badge
+from lib_bejson_html3_skeletons import COLOR, CSS_CORE, HTML_SKELETON
+from lib_html3_page_templates import html_page
+from lib_html3_tables import html_table
+from lib_html3_body import html_stats_bar, html_card, html_card_grid, html_badge
 
 def list_to_bejson(data_list, entity_name="Entity"):
     """

@@ -17,11 +17,11 @@ import html as html_mod
 import os
 import sys
 import logging
-from .lib_html3_body import html_card, html_stats_bar, html_description_list
-from .lib_html3_tables import html_table
-from .lib_html3_charts import html_chart
-from .lib_bejson_to_html import bejson_to_html_viewer
-from .lib_html3_showcase import html_bento_grid
+from lib_html3_body import html_card, html_stats_bar, html_description_list
+from lib_html3_tables import html_table
+from lib_html3_charts import html_chart
+from lib_bejson_to_html import bejson_to_html_viewer
+from lib_html3_showcase import html_bento_grid
 
 # --- Sibling Resolution ---
 LIB_DIR = os.path.dirname(os.path.abspath(__file__))

@@ -18,7 +18,7 @@ from datetime import datetime
 import lib_bejson_validator as CoreValidator
 
 # Reuse template logic from diagram_html for consistency
-from .lib_bejson_diagram_html import BECSS_DIAGRAM_TEMPLATE
+from lib_bejson_diagram_html import BECSS_DIAGRAM_TEMPLATE
 
 def bejson_validator_diagram_validate_string(json_string):
     """Validates a BEJSON string as a valid Diagrammer structure."""
