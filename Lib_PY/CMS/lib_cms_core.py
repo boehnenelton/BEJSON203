@@ -1,7 +1,7 @@
 # ==============================================================================
 # LIBRARY: lib_cms_core.py
 # PURPOSE: Extension library for BEJSON_CMS built on core MFDB libraries.
-# VERSION: 17.0 (CoreEvolution Integration)
+# VERSION: 18.0 (CoreEvolution Integration)
 # AUTHOR:  Elton Boehnen
 # DATE:    2026-06-06
 # CHANGES: - Integrated bejson_core_get_field_map() for O(1) field lookups.
@@ -71,9 +71,6 @@ class CMSCore:
             for field_name, val in record_dict.items():
                 idx = field_map.get(field_name, -1)
                 if idx != -1:
-                    # Data Integrity: Coerce None to "" for strings (BUG-11)
-                    if val is None and fields[idx].get("type") == "string":
-                        val = ""
                     row[idx] = val
             
             # Handle Record_Type_Parent discriminator (104db)
