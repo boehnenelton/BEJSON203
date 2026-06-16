@@ -12,6 +12,7 @@ Description:  BECSS-compliant page templates for HTML3.
 """
 
 import os
+import html as html_mod
 from lib_bejson_html3_skeletons import COLOR, BRUTAL_COLOR, CSS_CORE, CSS_BRUTAL, HTML_SKELETON, HTML_SKELETON_BRUTAL
 from lib_html3_sidemenu import _sidebar_html
 
@@ -25,6 +26,13 @@ def html_page(title, content, nav_links=None, status_extra="", active_url="", da
     :param dark: If True, applies .u-dark to the <html> tag.
     :param site_url: Base URL for absolute links.
     """
+    # Hardening: Type enforcement and null handling
+    title = html_mod.escape(str(title or "Untitled Page"))
+    content = str(content or "")
+    status_extra = html_mod.escape(str(status_extra or ""))
+    active_url = str(active_url or "")
+    site_url = str(site_url or "").rstrip("/")
+
     header, sidebar, overlay = _sidebar_html(nav_links, title=title)
     
     # Render navigation items with active state
@@ -33,7 +41,15 @@ def html_page(title, content, nav_links=None, status_extra="", active_url="", da
         for label, url in nav_links:
             active_class = " c-sidebar__link--active" if url == active_url else ""
             final_url = f"{site_url.rstrip('/')}/{url.lstrip('/')}" if site_url and not url.startswith(("http", "/")) else url
-            nav_html += f'<a href="{final_url}" class="c-sidebar__link{active_class}"><span>❯</span> {label}</a>\n'
+            nav_html += f'\n                    <a href="{final_url}" class="c-sidebar__link{active_class}"><span>❯</span> {label}</a>'
+
+    # Ensure content has some base indentation if it's multi-line, 
+    # but avoid over-indenting if it looks like it already has structure.
+    lines = content.splitlines()
+    if len(lines) > 1:
+        indented_content = lines[0] + "\n" + "\n".join("            " + line for line in lines[1:])
+    else:
+        indented_content = content
 
     # Combine components into skeleton
     css = CSS_CORE.format(**COLOR)
@@ -43,7 +59,7 @@ def html_page(title, content, nav_links=None, status_extra="", active_url="", da
                         .replace("{{breadcrumbs}}", f"<span>{title.upper()}</span>") \
                         .replace("{{nav_items}}", nav_html) \
                         .replace("{{status_extra}}", status_extra) \
-                        .replace("{{content}}", content)
+                        .replace("{{content}}", indented_content)
     
     if dark:
         html = html.replace("<html lang=\"en\">", '<html lang="en" class="u-dark">')

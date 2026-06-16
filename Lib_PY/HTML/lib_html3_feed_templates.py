@@ -46,34 +46,50 @@ def html_card_grid(cards, title="Cards", nav_links=None, dark=False):
     return cards_html
 
 def html_feed(entries, title="Feed", nav_links=None, dark=False,
-              site_url="https://boehnenelton2024.pages.dev"):
-    """BECSS Content Feed."""
+              site_url="https://boehnenelton2024.pages.dev", active_url=""):
+    """
+    BECSS Content Feed.
+    :param active_url: Current URL for sidebar highlight.
+    """
+    # Hardening: Input validation
+    if not isinstance(entries, list):
+        entries = []
+    title = html_mod.escape(str(title or "Feed"))
+    site_url = str(site_url or "https://boehnenelton2024.pages.dev").rstrip("/")
+    active_url = str(active_url or "")
+
     items = ""
     for e in entries:
-        t = html_mod.escape(str(e.get("title", "")))
+        if not isinstance(e, dict): continue
+        t = html_mod.escape(str(e.get("title", "Untitled")))
         link = html_mod.escape(str(e.get("link", "#")))
-        date = html_mod.escape(str(e.get("date", "")))
-        author = html_mod.escape(str(e.get("author", "")))
-        body = e.get("body", "") 
-        tags = e.get("tags", [])
+        date = html_mod.escape(str(e.get("date", "Unknown Date")))
+        author = html_mod.escape(str(e.get("author", "Anonymous")))
+        body = str(e.get("body", "")) # Body often contains HTML, handle with care or provide sanitizer
+        tags = e.get("tags")
+        if not isinstance(tags, list): tags = []
         tag_html = ""
         if tags:
-            tag_html = '<div class="c-feed-item__tags">' + " ".join(
-                f'<span class="c-feed-tag">{html_mod.escape(str(tg))}</span>'
-                for tg in tags) + '</div>'
+            tag_html = '\n            <div class="c-feed-item__tags">' + "".join(
+                f'\n                <span class="c-feed-tag">{html_mod.escape(str(tg))}</span>'
+                for tg in tags) + '\n            </div>'
 
         items += f"""
         <div class="c-feed-item">
             <h3 class="c-feed-item__title"><a href="{link}">{t}</a></h3>
             <div class="c-feed-item__meta">{date} &middot; {author}</div>
-            <div class="c-feed-item__body">{body}</div>
-            {tag_html}
+            <div class="c-feed-item__body">{body}</div>{tag_html}
         </div>\n"""
     
-    feed_body = f'<header class="c-page-header"><h1>{html_mod.escape(title)}</h1></header><section class="c-feed">{items}</section>'
+    feed_body = f"""
+    <header class="c-page-header">
+        <h1>{html_mod.escape(title)}</h1>
+    </header>
+    <section class="c-feed">{items}
+    </section>"""
     
     if nav_links is not None:
         from lib_html3_page_templates import html_page
-        return html_page(title, feed_body, nav_links=nav_links, dark=dark, site_url=site_url)
+        return html_page(title, feed_body, nav_links=nav_links, dark=dark, site_url=site_url, active_url=active_url)
         
     return feed_body
