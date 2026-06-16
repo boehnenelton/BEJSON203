@@ -1391,6 +1391,82 @@
       "/data/data/com.termux/files/home/libraries/Lib_PY/Chunker/lib_cms_chunker_wrapper.py",
       "Wrapper for Chunker v5 and v6.",
       []
+    ],
+    [
+      "lib_md_indexer.py",
+      "lib_md_indexer_py",
+      "/data/data/com.termux/files/home/libraries/Lib_PY/MD/lib_md_indexer.py",
+      "Markdown scanner and BEJSON 104 chunk index factory.",
+      [
+        "md_indexer_scan_file",
+        "md_indexer_build_index_doc",
+        "md_indexer_save_index",
+        "md_indexer_reindex_file",
+        "md_indexer_list_chunks",
+        "md_indexer_get_chunk_row"
+      ]
+    ],
+    [
+      "lib_md_ops.py",
+      "lib_md_ops_py",
+      "/data/data/com.termux/files/home/libraries/Lib_PY/MD/lib_md_ops.py",
+      "Core operations (pull, inject, toggle, assemble) for addressable markdown chunks.",
+      [
+        "md_ops_pull",
+        "md_ops_inject",
+        "md_ops_toggle",
+        "md_ops_toggle_by_tag",
+        "md_ops_set_tags",
+        "md_ops_set_sort_order",
+        "md_ops_assemble",
+        "md_ops_assemble_by_tag",
+        "md_ops_reindex",
+        "md_ops_list_chunks"
+      ]
+    ],
+    [
+      "lib_md_db.py",
+      "lib_md_db_py",
+      "/data/data/com.termux/files/home/libraries/Lib_PY/MD/lib_md_db.py",
+      "MFDB v1.31 wrapper for multi-file addressable markdown chunk management.",
+      [
+        "md_db_create",
+        "md_db_exists",
+        "md_db_register_file",
+        "md_db_list_files",
+        "md_db_get_file",
+        "md_db_get_index_path",
+        "md_db_reindex_file",
+        "md_db_reindex_all",
+        "md_db_unregister_file",
+        "md_db_list_all_chunks",
+        "md_db_assemble",
+        "md_db_assemble_by_tag",
+        "md_db_pull",
+        "md_db_inject",
+        "md_db_toggle",
+        "md_db_set_tags",
+        "md_db_list_chunks"
+      ]
+    ],
+    [
+      "lib_md_errors.py",
+      "lib_md_errors_py",
+      "/data/data/com.termux/files/home/libraries/Lib_PY/MD/lib_md_errors.py",
+      "Custom exception classes for the Markdown library (error codes 70-89).",
+      [
+        "MarkdownLibError",
+        "ChunkNotFoundError",
+        "FileNotFoundError",
+        "IndexNotFoundError",
+        "ChunkDriftError",
+        "IndexStaleError",
+        "WriteFailedError",
+        "InjectRangeInvalidError",
+        "AssembleEmptyError",
+        "MFDBWrapperError",
+        "InvalidDocumentError"
+      ]
     ]
   ]
 }
