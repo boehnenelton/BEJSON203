@@ -45,10 +45,11 @@ COMPONENT_CSS = """
         margin-bottom: 12px; font-weight: 800;
     }}
     .c-card__body {{ font-size: 0.95rem; color: var(--text-main); }}
-    
-    .c-card--brutal {{
+    .c-card--brutal {
         border: 1px solid var(--border); border-radius: var(--radius);
         box-shadow: 8px 8px 0px var(--border);
+    }
+
     }}
 
     /* Badges */
