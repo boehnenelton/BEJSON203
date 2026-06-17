@@ -47,7 +47,7 @@ COMPONENT_CSS = """
     .c-card__body {{ font-size: 0.95rem; color: var(--text-main); }}
     
     .c-card--brutal {{
-        border: 4px solid var(--border); border-radius: 0;
+        border: 1px solid var(--border); border-radius: var(--radius);
         box-shadow: 8px 8px 0px var(--border);
     }}
 
